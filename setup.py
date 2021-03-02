@@ -9,5 +9,7 @@ setup(
     author_email='zhuny936772@gmail.com',
     license='unlicense',
     packages=['algebra'],
-    zip_safe=False
+    zip_safe=False,
+    test_suite='algebra.tests',
+    tests_require=[],
 )
