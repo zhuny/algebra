@@ -1,4 +1,5 @@
 import collections
+import math
 from typing import List, Dict
 
 
@@ -35,3 +36,7 @@ def factorize(num: int) -> Dict[int, int]:
         factor[num] += 1
 
     return factor
+
+
+def lcm(a, b):
+    return a * b // math.gcd(a, b)
