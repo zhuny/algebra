@@ -208,7 +208,7 @@ class SimpleRadicalElement:
             return SimpleRadicalElement(
                 multiplier=self.multiplier * other,
                 index=self.index,
-                radicand=self.radicand * (other ** self.index)
+                radicand=self.radicand
             )
         assert isinstance(other, SimpleRadicalElement), type(other)  # FIXME: 다른게 오게 될 수도?
         g = math.gcd(self.index, other.index)
