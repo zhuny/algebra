@@ -9,7 +9,7 @@ from algebra.number.types import Number, NumberType
 from algebra.number.util import factorize, lcm
 
 
-@dataclass(eq=False)
+@dataclass(eq=False, frozen=True, unsafe_hash=True)
 class Radical:
     inv: int  # should be positive integer
     body: 'SimpleRadical'
@@ -68,7 +68,7 @@ class Radical:
             return f"({upper})/{self.inv}"
 
 
-@dataclass(eq=False)
+@dataclass(eq=False, frozen=True)
 class SimpleRadical:
     constant: int
     body: List['SimpleRadicalElement'] = field(default_factory=list)
@@ -79,6 +79,12 @@ class SimpleRadical:
             return SimpleRadical(constant=other)
         assert isinstance(other, SimpleRadical)
         return other
+
+    def __hash__(self):
+        return hash((
+            self.constant,
+            tuple(sorted(self.body, key=hash))
+        ))
 
     def __eq__(self, other):
         return (self - other).is_zero()
@@ -190,7 +196,7 @@ class SimpleRadical:
         return "".join(stream)
 
 
-@dataclass
+@dataclass(frozen=True, unsafe_hash=True)
 class SimpleRadicalElement:
     multiplier: int
     index: int

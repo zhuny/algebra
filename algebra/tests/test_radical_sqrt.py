@@ -27,3 +27,15 @@ class TestRadicalMultiply(unittest.TestCase):
         number2 = Radical.from_number(6).sqrt() * 2 + 5
 
         self.assertEqual(number1, number2)
+
+    def test_hash_func(self):
+        sqrt_2_2 = Radical.from_number(2).sqrt() * 2
+        sqrt_8 = Radical.from_number(8).sqrt()
+
+        self.assertEqual(sqrt_2_2, sqrt_8)
+
+        number_set = set()
+        number_set.add(sqrt_2_2)
+        number_set.add(sqrt_8)
+
+        self.assertEqual(len(number_set), 1)
