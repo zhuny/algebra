@@ -2,11 +2,11 @@ import collections
 from fractions import Fraction
 from typing import List, Dict, Union
 
-from algebra.number.types import NumberType
+from algebra.number.types import NumberType, Number
 
 
 class Polynomial:
-    def __init__(self, body: Union[List[Fraction], Dict[int, Fraction]]):
+    def __init__(self, body: Union[List[Number], Dict[int, Number]]):
         if isinstance(body, list):
             body = dict(enumerate(body))
         assert isinstance(body, dict)
@@ -45,5 +45,31 @@ class Polynomial:
                 d[i+j] += num1 * num2
         return Polynomial(d)
 
+    def __truediv__(self, other):
+        if isinstance(other, NumberType):
+            return Polynomial({k: v/other for k, v in self.body.items()})
+
+        raise ValueError("Cannot divided")
+
     def __eq__(self, other):
         return isinstance(other, Polynomial) and self.body == other.body
+
+    def to_wolfram_alpha(self):
+        stream = []
+        for p, coeff in sorted(self.body.items(), reverse=True):
+            if stream and coeff > 0:
+                stream.append("+")
+            if coeff != 1 or p == 0:
+                stream.append(f"{coeff}")
+            if p > 1:
+                stream.append(f"x**{p}")
+            elif p == 1:
+                stream.append(f"x")
+        return "".join(stream)
+
+    def diff(self):
+        d = {}
+        for k, v in self.body.items():
+            if k > 0:
+                d[k-1] = v*k
+        return Polynomial(d)

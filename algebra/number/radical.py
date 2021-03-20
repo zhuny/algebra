@@ -253,7 +253,11 @@ class SimpleRadicalElement:
         return self.radicand._is_integer() and self.radicand.constant == 1
 
     def to_wolfram_alpha(self):
-        return (
-            f"{self.multiplier}*"
-            f"({self.radicand.to_wolfram_alpha()})^(1/{self.index})"
-        )
+        stream = []
+        if self.multiplier != 1:
+            stream.append(f"{self.multiplier}*")
+        stream.append('sqrt')
+        if self.index != 2:
+            stream.append(f"[{self.index}]")
+        stream.append(f"{{{self.radicand.to_wolfram_alpha()}}}")
+        return "".join(stream)
