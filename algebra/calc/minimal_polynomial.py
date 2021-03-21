@@ -70,10 +70,14 @@ def minimal_polynomial(number: Radical):
         # print(i)
         # for p, poly in enumerate(right_row):
         #     print(f"Polynomial[{p}] :", poly.to_wolfram_alpha())
+        #
+        # print(x.to_wolfram_alpha())
+        # print(left_matrix.matrix.to_wolfram_alpha())
         # input()
 
         if left_matrix.is_last_zero():
             break
+
         x *= number
 
     return right_row[-1]

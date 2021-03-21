@@ -16,9 +16,9 @@ class TestRadicalMultiply(unittest.TestCase):
         self.check_minimal_polynomial(
             self.sqrt(2) + self.sqrt(3) * 2
         )
-        # self.check_minimal_polynomial(
-        #     self.sqrt(2) + self.sqrt(3) + self.sqrt(5)
-        # )
+        self.check_minimal_polynomial(
+            self.sqrt(2) + self.sqrt(3) + self.sqrt(5)
+        )
 
     def check_minimal_polynomial(self, number):
         p = minimal_polynomial(number)

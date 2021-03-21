@@ -41,11 +41,31 @@ class Matrix:
         for col in range(self.col_size):
             self[row_t, col] += self[row_s, col] * value
 
+    def _find_non_zero(self, row, col):
+        for row2 in range(row, self.row_size):
+            if self[row2, col]:
+                return row2
+
+    def _swap(self, row1, row2):
+        for col in range(self.col_size):
+            self[row1, col], self[row2, col] = self[row2, col], self[row1, col]
+
     def reduced_form(self, associate=None):
         col = 0
         for row in range(self.row_size):
-            while col < self.col_size and self[row, col] == 0:
-                col += 1
+            while col < self.col_size:
+                row2 = self._find_non_zero(row, col)
+                if row2 is None:
+                    col += 1
+                    continue
+                else:
+                    if row != row2:
+                        self._swap(row, row2)
+                        associate[row], associate[row2] = (
+                            associate[row2], associate[row]
+                        )
+                    break
+
             if col == self.col_size:
                 break
 
@@ -63,3 +83,17 @@ class Matrix:
             if self[row, col]:
                 return False
         return True
+
+    def to_wolfram_alpha(self):
+        stream = ["{"]
+        for row in range(self.row_size):
+            if row > 0:
+                stream.append(",")
+            stream.append("{")
+            for col in range(self.col_size):
+                if col > 0:
+                    stream.append(",")
+                stream.append(str(self[row, col]))
+            stream.append("}")
+        stream.append("}")
+        return "".join(stream)
