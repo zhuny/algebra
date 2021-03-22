@@ -14,6 +14,12 @@ class Radical:
     inv: int  # should be positive integer
     body: 'SimpleRadical'
 
+    def __post_init__(self):
+        if self.inv == 0:
+            raise ValueError("Zero division?")
+        if self.inv < 0:
+            raise ValueError("Normalize to zero")
+
     @classmethod
     def from_number(cls, n: Number):
         """
