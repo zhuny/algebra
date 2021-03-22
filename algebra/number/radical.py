@@ -31,10 +31,10 @@ class Radical:
             other = self.from_number(other)
         assert isinstance(other, Radical)
 
-        d = math.gcd(self.inv, other.inv)
-        inv = self.inv * other.inv // d
-        body = self.body*(other.inv // d) + other.body*(self.inv // d)
-        return Radical(inv=inv, body=body._fast_simplify())
+        return Radical(
+            inv=self.inv * other.inv,
+            body=self.body * other.inv + other.body * self.inv
+        )._fast_simplify()
 
     def __sub__(self, other):
         return self + (-other)
@@ -44,12 +44,33 @@ class Radical:
             other = self.from_number(other)
 
         return Radical(
-            inv=self.inv*other.inv,
-            body=(self.body*other.body)._fast_simplify()
-        )
+            inv=self.inv * other.inv,
+            body=self.body * other.body
+        )._fast_simplify()
+
+    def __floordiv__(self, other):
+        return self // other
+
+    def __truediv__(self, other):
+        if isinstance(other, int):
+            return Radical(inv=self.inv*other, body=self.body)
+        # FIXME: 다양한 경우에 대해서 고려해보자
 
     def __neg__(self):
         return Radical(inv=self.inv, body=-self.body)
+
+    def _fast_simplify(self):
+        body = self.body._fast_simplify()
+        nums = [self.inv]
+        if body.constant:
+            nums.append(abs(body.constant))
+        for sub_body in body.body:
+            nums.append(abs(sub_body.multiplier))
+        if len(nums) > 1:
+            d = functools.reduce(math.gcd, nums)
+            return Radical(inv=self.inv // d, body=body / d)
+        else:
+            return Radical(inv=self.inv, body=body)
 
     def is_zero(self):
         return self.body.is_zero()
@@ -57,8 +78,8 @@ class Radical:
     def sqrt(self):
         return Radical(
             inv=self.inv,
-            body=(self.body*self.inv).sqrt()._fast_simplify()
-        )
+            body=(self.body*self.inv).sqrt()
+        )._fast_simplify()
 
     def to_wolfram_alpha(self):
         upper = self.body.to_wolfram_alpha()
@@ -114,6 +135,13 @@ class SimpleRadical:
         return SimpleRadical(
             constant=self.constant*other.constant,
             body=body
+        )
+
+    def __truediv__(self, other):
+        assert isinstance(other, int)
+        return SimpleRadical(
+            constant=self.constant // other,
+            body=[body / other for body in self.body]
         )
 
     def __neg__(self):
@@ -225,6 +253,14 @@ class SimpleRadicalElement:
                 (self.radicand ** (other.index//g)) *
                 (other.radicand ** (self.index//g))
             )
+        )
+
+    def __truediv__(self, other):
+        assert isinstance(other, int)
+        return SimpleRadicalElement(
+            multiplier=self.multiplier // other,
+            index=self.index,
+            radicand=self.radicand
         )
 
     def _fast_simplify(self):

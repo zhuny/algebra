@@ -39,3 +39,11 @@ class TestRadicalMultiply(unittest.TestCase):
         number_set.add(sqrt_8)
 
         self.assertEqual(len(number_set), 1)
+
+    def test_simple_expr(self):
+        sqrt6_2 = Radical.from_number(6).sqrt() / 2
+        sqrt2 = Radical.from_number(2).sqrt()
+
+        sqrt3 = sqrt2 * sqrt6_2  # 2*sqrt(3)/2) is not allowed
+
+        self.assertEqual(sqrt3.to_wolfram_alpha(), "sqrt{3}")
