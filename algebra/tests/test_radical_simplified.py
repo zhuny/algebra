@@ -9,7 +9,8 @@ class TestRadicalMultiply(unittest.TestCase):
             with self.subTest(f"Factorize {i}"):
                 f = factorize(i)
                 for prime, power in f.items():
-                    self.assertTrue(is_prime(prime), "Factor should be a prime")
+                    self.assertTrue(is_prime(prime),
+                                    "Factor should be a prime")
 
                 i_another = 1
                 for prime, power in f.items():
@@ -23,7 +24,7 @@ class TestRadicalMultiply(unittest.TestCase):
                 self.assertIn(2, f)
                 self.assertEqual(f[2], i*3)
 
-        with self.subTest(f"Figure 1372933"):
+        with self.subTest("Figure 1372933"):
             f = factorize(1372933)
             self.assertTrue(is_prime(1372933))
             self.assertEqual(len(f), 1)

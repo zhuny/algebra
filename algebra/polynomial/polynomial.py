@@ -64,7 +64,7 @@ class Polynomial:
             if p > 1:
                 stream.append(f"x**{p}")
             elif p == 1:
-                stream.append(f"x")
+                stream.append("x")
         return "".join(stream)
 
     def diff(self):

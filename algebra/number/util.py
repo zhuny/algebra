@@ -1,6 +1,6 @@
 import collections
 import math
-from typing import List, Dict
+from typing import Dict
 
 
 def is_prime(num: int) -> bool:

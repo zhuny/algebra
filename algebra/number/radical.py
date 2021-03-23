@@ -250,7 +250,9 @@ class SimpleRadicalElement:
                 index=self.index,
                 radicand=self.radicand
             )
-        assert isinstance(other, SimpleRadicalElement), type(other)  # FIXME: 다른게 오게 될 수도?
+
+        # FIXME: 다른게 오게 될 수도?
+        assert isinstance(other, SimpleRadicalElement), type(other)
         g = math.gcd(self.index, other.index)
         return SimpleRadicalElement(
             multiplier=self.multiplier*other.multiplier,
