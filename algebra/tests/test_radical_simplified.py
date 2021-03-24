@@ -30,3 +30,8 @@ class TestRadicalMultiply(unittest.TestCase):
             self.assertEqual(len(f), 1)
             self.assertIn(1372933, f)
             self.assertEqual(f[1372933], 1)
+
+    def test_prime(self):
+        self.assertFalse(is_prime(100))
+        with self.assertRaises(ValueError):
+            factorize(-10)
