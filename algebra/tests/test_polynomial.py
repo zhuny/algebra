@@ -30,12 +30,10 @@ class TestPolynomial(unittest.TestCase):
         with self.subTest("__mul__ type error"):
             with self.assertRaises(ValueError):
                 p = p * ()
-                print(p)
 
         with self.subTest("__truediv__ type error"):
             with self.assertRaises(ValueError):
                 p = p / ()
-                print(p)
 
     def test_diff(self):
         p = Polynomial({1: 1, 2: 1, 3: 1, 4:1})

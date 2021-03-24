@@ -4,20 +4,22 @@ from algebra.matrix.matrix import Matrix
 
 
 class TestMatrix(unittest.TestCase):
-    def _test_fibo(self):
-        fibo = Matrix(2, 2)
-        fibo[0, 0] = fibo[0, 1] = fibo[1, 0] = 1
-
-        row = Matrix(2, 1)
-        row[0, 0] = 1
-
-        fibo1 = fibo
-        a, b = 1, 0
-
-        for i in range(100):
-            with self.subTest(f"{i}-th fibonacci number"):
-                fibo1 *= fibo
-                result = fibo1 * row
+    # def test_fibo(self):
+    #     fibo = Matrix(2, 2)
+    #     fibo[0, 0] = fibo[0, 1] = fibo[1, 0] = 1
+    #
+    #     row = Matrix(2, 1)
+    #     row[0, 0] = 1
+    #
+    #     fibo1 = fibo
+    #     a, b = 1, 0
+    #
+    #     for i in range(100):
+    #         with self.subTest(f"{i}-th fibonacci number"):
+    #             fibo1 *= fibo
+    #             result = fibo1 * row
+    #             a, b = b, a+b
+    #             self.assertEqual(result[1, 0], b)
 
     def test_boundary_out_error(self):
         m = Matrix(5, 5)
