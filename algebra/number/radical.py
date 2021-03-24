@@ -54,9 +54,6 @@ class Radical:
             body=self.body * other.body
         )._fast_simplify()
 
-    def __floordiv__(self, other):
-        return self // other
-
     def __truediv__(self, other):
         if isinstance(other, int):
             return Radical(inv=self.inv*other, body=self.body)
@@ -158,7 +155,7 @@ class SimpleRadical:
 
     def __pow__(self, power, modulo=None):
         assert isinstance(power, int)  # TODO: 나중에 Fraction도 고려
-        assert power >= 0  # TODO: 음수도 고려...
+        assert power > 0  # TODO: 음수도 고려...
 
         multiplier_list = []
         current = self
@@ -168,10 +165,8 @@ class SimpleRadical:
             power >>= 1
             current = current * current
 
-        if len(multiplier_list) == 0:
-            return SimpleRadical.from_number(1)
-        else:
-            return functools.reduce(lambda x, y: x*y, multiplier_list)
+        assert len(multiplier_list) > 0
+        return functools.reduce(lambda x, y: x*y, multiplier_list)
 
     def _fast_simplify(self):
         const = self.constant
@@ -260,7 +255,7 @@ class SimpleRadicalElement:
             radicand=(
                 (self.radicand ** (other.index//g)) *
                 (other.radicand ** (self.index//g))
-            )
+            )._fast_simplify()
         )
 
     def __truediv__(self, other):

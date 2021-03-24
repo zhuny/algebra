@@ -19,3 +19,10 @@ class TestRadicalMultiply(unittest.TestCase):
                 right_side = ii * 2 + (i + 1)  # sqrt(i)*2 + i + 1
 
                 self.assertEqual(left_side, right_side)
+
+    def test_mul_nested(self):
+        x = (
+                Radical.from_number(5).sqrt() +
+                Radical.from_number(6).sqrt() * 2
+        ).sqrt()
+        y = x*x

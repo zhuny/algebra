@@ -1,6 +1,6 @@
 import unittest
 
-from algebra.number.radical import Radical, SimpleRadical
+from algebra.number.radical import Radical, SimpleRadical, SimpleRadicalElement
 
 
 class TestRadicalMultiply(unittest.TestCase):
@@ -20,5 +20,15 @@ class TestRadicalMultiply(unittest.TestCase):
         sin_180 = sin_120 * cos_60 + cos_120 * sin_60
         cos_180 = cos_60 * cos_120 - sin_60 * sin_120
 
+        self.assertEqual(sin_60.to_wolfram_alpha(), "(sqrt{3})/2")
         self.assertEqual(sin_180, 0)
         self.assertEqual(cos_180, -1)
+
+    def test_another_index(self):
+        number = SimpleRadicalElement(
+            multiplier=2,
+            index=3,
+            radicand=SimpleRadical(constant=3)
+        )
+        self.assertEqual(number.to_wolfram_alpha(), "2*sqrt[3]{3}")
+
