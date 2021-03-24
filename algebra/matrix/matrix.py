@@ -2,10 +2,10 @@ from fractions import Fraction
 
 
 class Matrix:
-    def __init__(self):
+    def __init__(self, row: int = 0, col: int = 0):
         self.body = {}
-        self.row_size = 0
-        self.col_size = 0
+        self.row_size = row
+        self.col_size = col
 
     def append_row(self):
         self.row_size += 1
@@ -75,7 +75,7 @@ class Matrix:
             for row2 in range(self.row_size):
                 if row == row2:
                     continue
-                associate[row2] -= associate[row]*self[row2, col]
+                associate[row2] -= associate[row] * self[row2, col]
                 self._add(row, row2, -self[row2, col])
 
     def is_zero_row(self, row):
