@@ -14,15 +14,6 @@ class Counter:
         return self.body.setdefault(obje, len(self.body))
 
 
-class ComponentMap:
-    def __init__(self, counter):
-        self.body = {}
-        self.counter = counter
-
-    def set(self, key, value):
-        self.body[self.counter.get(key)] = value
-
-
 class MappedColumnMatrix:
     def __init__(self):
         self.matrix = Matrix()
