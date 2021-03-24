@@ -1,0 +1,24 @@
+import unittest
+
+from algebra.number.radical import Radical, SimpleRadical
+
+
+class TestRadicalMultiply(unittest.TestCase):
+    def test_error_input(self):
+        with self.assertRaises(ValueError):
+            Radical(-1, SimpleRadical(0))
+        with self.assertRaises(ValueError):
+            Radical(0, SimpleRadical(0))
+
+    def test_sin_60(self):
+        sin_60 = Radical.from_number(3).sqrt() / 2
+        cos_60 = Radical.from_number(1) / 2
+
+        sin_120 = sin_60 * cos_60 * 2
+        cos_120 = cos_60 * cos_60 - sin_60 * sin_60
+
+        sin_180 = sin_120 * cos_60 + cos_120 * sin_60
+        cos_180 = cos_60 * cos_120 - sin_60 * sin_120
+
+        self.assertEqual(sin_180, 0)
+        self.assertEqual(cos_180, -1)
