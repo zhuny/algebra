@@ -10,7 +10,7 @@ steps:
       - -t
       - ./.venv
     id: 'py3-pip-install'
-    waitFor: ['py3-setting']
+    waitFor: ['-']
   - name: python:3.8
     entrypoint: python3
     args:
