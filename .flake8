@@ -1,0 +1,6 @@
+[flake8]
+exclude = .venv
+
+# it's not a bug that we aren't using all of hacking, ignore:
+# W504: line break after binary operator
+ignore = W504

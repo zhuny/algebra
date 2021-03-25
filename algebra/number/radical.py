@@ -54,12 +54,9 @@ class Radical:
             body=self.body * other.body
         )._fast_simplify()
 
-    def __floordiv__(self, other):
-        return self // other
-
     def __truediv__(self, other):
         if isinstance(other, int):
-            return Radical(inv=self.inv*other, body=self.body)
+            return Radical(inv=self.inv * other, body=self.body)
         # FIXME: 다양한 경우에 대해서 고려해보자
 
     def __neg__(self):
@@ -84,7 +81,7 @@ class Radical:
     def sqrt(self):
         return Radical(
             inv=self.inv,
-            body=(self.body*self.inv).sqrt()
+            body=(self.body * self.inv).sqrt()
         )._fast_simplify()
 
     def to_wolfram_alpha(self):
@@ -120,8 +117,8 @@ class SimpleRadical:
         other = self._wrap(other)
 
         return SimpleRadical(
-            constant=self.constant+other.constant,
-            body=self.body+other.body
+            constant=self.constant + other.constant,
+            body=self.body + other.body
         )
 
     def __sub__(self, other):
@@ -139,7 +136,7 @@ class SimpleRadical:
             for b1 in self.body for b2 in other.body
         ]
         return SimpleRadical(
-            constant=self.constant*other.constant,
+            constant=self.constant * other.constant,
             body=body
         )
 
@@ -158,7 +155,7 @@ class SimpleRadical:
 
     def __pow__(self, power, modulo=None):
         assert isinstance(power, int)  # TODO: 나중에 Fraction도 고려
-        assert power >= 0  # TODO: 음수도 고려...
+        assert power > 0  # TODO: 음수도 고려...
 
         multiplier_list = []
         current = self
@@ -168,10 +165,8 @@ class SimpleRadical:
             power >>= 1
             current = current * current
 
-        if len(multiplier_list) == 0:
-            return SimpleRadical.from_number(1)
-        else:
-            return functools.reduce(lambda x, y: x*y, multiplier_list)
+        assert len(multiplier_list) > 0
+        return functools.reduce(lambda x, y: x * y, multiplier_list)
 
     def _fast_simplify(self):
         const = self.constant
@@ -250,15 +245,17 @@ class SimpleRadicalElement:
                 index=self.index,
                 radicand=self.radicand
             )
-        assert isinstance(other, SimpleRadicalElement), type(other)  # FIXME: 다른게 오게 될 수도?
+
+        # FIXME: 다른게 오게 될 수도?
+        assert isinstance(other, SimpleRadicalElement), type(other)
         g = math.gcd(self.index, other.index)
         return SimpleRadicalElement(
-            multiplier=self.multiplier*other.multiplier,
-            index=self.index*other.index//g,
+            multiplier=self.multiplier * other.multiplier,
+            index=self.index * other.index // g,
             radicand=(
-                (self.radicand ** (other.index//g)) *
-                (other.radicand ** (self.index//g))
-            )
+                (self.radicand ** (other.index // g)) *
+                (other.radicand ** (self.index // g))
+            )._fast_simplify()
         )
 
     def __truediv__(self, other):
@@ -282,7 +279,7 @@ class SimpleRadicalElement:
                     index = lcm(index, f.denominator)
             number = 1
             for p, e in power_map.items():
-                number *= pow(p, (e*index).numerator)
+                number *= pow(p, (e * index).numerator)
             return SimpleRadicalElement(
                 multiplier=multiplier,
                 index=index,

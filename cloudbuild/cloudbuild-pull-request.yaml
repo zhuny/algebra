@@ -1,0 +1,49 @@
+steps:
+  - name: python:3.8
+    entrypoint: python3
+    args:
+      - -m
+      - pip
+      - install
+      - -r
+      - requirements.txt
+      - -t
+      - ./.venv
+    id: 'py3-pip-install'
+    waitFor: ['-']
+  - name: python:3.8
+    entrypoint: python3
+    args:
+      - -m
+      - flake8
+      - --count
+    id: 'py3-flake8'
+    waitFor: ['py3-pip-install']
+    env:
+      - "PYTHONPATH=./.venv"
+  - name: python:3.8
+    entrypoint: python3
+    args:
+      - -m
+      - coverage
+      - run
+      - -m
+      - unittest
+      - discover
+    id: 'py3-test'
+    waitFor: ['py3-flake8']
+    dir: '.'
+    env:
+      - "PYTHONPATH=./.venv"
+  - name: python:3.8
+    entrypoint: python3
+    args:
+      - -m
+      - coverage
+      - report
+      - --fail-under=100
+    id: 'py3-coverage'
+    waitFor: ['py3-test']
+    dir: '.'
+    env:
+      - "PYTHONPATH=./.venv"
