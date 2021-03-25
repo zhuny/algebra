@@ -31,4 +31,3 @@ class TestRadicalMultiply(unittest.TestCase):
             radicand=SimpleRadical(constant=3)
         )
         self.assertEqual(number.to_wolfram_alpha(), "2*sqrt[3]{3}")
-

@@ -6,7 +6,7 @@ from typing import Dict
 def is_prime(num: int) -> bool:
     # More efficient algorithm is needed
     for i in range(2, num):
-        if i*i > num:
+        if i * i > num:
             return True
         if num % i == 0:
             return False
@@ -25,7 +25,7 @@ def factorize(num: int) -> Dict[int, int]:
         num >>= 1
 
     p = 3
-    while num >= p*p:
+    while num >= p * p:
         if num % p == 0:
             num //= p
             factor[p] += 1

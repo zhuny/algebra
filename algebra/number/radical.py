@@ -56,7 +56,7 @@ class Radical:
 
     def __truediv__(self, other):
         if isinstance(other, int):
-            return Radical(inv=self.inv*other, body=self.body)
+            return Radical(inv=self.inv * other, body=self.body)
         # FIXME: 다양한 경우에 대해서 고려해보자
 
     def __neg__(self):
@@ -81,7 +81,7 @@ class Radical:
     def sqrt(self):
         return Radical(
             inv=self.inv,
-            body=(self.body*self.inv).sqrt()
+            body=(self.body * self.inv).sqrt()
         )._fast_simplify()
 
     def to_wolfram_alpha(self):
@@ -117,8 +117,8 @@ class SimpleRadical:
         other = self._wrap(other)
 
         return SimpleRadical(
-            constant=self.constant+other.constant,
-            body=self.body+other.body
+            constant=self.constant + other.constant,
+            body=self.body + other.body
         )
 
     def __sub__(self, other):
@@ -136,7 +136,7 @@ class SimpleRadical:
             for b1 in self.body for b2 in other.body
         ]
         return SimpleRadical(
-            constant=self.constant*other.constant,
+            constant=self.constant * other.constant,
             body=body
         )
 
@@ -166,7 +166,7 @@ class SimpleRadical:
             current = current * current
 
         assert len(multiplier_list) > 0
-        return functools.reduce(lambda x, y: x*y, multiplier_list)
+        return functools.reduce(lambda x, y: x * y, multiplier_list)
 
     def _fast_simplify(self):
         const = self.constant
@@ -250,11 +250,11 @@ class SimpleRadicalElement:
         assert isinstance(other, SimpleRadicalElement), type(other)
         g = math.gcd(self.index, other.index)
         return SimpleRadicalElement(
-            multiplier=self.multiplier*other.multiplier,
-            index=self.index*other.index//g,
+            multiplier=self.multiplier * other.multiplier,
+            index=self.index * other.index // g,
             radicand=(
-                (self.radicand ** (other.index//g)) *
-                (other.radicand ** (self.index//g))
+                (self.radicand ** (other.index // g)) *
+                (other.radicand ** (self.index // g))
             )._fast_simplify()
         )
 
@@ -279,7 +279,7 @@ class SimpleRadicalElement:
                     index = lcm(index, f.denominator)
             number = 1
             for p, e in power_map.items():
-                number *= pow(p, (e*index).numerator)
+                number *= pow(p, (e * index).numerator)
             return SimpleRadicalElement(
                 multiplier=multiplier,
                 index=index,

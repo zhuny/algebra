@@ -22,7 +22,7 @@ class TestRadicalMultiply(unittest.TestCase):
                 f = factorize(8 ** i)
                 self.assertEqual(len(f), 1)
                 self.assertIn(2, f)
-                self.assertEqual(f[2], i*3)
+                self.assertEqual(f[2], i * 3)
 
         with self.subTest("Figure 1372933"):
             f = factorize(1372933)

@@ -42,12 +42,12 @@ class Polynomial:
         d = collections.defaultdict(Fraction)
         for i, num1 in self.body.items():
             for j, num2 in other_body.items():
-                d[i+j] += num1 * num2
+                d[i + j] += num1 * num2
         return Polynomial(d)
 
     def __truediv__(self, other):
         if isinstance(other, NumberType):
-            return Polynomial({k: v/other for k, v in self.body.items()})
+            return Polynomial({k: v / other for k, v in self.body.items()})
 
         raise ValueError("Cannot divided")
 
@@ -71,5 +71,5 @@ class Polynomial:
         d = {}
         for k, v in self.body.items():
             if k > 0:
-                d[k-1] = v*k
+                d[k - 1] = v * k
         return Polynomial(d)

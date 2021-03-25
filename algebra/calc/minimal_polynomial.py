@@ -23,7 +23,7 @@ class MappedColumnMatrix:
         self.matrix.append_row()
 
     def set_last(self, index, number):
-        row = self.matrix.row_size-1
+        row = self.matrix.row_size - 1
         col = self.counter.get(index)
         if col >= self.matrix.col_size:
             self.matrix.append_col()
@@ -33,7 +33,7 @@ class MappedColumnMatrix:
         self.matrix.reduced_form(right)
 
     def is_last_zero(self):
-        return self.matrix.is_zero_row(self.matrix.row_size-1)
+        return self.matrix.is_zero_row(self.matrix.row_size - 1)
 
 
 def minimal_polynomial(number: Radical):
