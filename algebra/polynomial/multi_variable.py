@@ -90,15 +90,5 @@ class MultiVariableRing:
             )
 
 
-def main():
-    m = MultiVariableRing(2)
-    x, y = m.variables()
-    i1 = x*x - y
-    i2 = y*y - 2*x + 4
-
-    print(i1)
-    print(i2)
-
-
 if __name__ == '__main__':
     main()
