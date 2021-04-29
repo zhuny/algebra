@@ -15,5 +15,5 @@ class TestMultiVariable(unittest.TestCase):
         f = 5 * x - 3 * y
 
         g = Polynomial([-23, 48, 18, 0, 1])
-        gf = g(f)
-        print(gf)
+        gf = g(f) % i1 % i2
+        self.assertEqual(gf, 0)

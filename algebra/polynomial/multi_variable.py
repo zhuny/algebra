@@ -72,6 +72,15 @@ class MultiVariableElement:
     def __rmul__(self, other):
         return self * other
 
+    def __div__(self, other):
+        return self.__divmod__(other)[0]
+
+    def __mod__(self, other):
+        return self.__divmod__(other)[1]
+
+    def __divmod__(self, other):
+        return self, other
+
 
 @dataclass(unsafe_hash=True)
 class MultiVariableRing:
