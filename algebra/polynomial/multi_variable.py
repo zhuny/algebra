@@ -2,6 +2,8 @@ import collections
 from dataclasses import dataclass, field
 from typing import List, Dict
 
+from algebra.util.zero_dict import ZeroValueSkip
+
 
 @dataclass
 class Monomial:
@@ -33,7 +35,7 @@ class MultiVariableElement:
         if isinstance(other, MultiVariableElement):
             self._check(other)
 
-        coeff = collections.defaultdict(int, self.coefficient)
+        coeff = ZeroValueSkip(self.coefficient)
         if isinstance(other, MultiVariableElement):
             for mono2, c2 in other.coefficient.items():
                 coeff[mono2] += c2
@@ -44,19 +46,13 @@ class MultiVariableElement:
         return MultiVariableElement(ring=self.ring, coefficient=dict(coeff))
 
     def __sub__(self, other):
-        if isinstance(other, MultiVariableElement):
-            self._check(other)
-
-            coeff = collections.defaultdict(int, self.coefficient)
-            for mono2, c2 in other.coefficient.items():
-                coeff[mono2] -= c2
-            return MultiVariableElement(ring=self.ring, coefficient=dict(coeff))
+        return self + (-other)
 
     def __mul__(self, other):
         if isinstance(other, MultiVariableElement):
             self._check(other)
 
-            coeff = collections.defaultdict(int)
+            coeff = ZeroValueSkip()
             for mono1, c1 in self.coefficient.items():
                 for mono2, c2 in other.coefficient.items():
                     coeff[mono1*mono2] += c1*c2
@@ -67,6 +63,12 @@ class MultiVariableElement:
                 ring=self.ring,
                 coefficient={k: v*other for k, v in self.coefficient.items()}
             )
+
+    def __neg__(self):
+        return MultiVariableElement(
+            ring=self.ring,
+            coefficient={k: -v for k, v in self.coefficient.items()}
+        )
 
     def __rmul__(self, other):
         return self * other
