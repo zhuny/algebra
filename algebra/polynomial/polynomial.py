@@ -54,6 +54,9 @@ class Polynomial:
     def __eq__(self, other):
         return isinstance(other, Polynomial) and self.body == other.body
 
+    def __call__(self, x):
+        pass
+
     def to_wolfram_alpha(self):
         stream = []
         for p, coeff in sorted(self.body.items(), reverse=True):
