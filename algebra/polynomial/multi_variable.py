@@ -1,4 +1,3 @@
-import collections
 from dataclasses import dataclass, field
 from typing import List, Dict
 
@@ -90,7 +89,3 @@ class MultiVariableRing:
                     Monomial(power=power, ring=self): 1
                 }
             )
-
-
-if __name__ == '__main__':
-    main()
