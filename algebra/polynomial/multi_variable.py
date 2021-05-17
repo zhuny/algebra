@@ -17,7 +17,7 @@ class Monomial:
             if self.ring != other.ring:
                 raise ValueError("Operation can be with same ring")
 
-            power = [x+y for x, y in zip(self.power, other.power)]
+            power = [x + y for x, y in zip(self.power, other.power)]
             return Monomial(power=power, ring=self.ring)
 
     def __truediv__(self, other):
@@ -26,7 +26,7 @@ class Monomial:
         if self.ring != other.ring:
             raise ValueError("Operation can be with same ring")
 
-        power = [x-y for x, y in zip(self.power, other.power)]
+        power = [x - y for x, y in zip(self.power, other.power)]
         return Monomial(power=power, ring=self.ring)
 
     def is_divisible(self, other: 'Monomial'):
@@ -57,7 +57,7 @@ class MultiVariableElement:
             for mono2, c2 in other.coefficient.items():
                 coeff[mono2] += c2
         else:
-            one = Monomial(ring=self.ring, power=[0]*self.ring.number)
+            one = Monomial(ring=self.ring, power=[0] * self.ring.number)
             coeff[one] += other
 
         return MultiVariableElement(ring=self.ring, coefficient=dict(coeff))
@@ -72,13 +72,14 @@ class MultiVariableElement:
             coeff = ZeroValueSkip()
             for mono1, c1 in self.coefficient.items():
                 for mono2, c2 in other.coefficient.items():
-                    coeff[mono1*mono2] += c1*c2
-            return MultiVariableElement(ring=self.ring, coefficient=dict(coeff))
+                    coeff[mono1 * mono2] += c1 * c2
+            return MultiVariableElement(ring=self.ring,
+                                        coefficient=dict(coeff))
 
         else:
             return MultiVariableElement(
                 ring=self.ring,
-                coefficient={k: v*other for k, v in self.coefficient.items()}
+                coefficient={k: v * other for k, v in self.coefficient.items()}
             )
 
     def __neg__(self):
@@ -117,13 +118,17 @@ class MultiVariableElement:
                     coefficient /= lc
                     monomial /= lm
                     result[monomial] = coefficient
-                    divisible = MultiVariableElement(ring=self.ring, coefficient={monomial: coefficient})
+                    divisible = MultiVariableElement(
+                        ring=self.ring, coefficient={monomial: coefficient})
                     current -= divisible * other
                     break
             else:  # if current is not changed, stop iteration.
                 break
 
-        return MultiVariableElement(ring=self.ring, coefficient=result), current
+        return (
+            MultiVariableElement(ring=self.ring, coefficient=result),
+            current
+        )
 
     def lead_monomial(self):
         return max(self.coefficient)
