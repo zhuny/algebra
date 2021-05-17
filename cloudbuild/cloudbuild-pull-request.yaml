@@ -43,7 +43,7 @@ steps:
       - -t
       - ${_CODECOV_TOKEN}
     id: 'py3-codecov'
-    waitFor: ['py3-coverage']
+    waitFor: ['py3-test']
     dir: '.'
     env:
       - "PYTHONPATH=./.venv"
@@ -55,7 +55,7 @@ steps:
       - report
       - --fail-under=100
     id: 'py3-coverage'
-    waitFor: ['py3-test']
+    waitFor: ['py3-coverage']
     dir: '.'
     env:
       - "PYTHONPATH=./.venv"
