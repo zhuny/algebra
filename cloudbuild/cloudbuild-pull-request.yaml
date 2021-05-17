@@ -55,7 +55,7 @@ steps:
       - report
       - --fail-under=100
     id: 'py3-coverage'
-    waitFor: ['py3-coverage']
+    waitFor: ['py3-codecov']
     dir: '.'
     env:
       - "PYTHONPATH=./.venv"
