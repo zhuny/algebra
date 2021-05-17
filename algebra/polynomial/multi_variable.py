@@ -90,8 +90,17 @@ class MultiVariableElement:
     def __rmul__(self, other):
         return self * other
 
-    def __div__(self, other):
-        return self.__divmod__(other)[0]
+    def __truediv__(self, other):
+        if isinstance(other, MultiVariableElement):
+            return self.__divmod__(other)[0]
+        else:
+            return MultiVariableElement(
+                ring=self.ring,
+                coefficient={
+                    k: v / other
+                    for k, v in self.coefficient.items()
+                }
+            )
 
     def __mod__(self, other):
         return self.__divmod__(other)[1]
