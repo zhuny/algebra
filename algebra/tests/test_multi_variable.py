@@ -1,7 +1,7 @@
 import unittest
 from fractions import Fraction
 
-from algebra.polynomial.multi_variable import MultiVariableRing
+from algebra.polynomial.multi_variable import MultiVariableRing, MultiVariableElement
 from algebra.polynomial.polynomial import Polynomial
 
 
@@ -33,3 +33,20 @@ class TestMultiVariable(unittest.TestCase):
         gf_mod = gf % i1 % i2
         # As example mentioned, gf_mod should be zero but not check until Grobner bases
         print(gf_mod)
+
+    def test_simple_number_div_test(self):
+        m = MultiVariableRing(2)
+        x, y = m.variables()
+        i1 = x * x - 2  # x = sqrt(2)
+        i2 = y * y - 3  # y = sqrt(3)
+        f = x + y  # f = sqrt(2) + sqrt(3)
+        print(f)
+
+        f2: MultiVariableElement = (f*f) % i1 % i2  # f**2 = 5 + 2*sqrt(6) = 5 + 2xy
+        self.assertEqual(f2.lead_coefficient(), 2)
+        self.assertEqual(f2.lead_monomial(), (x*y).lead_monomial())
+        print(f2)
+
+        f3: MultiVariableElement = (f2*f2 - 10*f2 + 1) % i1 % i2  # f**4 - 10*f**2 + 1 = 0
+        print(f3)
+        self.assertEqual(f3, MultiVariableElement(m))
