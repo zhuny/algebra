@@ -39,11 +39,11 @@ steps:
     entrypoint: python3
     args:
       - -m
-      - coverage
-      - report
-      - --fail-under=100
-    id: 'py3-coverage'
-    waitFor: ['py3-test']
+      - codecov
+      - -t
+      - ${_CODECOV_TOKEN}
+    id: 'py3-codecov'
+    waitFor: ['py3-coverage']
     dir: '.'
     env:
       - "PYTHONPATH=./.venv"
@@ -51,11 +51,11 @@ steps:
     entrypoint: python3
     args:
       - -m
-      - codecov
-      - -t
-      - ${_CODECOV_TOKEN}
-    id: 'py3-codecov'
-    waitFor: ['py3-coverage']
+      - coverage
+      - report
+      - --fail-under=100
+    id: 'py3-coverage'
+    waitFor: ['py3-test']
     dir: '.'
     env:
       - "PYTHONPATH=./.venv"
