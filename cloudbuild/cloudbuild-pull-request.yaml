@@ -53,7 +53,7 @@ steps:
       - -m
       - coverage
       - report
-      - --fail-under=100
+      - --fail-under=95
     id: 'py3-coverage'
     waitFor: ['py3-codecov']
     dir: '.'
