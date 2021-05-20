@@ -1,4 +1,4 @@
-autopep8==1.5.6
+autopep8==1.5.7
 codecov==2.1.11
 coverage==5.5
-flake8==3.9.0
+flake8==3.9.2
