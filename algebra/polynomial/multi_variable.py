@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
+from fractions import Fraction
 from typing import List, Dict
 
+from algebra.number.types import Number
 from algebra.util.zero_dict import ZeroValueSkip
 
 
@@ -42,7 +44,12 @@ class Monomial:
 @dataclass
 class MultiVariableElement:
     ring: 'MultiVariableRing'
-    coefficient: Dict[Monomial, int] = field(default_factory=dict)
+    coefficient: Dict[Monomial, Number] = field(default_factory=dict)
+
+    def __post_init__(self):
+        for m, v in self.coefficient.items():
+            if not isinstance(v, Fraction):
+                self.coefficient[m] = v
 
     def _check(self, other):
         if self.ring != other.ring:
