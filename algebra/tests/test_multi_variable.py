@@ -56,3 +56,17 @@ class TestMultiVariable(unittest.TestCase):
             f2 * f2 - 10 * f2 + 1) % i1 % i2  # f**4 - 10*f**2 + 1 = 0
         print(f3)
         self.assertEqual(f3, MultiVariableElement(m))
+
+    def test_simple_number_div_test2(self):
+        m = MultiVariableRing(3)
+        x, y, z = m.variables()
+
+        i3 = z * z - 3  # z = sqrt(3)
+        i2 = y * y - 6  # y = sqrt(6)
+        i1 = x * x - y * 2 - 5  # x = sqrt(2*sqrt(6)+5)
+
+        f = x - z  # f = sqrt(2*sqrt(6)+5) - sqrt(3) = sqrt(2)
+        p = f
+        for i in range(8):
+            p = (p * f) % i1 % i2 % i3
+            print(i, p)
