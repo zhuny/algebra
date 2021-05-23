@@ -11,6 +11,11 @@ class Monomial:
     power: List[int]
     ring: 'MultiVariableRing'
 
+    def __post_init__(self):
+        for i, p in enumerate(self.power):
+            if p < 0:
+                raise ValueError(f"{i}-th index is negative.")
+
     def __hash__(self):
         return hash((tuple(self.power), self.ring))
 
