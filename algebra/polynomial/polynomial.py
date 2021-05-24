@@ -162,8 +162,7 @@ class Polynomial:
             return v1 % v2 == 0
 
     def factorize(self) -> List['Polynomial']:
-        print("factorize", self)
-        if self.degree == 0:
+        if self.degree < 2:
             return [self]
 
         degree = max(self.body, default=0)

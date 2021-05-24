@@ -58,6 +58,12 @@ class TestMultiVariable(unittest.TestCase):
         print(f3)
         self.assertEqual(f3, MultiVariableElement(m))
 
+    def _sim_frac_sqrt2(self):
+        sqrt2 = Fraction(2)
+        for i in range(8):
+            sqrt2 = (sqrt2 * sqrt2 + 2) / (sqrt2 * 2)
+        return sqrt2
+
     def test_simple_number_div_test2(self):
         m = MultiVariableRing(3)
         x, y, z = m.variables()
@@ -85,4 +91,16 @@ class TestMultiVariable(unittest.TestCase):
         right: Polynomial = pair.right
         right = right.to_integer_coefficient()
         print("Multiple of Minimal polynomial of f is", right)
-        print(right.factorize())
+        right_factors = right.factorize()
+        print("Factor :", right_factors)
+
+        expected_result = self._sim_frac_sqrt2()
+
+        def zero_distance(f):
+            return abs(f(expected_result))
+
+        minimal_polynomial = min(right_factors, key=zero_distance)
+        print(
+            "Minimal polynomial of sqrt(2*sqrt(6)+5)-sqrt(3) is",
+            minimal_polynomial.to_wolfram_alpha()
+        )
