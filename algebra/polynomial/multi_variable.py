@@ -143,10 +143,16 @@ class MultiVariableElement:
         )
 
     def lead_monomial(self):
-        return max(self.coefficient)
+        if self.coefficient:
+            return max(self.coefficient)
+        else:
+            return Monomial(ring=self.ring, power=[0] * self.ring.number)
 
     def lead_coefficient(self):
-        return self.coefficient[max(self.coefficient)]
+        if self.coefficient:
+            return self.coefficient[max(self.coefficient)]
+        else:
+            return Fraction()
 
     def lead_term(self):
         lm = max(self.coefficient)
@@ -173,3 +179,13 @@ class MultiVariableRing:
                     Monomial(power=power, ring=self): 1
                 }
             )
+
+    def constant(self, number: Number):
+        if not isinstance(number, NumberType):
+            raise TypeError(f'Number should be given but {number!r}')
+        return MultiVariableElement(
+            ring=self,
+            coefficient={
+                Monomial(power=[0]*self.number, ring=self): number
+            }
+        )
