@@ -1,6 +1,7 @@
 import unittest
 from fractions import Fraction
 
+from algebra.calc.grobner_basis import Ideal
 from algebra.polynomial.multi_variable import MultiVariableRing, \
     MultiVariableElement
 from algebra.polynomial.polynomial import Polynomial
@@ -65,8 +66,25 @@ class TestMultiVariable(unittest.TestCase):
         i2 = y * y - 6  # y = sqrt(6)
         i1 = x * x - y * 2 - 5  # x = sqrt(2*sqrt(6)+5)
 
-        f = x - z  # f = sqrt(2*sqrt(6)+5) - sqrt(3) = sqrt(2)
-        p = f
-        for i in range(8):
-            p = (p * f) % i1 % i2 % i3
-            print(i, p)
+        ideal = Ideal()
+        ideal.add(m.constant(1), Polynomial([1]))
+
+        f: MultiVariableElement = x - z  # f = sqrt(2*sqrt(6)+5) - sqrt(3) = sqrt(2)
+        px = Polynomial([0, 1])
+
+        pair = ideal.add(f, px)
+        for i in range(100):
+            element = (pair.element * f) % i1 % i2 % i3
+            right = pair.right * px
+
+            pair = ideal.add(element, right)
+            print(pair)
+            if pair.element == 0:
+                break
+
+        minimal = Polynomial({
+            k // 2: v
+            for k, v in pair.right.body.items()
+        })
+
+        print("Minimal polynomial of f is", pair.right)
