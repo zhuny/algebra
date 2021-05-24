@@ -82,9 +82,7 @@ class TestMultiVariable(unittest.TestCase):
             if pair.element == 0:
                 break
 
-        minimal = Polynomial({
-            k // 2: v
-            for k, v in pair.right.body.items()
-        })
-
-        print("Minimal polynomial of f is", pair.right)
+        right: Polynomial = pair.right
+        right = right.to_integer_coefficient()
+        print("Multiple of Minimal polynomial of f is", right)
+        print(right.factorize())
