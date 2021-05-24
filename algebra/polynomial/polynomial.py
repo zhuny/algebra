@@ -1,11 +1,15 @@
 import collections
+from dataclasses import dataclass
 from fractions import Fraction
 from typing import List, Dict, Union
 
 from algebra.number.types import NumberType, Number
 
 
+@dataclass(init=False)
 class Polynomial:
+    body: Dict[int, Number]
+
     def __init__(self, body: Union[List[Number], Dict[int, Number]]):
         if isinstance(body, list):
             body = dict(enumerate(body))
@@ -49,16 +53,16 @@ class Polynomial:
         if isinstance(other, NumberType):
             return Polynomial({k: v / other for k, v in self.body.items()})
 
-        raise ValueError("Cannot divided")
+        raise ValueError(f"Cannot divided by {other!r}")
 
     def __eq__(self, other):
         return isinstance(other, Polynomial) and self.body == other.body
 
     def __getitem__(self, item):
-        return self.body.get(item, 0)
+        return self.body.get(item, Fraction())
 
     def __call__(self, x):
-        degree = max(self.body, default=0)
+        degree = max(self.body, default=Fraction())
         value = self[degree]
         while degree > 0:
             degree -= 1
