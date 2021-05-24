@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import List, Dict
 
-from algebra.number.types import Number
+from algebra.number.types import Number, NumberType
 from algebra.util.zero_dict import ZeroValueSkip
 
 
@@ -52,13 +52,41 @@ class MultiVariableElement:
     coefficient: Dict[Monomial, Number] = field(default_factory=dict)
 
     def __post_init__(self):
-        for m, v in self.coefficient.items():
+        for m, v in list(self.coefficient.items()):
             if not isinstance(v, Fraction):
+                v = Fraction(v)
+            if v == 0:
+                self.coefficient.pop(m)
+            else:
                 self.coefficient[m] = v
 
     def _check(self, other):
         if self.ring != other.ring:
             raise ValueError("Operation can be with same ring")
+
+    def __eq__(self, other):
+        if isinstance(other, NumberType):
+            other = self.ring.constant(other)
+
+        if not isinstance(other, MultiVariableElement):
+            raise TypeError('Unknown Type Error')
+
+        return (
+            self.ring == other.ring and
+            self.coefficient == other.coefficient
+        )
+
+    def __getitem__(self, item):
+        if isinstance(item, Monomial):
+            if item.ring == self.ring:
+                if item in self.coefficient:
+                    return self.coefficient[item]
+                else:
+                    return Fraction()
+            else:
+                raise ValueError('Monomial is not defined on same ring')
+        else:
+            raise ValueError('Only monomial can be used')
 
     def __add__(self, other):
         if isinstance(other, MultiVariableElement):
