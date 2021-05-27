@@ -214,6 +214,6 @@ class MultiVariableRing:
         return MultiVariableElement(
             ring=self,
             coefficient={
-                Monomial(power=[0]*self.number, ring=self): number
+                Monomial(power=[0] * self.number, ring=self): number
             }
         )

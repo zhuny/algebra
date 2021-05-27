@@ -64,7 +64,7 @@ def divisor_list(number) -> List[int]:
     while queue.size() > 0:
         i = queue.pop()
         yield i
-        if number > i*i:
+        if number > i * i:
             last.append(number // i)
             for p in factor:
                 if number % (j := p * i) == 0 and j * j <= number:

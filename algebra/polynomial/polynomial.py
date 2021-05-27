@@ -1,7 +1,6 @@
 import collections
 import functools
 import itertools
-import math
 from dataclasses import dataclass
 from fractions import Fraction
 from operator import itemgetter
@@ -87,7 +86,7 @@ class Polynomial:
             return self / other[0], q
 
         while current.degree >= other.degree:
-            diff = current.degree-other.degree
+            diff = current.degree - other.degree
             p = Polynomial({
                 diff: current[current.degree] / other[other.degree]
             })
@@ -116,7 +115,10 @@ class Polynomial:
         return value
 
     def to_integer_coefficient(self):
-        deno = functools.reduce(lcm, [coeff.denominator for coeff in self.body.values()])
+        deno = functools.reduce(
+            lcm,
+            [coeff.denominator for coeff in self.body.values()]
+        )
         return self * deno
 
     def is_integer_coefficient(self):
@@ -147,7 +149,7 @@ class Polynomial:
 
     def _value(self, i):
         v = self(i)
-        return i, v, divisor_function(abs(v))*2 if v != 0 else 1
+        return i, v, divisor_function(abs(v)) * 2 if v != 0 else 1
 
     def _num_factor(self, n):
         if n == 0:
@@ -174,7 +176,7 @@ class Polynomial:
             (
                 i,
                 (v := int(self(i))),
-                divisor_function(abs(v))*2 if v != 0 else 1
+                divisor_function(abs(v)) * 2 if v != 0 else 1
             )
             for i in range(-100, 100)
         ]

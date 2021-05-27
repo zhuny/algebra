@@ -32,7 +32,7 @@ class TestMultiVariable(unittest.TestCase):
         f = 3 * x - 2 * y
 
         g = Polynomial([Fraction(10967, 28), Fraction(5868, 7),
-                       Fraction(-6527, 49), Fraction(24, 7), 1])
+                        Fraction(-6527, 49), Fraction(24, 7), 1])
         gf = g(f)
         gf_mod = gf % i1 % i2
         # As example mentioned,
@@ -75,8 +75,12 @@ class TestMultiVariable(unittest.TestCase):
         ideal = Ideal()
         ideal.add(m.constant(1), Polynomial([1]))
 
-        f: MultiVariableElement = x - z  # f = sqrt(2*sqrt(6)+5) - sqrt(3) = sqrt(2)
-        print("Let f = sqrt(2*sqrt(6)+5)-sqrt(3) which is actually f = sqrt(2)")
+        # f = sqrt(2*sqrt(6)+5) - sqrt(3) = sqrt(2)
+        f: MultiVariableElement = x - z
+        print(
+            "Let f = sqrt(2*sqrt(6)+5)-sqrt(3)",
+            "which is actually f = sqrt(2)"
+        )
 
         px = Polynomial([0, 1])
 
@@ -91,10 +95,16 @@ class TestMultiVariable(unittest.TestCase):
 
         right: Polynomial = pair.right
         right = right.to_integer_coefficient()
-        print("Multiple of Minimal polynomial of f is", right.to_wolfram_alpha())
+        print(
+            "Multiple of Minimal polynomial of f is",
+            right.to_wolfram_alpha()
+        )
 
         right_factors = right.factorize()
-        print("Factors, Candidates of minimal polynomial :", ", ".join(f.to_wolfram_alpha() for f in right_factors))
+        print(
+            "Factors, Candidates of minimal polynomial :",
+            ", ".join(factor.to_wolfram_alpha() for factor in right_factors)
+        )
 
         expected_result = self._sim_frac_sqrt2()
 
