@@ -96,8 +96,8 @@ class TestMultiVariable(unittest.TestCase):
 
         expected_result = self._sim_frac_sqrt2()
 
-        def zero_distance(f):
-            return abs(f(expected_result))
+        def zero_distance(func):
+            return abs(func(expected_result))
 
         minimal_polynomial = min(right_factors, key=zero_distance)
         print(
