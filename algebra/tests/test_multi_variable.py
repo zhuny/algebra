@@ -76,6 +76,8 @@ class TestMultiVariable(unittest.TestCase):
         ideal.add(m.constant(1), Polynomial([1]))
 
         f: MultiVariableElement = x - z  # f = sqrt(2*sqrt(6)+5) - sqrt(3) = sqrt(2)
+        print("Let f = sqrt(2*sqrt(6)+5)-sqrt(3) which is actually f = sqrt(2)")
+
         px = Polynomial([0, 1])
 
         pair = ideal.add(f, px)
@@ -84,15 +86,15 @@ class TestMultiVariable(unittest.TestCase):
             right = pair.right * px
 
             pair = ideal.add(element, right)
-            print(pair)
             if pair.element == 0:
                 break
 
         right: Polynomial = pair.right
         right = right.to_integer_coefficient()
-        print("Multiple of Minimal polynomial of f is", right)
+        print("Multiple of Minimal polynomial of f is", right.to_wolfram_alpha())
+
         right_factors = right.factorize()
-        print("Factor :", right_factors)
+        print("Factors, Candidates of minimal polynomial :", ", ".join(f.to_wolfram_alpha() for f in right_factors))
 
         expected_result = self._sim_frac_sqrt2()
 
@@ -104,3 +106,4 @@ class TestMultiVariable(unittest.TestCase):
             "Minimal polynomial of sqrt(2*sqrt(6)+5)-sqrt(3) is",
             minimal_polynomial.to_wolfram_alpha()
         )
+        self.assertEqual(minimal_polynomial, Polynomial([-2, 0, 1]))
