@@ -25,7 +25,7 @@ class TestPolynomial(unittest.TestCase):
         self.assertEqual(p2, p3)
 
     def test_error(self):
-        p = Polynomial({})
+        p = Polynomial()
 
         with self.subTest("__mul__ type error"):
             with self.assertRaises(ValueError):

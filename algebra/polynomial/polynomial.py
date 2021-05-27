@@ -17,8 +17,10 @@ class Polynomial:
     body: Dict[int, Number]
     degree: int
 
-    def __init__(self, body: Union[List[Number], Dict[int, Number]]):
-        if isinstance(body, list):
+    def __init__(self, body: Union[List[Number], Dict[int, Number]] = None):
+        if body is None:
+            body = {}
+        elif isinstance(body, list):
             body = dict(enumerate(body))
         assert isinstance(body, dict)
 
@@ -79,7 +81,7 @@ class Polynomial:
 
     def __divmod__(self, other):
         current = self
-        q = Polynomial({})
+        q = Polynomial()
 
         if other.degree == 0:
             return self / other[0], q
