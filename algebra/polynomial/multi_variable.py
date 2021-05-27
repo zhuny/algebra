@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
+from fractions import Fraction
 from typing import List, Dict
 
+from algebra.number.types import Number, NumberType
 from algebra.util.zero_dict import ZeroValueSkip
 
 
@@ -8,6 +10,11 @@ from algebra.util.zero_dict import ZeroValueSkip
 class Monomial:
     power: List[int]
     ring: 'MultiVariableRing'
+
+    def __post_init__(self):
+        for i, p in enumerate(self.power):
+            if p < 0:
+                raise ValueError(f"{i}-th index is negative.")
 
     def __hash__(self):
         return hash((tuple(self.power), self.ring))
@@ -42,11 +49,44 @@ class Monomial:
 @dataclass
 class MultiVariableElement:
     ring: 'MultiVariableRing'
-    coefficient: Dict[Monomial, int] = field(default_factory=dict)
+    coefficient: Dict[Monomial, Number] = field(default_factory=dict)
+
+    def __post_init__(self):
+        for m, v in list(self.coefficient.items()):
+            if not isinstance(v, Fraction):
+                v = Fraction(v)
+            if v == 0:
+                self.coefficient.pop(m)
+            else:
+                self.coefficient[m] = v
 
     def _check(self, other):
         if self.ring != other.ring:
             raise ValueError("Operation can be with same ring")
+
+    def __eq__(self, other):
+        if isinstance(other, NumberType):
+            other = self.ring.constant(other)
+
+        if not isinstance(other, MultiVariableElement):
+            raise TypeError('Unknown Type Error')
+
+        return (
+            self.ring == other.ring and
+            self.coefficient == other.coefficient
+        )
+
+    def __getitem__(self, item):
+        if isinstance(item, Monomial):
+            if item.ring == self.ring:
+                if item in self.coefficient:
+                    return self.coefficient[item]
+                else:
+                    return Fraction()
+            else:
+                raise ValueError('Monomial is not defined on same ring')
+        else:
+            raise ValueError('Only monomial can be used')
 
     def __add__(self, other):
         if isinstance(other, MultiVariableElement):
@@ -131,10 +171,16 @@ class MultiVariableElement:
         )
 
     def lead_monomial(self):
-        return max(self.coefficient)
+        if self.coefficient:
+            return max(self.coefficient)
+        else:
+            return Monomial(ring=self.ring, power=[0] * self.ring.number)
 
     def lead_coefficient(self):
-        return self.coefficient[max(self.coefficient)]
+        if self.coefficient:
+            return self.coefficient[max(self.coefficient)]
+        else:
+            return Fraction()
 
     def lead_term(self):
         lm = max(self.coefficient)
@@ -161,3 +207,13 @@ class MultiVariableRing:
                     Monomial(power=power, ring=self): 1
                 }
             )
+
+    def constant(self, number: Number):
+        if not isinstance(number, NumberType):
+            raise TypeError(f'Number should be given but {number!r}')
+        return MultiVariableElement(
+            ring=self,
+            coefficient={
+                Monomial(power=[0] * self.number, ring=self): number
+            }
+        )

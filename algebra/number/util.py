@@ -1,6 +1,8 @@
 import collections
 import math
-from typing import Dict
+from typing import Dict, List
+
+from algebra.util.queue import HeapQueueSet
 
 
 def is_prime(num: int) -> bool:
@@ -40,3 +42,33 @@ def factorize(num: int) -> Dict[int, int]:
 
 def lcm(a, b):
     return a * b // math.gcd(a, b)
+
+
+def divisor_function(number):
+    n = 1
+    for p, e in factorize(number).items():
+        n *= e + 1
+    return n
+
+
+def divisor_list(number) -> List[int]:
+    if number == 1:
+        yield 1
+        return
+
+    factor = factorize(number)
+    queue = HeapQueueSet()
+    queue.push(1)
+    last = []
+
+    while queue.size() > 0:
+        i = queue.pop()
+        yield i
+        if number > i * i:
+            last.append(number // i)
+            for p in factor:
+                if number % (j := p * i) == 0 and j * j <= number:
+                    queue.push(j)
+
+    last.reverse()
+    yield from last
