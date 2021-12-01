@@ -11,6 +11,18 @@ class DictVector(collections.defaultdict):
         for k, v in vector.items():
             self[k] += v * scale
 
+    def __mul__(self, other):
+        result = DictVector()
+        for k, v in self.items():
+            result[k] = v*other
+        return result
+
+    def __add__(self, other):
+        result = DictVector()
+        result.update_add(self)
+        result.update_add(other)
+        return result
+
 
 def power_series(num, m):
     current = num
@@ -26,6 +38,7 @@ def multiple_group_structure(n):
 
     info: Dict[int, DictVector] = {1: DictVector()}
 
+    # cover every element
     relation_list = []
     generating_list = []
     for i in range(2, n):
@@ -49,7 +62,53 @@ def multiple_group_structure(n):
                     result.update_add(already_power)
                     info[(already_num * num) % n] = result
 
-    return relation_list, generating_list
+    # calculate smith normal form
+    for index, relation in enumerate(relation_list):
+        for index2, another in enumerate(relation_list[index+1:], index+1):
+            if another[index] != 0:
+                a, b = relation[index], another[index]
+                c, d = gcd_pair_up(a, b)
+                g = a*c + b*d
+                aa, bb = a//g, b//g
+                relation, another = (
+                    relation*c + another*d,
+                    relation*(-bb) + another*aa
+                )
+                relation_list[index2] = another
+        relation_list[index] = relation
+
+    return [
+        relation[index]
+        for index, relation in enumerate(relation_list)
+    ], generating_list
+
+
+def _gcd_pair_positive(a, b):
+    s_, s = 1, 0
+    t_, t = 0, 1
+
+    while b != 0:
+        q, r = divmod(a, b)
+        s_, s = s, s_ - s * q
+        t_, t = t, t_ - t * q
+        a, b = b, r  # r = a - b * q
+    return s_, t_
+
+
+def gcd_pair(a, b):
+    a_sign = a > 0
+    b_sign = b > 0
+    c, d = _gcd_pair_positive(abs(a), abs(b))
+    if not a_sign:
+        c = -c
+    if not b_sign:
+        d = -d
+    return c, d
+
+
+def gcd_pair_up(a, b):
+    c, d = gcd_pair(a, b)
+    return c-b, d+a
 
 
 def run():
