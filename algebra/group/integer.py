@@ -62,6 +62,8 @@ def multiple_group_structure(n):
                     result.update_add(already_power)
                     info[(already_num * num) % n] = result
 
+    gl = generating_list
+
     # calculate smith normal form
     for index, relation in enumerate(relation_list):
         for index2, another in enumerate(relation_list[index+1:], index+1):
@@ -73,6 +75,10 @@ def multiple_group_structure(n):
                 relation, another = (
                     relation*c + another*d,
                     relation*(-bb) + another*aa
+                )
+                gl[index], gl[index2] = (
+                    (pow(gl[index], c, n) * pow(gl[index2], d, n)) % n,
+                    (pow(gl[index], -bb, n) * pow(gl[index2], aa, n)) % n
                 )
                 relation_list[index2] = another
         relation_list[index] = relation
