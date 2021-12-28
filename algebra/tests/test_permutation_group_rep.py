@@ -1,6 +1,6 @@
 import unittest
 
-from algebra.group.abstract import PermutationGroupRep
+from algebra.group.abstract.permutation import PermutationGroupRep
 
 
 class TestPermutationGroupRep(unittest.TestCase):
