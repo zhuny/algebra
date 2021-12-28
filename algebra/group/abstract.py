@@ -3,15 +3,15 @@ from typing import List
 
 
 @dataclass
-class Group:
+class GroupRep:
     @property
     def identity(self):
         raise NotImplementedError
 
 
 @dataclass
-class Subgroup:
-    group: Group
+class Group:
+    group: GroupRep
     generator: List['GroupElement']
 
     def random_element(self):
@@ -20,7 +20,7 @@ class Subgroup:
     def centralizer(self, element: 'GroupElement'):
         pass
 
-    def normalizer(self, subgroup: 'Subgroup'):
+    def normalizer(self, subgroup: 'Group'):
         pass
 
     def conjugacy_classes(self):
@@ -38,20 +38,20 @@ class Subgroup:
     def maximal_subgroup_class_reps(self):
         pass
 
-    def isomorphism_groups(self, others: 'Subgroup'):
+    def isomorphism_groups(self, others: 'Group'):
         pass
 
-    def g_quotients(self, others: 'Subgroup'):
+    def g_quotients(self, others: 'Group'):
         pass
 
 
 @dataclass
 class GroupElement:
-    group: Group
+    group: GroupRep
 
 
 @dataclass
-class PermutationGroup(Group):
+class PermutationGroup(GroupRep):
     pass
 
 
@@ -61,7 +61,7 @@ class PermutationGroupElement(GroupElement):
 
 
 @dataclass
-class PolyCyclicGroup(Group):
+class PolyCyclicGroup(GroupRep):
     pass
 
 
