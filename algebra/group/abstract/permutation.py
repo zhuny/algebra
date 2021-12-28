@@ -51,7 +51,7 @@ class PermutationGroupRep(GroupRep):
 
 
 @dataclass
-class PermutationGroupElement(GroupElement):
+class PermutationGroupElement(GroupElement[PermutationObject]):
     group: PermutationGroupRep
     perm_map: Dict[
         PermutationObject,
@@ -62,7 +62,7 @@ class PermutationGroupElement(GroupElement):
         s = set(self.perm_map) | set(other.perm_map)
         d = {}
         for e1 in s:
-            e2 = other._get(self._get(e1))
+            e2 = other.act(self.act(e1))
             if e1 != e2:
                 d[e1] = e2
         return PermutationGroupElement(group=self.group, perm_map=d)
@@ -73,5 +73,5 @@ class PermutationGroupElement(GroupElement):
             perm_map={v: k for k, v in self.perm_map.items()}
         )
 
-    def _get(self, e):
+    def act(self, o: PermutationObject) -> PermutationObject:
         return self.perm_map.get(e, e)

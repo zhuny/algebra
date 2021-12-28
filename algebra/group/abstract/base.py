@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, TypeVar, Generic
 
 
 @dataclass
@@ -45,8 +45,11 @@ class Group:
         pass
 
 
+T = TypeVar("T")
+
+
 @dataclass
-class GroupElement:
+class GroupElement(Generic[T]):
     group: GroupRep
 
     def __add__(self, other):
@@ -54,3 +57,13 @@ class GroupElement:
 
     def __neg__(self):
         raise NotImplementedError
+
+    def act(self, o: T) -> T:
+        # raise NotImplementedError
+        """
+        "Group Action" on some Set and T is a element of the set.
+
+        :param o: Element on T
+        :return: Another T
+        """
+        pass
