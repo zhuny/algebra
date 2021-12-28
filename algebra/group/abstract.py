@@ -121,7 +121,10 @@ class PermutationGroupElement(GroupElement):
         return PermutationGroupElement(group=self.group, perm_map=d)
 
     def __neg__(self):
-        pass
+        return PermutationGroupElement(
+            group=self.group,
+            perm_map={v: k for k, v in self.perm_map.items()}
+        )
 
     def _get(self, e):
         return self.perm_map.get(e, e)
