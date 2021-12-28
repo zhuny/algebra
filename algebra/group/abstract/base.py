@@ -1,5 +1,7 @@
 from dataclasses import dataclass
-from typing import List, TypeVar, Generic
+from typing import List, TypeVar, Generic, Set
+
+T = TypeVar("T")
 
 
 @dataclass
@@ -8,14 +10,29 @@ class GroupRep:
     def identity(self):
         raise NotImplementedError
 
+    def group(self, *elements):
+        return Group(represent=self, generator=list(elements))
+
 
 @dataclass
-class Group:
-    group: GroupRep
+class Group(Generic[T]):
+    represent: GroupRep
     generator: List['GroupElement']
 
     def random_element(self):
         raise NotImplementedError
+
+    def orbit(self, o: T) -> Set[T]:
+        done = set()
+        queue = {o}
+        while queue:
+            c = queue.pop()
+            done.add(c)
+            for g in self.generator:
+                gc = g.act(c)
+                if gc not in done:
+                    queue.add(gc)
+        return done
 
     def centralizer(self, element: 'GroupElement'):
         pass
@@ -43,9 +60,6 @@ class Group:
 
     def g_quotients(self, others: 'Group'):
         pass
-
-
-T = TypeVar("T")
 
 
 @dataclass

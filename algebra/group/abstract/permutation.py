@@ -74,4 +74,4 @@ class PermutationGroupElement(GroupElement[PermutationObject]):
         )
 
     def act(self, o: PermutationObject) -> PermutationObject:
-        return self.perm_map.get(e, e)
+        return self.perm_map.get(o, o)

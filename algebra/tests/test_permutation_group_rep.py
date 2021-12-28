@@ -1,5 +1,6 @@
 import unittest
 
+from algebra.group.abstract.base import Group
 from algebra.group.abstract.permutation import PermutationGroupRep
 
 
@@ -15,3 +16,15 @@ class TestPermutationGroupRep(unittest.TestCase):
         self.assertNotEqual(e2 + e2, perm.identity)
         self.assertEqual(e2 + e2 + e2, perm.identity)
         self.assertEqual(e2 + (-e2), perm.identity)
+
+    def test_orbit(self):
+        perm = PermutationGroupRep(5)
+        a0, a1, a2, a3, a4 = perm.object_list()
+        e1 = perm.element(a0, a1, a2)  # (0 1 2)
+        group = perm.group(e1)  # <(0 1 2)>
+
+        self.assertSetEqual(group.orbit(a0), {a0, a1, a2})
+        self.assertSetEqual(group.orbit(a1), {a0, a1, a2})
+        self.assertSetEqual(group.orbit(a2), {a0, a1, a2})
+        self.assertSetEqual(group.orbit(a3), {a3})
+        self.assertSetEqual(group.orbit(a4), {a4})
