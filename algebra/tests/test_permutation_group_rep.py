@@ -1,6 +1,5 @@
 import unittest
 
-from algebra.group.abstract.base import Group
 from algebra.group.abstract.permutation import PermutationGroupRep
 
 
@@ -39,3 +38,5 @@ class TestPermutationGroupRep(unittest.TestCase):
         group = perm.group(e1, e2)  # <(0 1 2), (2 3 4)(5 6 7 8)>
 
         subgroup = group.stabilizer(ol[0])
+        for g1 in subgroup.generator:
+            print(g1)
