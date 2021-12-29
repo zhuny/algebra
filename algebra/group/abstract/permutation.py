@@ -73,5 +73,23 @@ class PermutationGroupElement(GroupElement[PermutationObject]):
             perm_map={v: k for k, v in self.perm_map.items()}
         )
 
+    def __str__(self):
+        done = set()
+        sequence = []
+        for k, v in self.perm_map.items():
+            if k in done:
+                continue
+
+            s1 = k
+            one = []
+            while True:
+                one.append(s1.value)
+                done.add(s1)
+                s1 = self.perm_map[s1]
+                if s1 == k:
+                    break
+            sequence.append(one)
+        return str(sequence)
+
     def act(self, o: PermutationObject) -> PermutationObject:
         return self.perm_map.get(o, o)
