@@ -28,3 +28,14 @@ class TestPermutationGroupRep(unittest.TestCase):
         self.assertSetEqual(group.orbit(a2), {a0, a1, a2})
         self.assertSetEqual(group.orbit(a3), {a3})
         self.assertSetEqual(group.orbit(a4), {a4})
+
+    def test_stabilizer(self):
+        perm = PermutationGroupRep(10)
+
+        ol = list(perm.object_list())
+
+        e1 = perm.element(*ol[:3])  # (0 1 2)
+        e2 = perm.element(ol[2:5], ol[5:9])  # (2 3 4)(5 6 7 8)
+        group = perm.group(e1, e2)  # <(0 1 2), (2 3 4)(5 6 7 8)>
+
+        subgroup = group.stabilizer(ol[0])

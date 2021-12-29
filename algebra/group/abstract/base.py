@@ -34,6 +34,30 @@ class Group(Generic[T]):
                     queue.add(gc)
         return done
 
+    def stabilizer(self, o: T) -> 'Group':
+        done = set()
+        queue = {o}
+        transversal = {o: self.represent.identity}
+
+        new_generator = []
+        while queue:
+            c = queue.pop()
+            done.add(c)
+            for g in self.generator:
+                gc = g.act(c)
+                if gc not in done:
+                    transversal[gc] = transversal[c] + g
+                    queue.add(gc)
+                else:
+                    new_generator.append(
+                        transversal[c] + g - transversal[gc]
+                    )
+
+        return Group(
+            represent=self.represent,
+            generator=new_generator
+        )
+
     def centralizer(self, element: 'GroupElement'):
         pass
 
@@ -66,11 +90,14 @@ class Group(Generic[T]):
 class GroupElement(Generic[T]):
     group: GroupRep
 
-    def __add__(self, other):
+    def __add__(self, other: 'GroupElement') -> 'GroupElement':
         raise NotImplementedError
 
-    def __neg__(self):
+    def __neg__(self) -> 'GroupElement':
         raise NotImplementedError
+
+    def __sub__(self, other: 'GroupElement') -> 'GroupElement':
+        return self + (-other)
 
     def act(self, o: T) -> T:
         # raise NotImplementedError
