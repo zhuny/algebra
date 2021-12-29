@@ -14,7 +14,7 @@ class DictVector(collections.defaultdict):
     def __mul__(self, other):
         result = DictVector()
         for k, v in self.items():
-            result[k] = v*other
+            result[k] = v * other
         return result
 
     def __add__(self, other):
@@ -66,15 +66,15 @@ def multiple_group_structure(n):
 
     # calculate smith normal form
     for index, relation in enumerate(relation_list):
-        for index2, another in enumerate(relation_list[index+1:], index+1):
+        for index2, another in enumerate(relation_list[index + 1:], index + 1):
             if another[index] != 0:
                 a, b = relation[index], another[index]
                 c, d = gcd_pair_up(a, b)
-                g = a*c + b*d
-                aa, bb = a//g, b//g
+                g = a * c + b * d
+                aa, bb = a // g, b // g
                 relation, another = (
-                    relation*c + another*d,
-                    relation*(-bb) + another*aa
+                    relation * c + another * d,
+                    relation * (-bb) + another * aa
                 )
                 gl[index], gl[index2] = (
                     (pow(gl[index], c, n) * pow(gl[index2], d, n)) % n,
@@ -114,7 +114,7 @@ def gcd_pair(a, b):
 
 def gcd_pair_up(a, b):
     c, d = gcd_pair(a, b)
-    return c-b, d+a
+    return c - b, d + a
 
 
 def run():
