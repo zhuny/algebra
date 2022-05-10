@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import List, TypeVar, Generic, Set
+from dataclasses import dataclass, field
+from typing import List, TypeVar, Generic, Set, Dict, Optional
 
 T = TypeVar("T")
 
@@ -58,6 +58,12 @@ class Group(Generic[T]):
             generator=new_generator
         )
 
+    def stabilizer_chain(self) -> 'StabilizerChain':
+        chain = StabilizerChain(group=self.represent.group())
+        for g in self.generator:
+            chain.extend(g)
+        return chain
+
     def centralizer(self, element: 'GroupElement'):
         pass
 
@@ -84,6 +90,33 @@ class Group(Generic[T]):
 
     def g_quotients(self, others: 'Group'):
         pass
+
+
+@dataclass
+class StabilizerChain(Generic[T]):
+    group: Group
+    transversal: Dict[T, 'GroupElement'] = field(default_factory=dict)
+    stabilizer: Optional['StabilizerChain'] = None
+
+    def extend(self, alpha: 'GroupElement'):
+        # It is implementation of Schreier-Sims algorithm
+        if not self.element_test(alpha):  # Extend existing stabilizer chain
+            if self.group.is_trivial():  # we are on the bottom of the chain
+                self.stabilizer = StabilizerChain(  # Add a new layer
+                    group=self.group.represent.group()
+                )
+                beta: T = None  # pick random object from base point
+                self.group.generator.append(alpha)
+                self.transversal[beta] = self.group.represent.identity
+                delta = alpha.act(beta)
+                s = alpha  # orbit algorithm for single generator group
+                while delta != beta:
+                    self.transversal[delta] = s
+                    delta, s = alpha.act(delta), s + alpha
+                self.stabilizer.extend(s)
+            else:
+                pass  # do something
+
 
 
 @dataclass

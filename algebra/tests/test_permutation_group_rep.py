@@ -40,3 +40,14 @@ class TestPermutationGroupRep(unittest.TestCase):
         subgroup = group.stabilizer(ol[0])
         for g1 in subgroup.generator:
             print(g1)
+
+    def test_stabilizer_chain(self):
+        perm = PermutationGroupRep(8)
+        ol = list(perm.object_list())
+
+        e1 = perm.element(ol)
+        e2 = perm.element(ol[:2])
+
+        group = perm.group(e1, e2)
+
+        print(group.stabilizer_chain())
