@@ -10,6 +10,9 @@ class GroupRep:
     def identity(self):
         raise NotImplementedError
 
+    def object_list(self):
+        raise NotImplementedError
+
     def group(self, *elements):
         return Group(represent=self, generator=list(elements))
 
@@ -19,7 +22,7 @@ class Group(Generic[T]):
     represent: GroupRep
     generator: List['GroupElement']
 
-    def random_element(self):
+    def object_list(self) -> List[T]:
         raise NotImplementedError
 
     def orbit(self, o: T) -> Set[T]:
@@ -60,8 +63,9 @@ class Group(Generic[T]):
 
     def stabilizer_chain(self) -> 'StabilizerChain':
         chain = StabilizerChain(group=self.represent.group())
+        obj_iter = iter(self.represent.object_list())
         for g in self.generator:
-            chain.extend(g)
+            chain.extend(g, obj_iter)
         return chain
 
     def centralizer(self, element: 'GroupElement'):
@@ -95,17 +99,47 @@ class Group(Generic[T]):
 @dataclass
 class StabilizerChain(Generic[T]):
     group: Group
+    point: T = None
     transversal: Dict[T, 'GroupElement'] = field(default_factory=dict)
     stabilizer: Optional['StabilizerChain'] = None
 
-    def extend(self, alpha: 'GroupElement'):
+    def is_trivial(self):
+        return self.point is None
+
+    def travel(self):
+        current = self
+        yield current
+        while not current.is_trivial():
+            current = current.stabilizer
+            yield current
+
+    def element_test(self, element: 'GroupElement'):
+        if self.point is None and element.is_identity():
+            return True
+
+        for stabilizer in self.travel():
+            base = element.act(stabilizer.point)
+            if base not in self.transversal:
+                return False
+
+            t = self.transversal[base]
+            element -= t
+            # TODO : representation may be needed
+
+        return True
+
+    def show(self):
+        for stack in self.travel():
+            print("HI", ",".join(map(str, stack.group.generator)))
+
+    def extend(self, alpha: 'GroupElement', next_object):
         # It is implementation of Schreier-Sims algorithm
         if not self.element_test(alpha):  # Extend existing stabilizer chain
-            if self.group.is_trivial():  # we are on the bottom of the chain
+            if self.is_trivial():  # we are on the bottom of the chain
+                beta = self.point = next(next_object)  # pick random object from base point
                 self.stabilizer = StabilizerChain(  # Add a new layer
                     group=self.group.represent.group()
                 )
-                beta: T = None  # pick random object from base point
                 self.group.generator.append(alpha)
                 self.transversal[beta] = self.group.represent.identity
                 delta = alpha.act(beta)
@@ -113,10 +147,9 @@ class StabilizerChain(Generic[T]):
                 while delta != beta:
                     self.transversal[delta] = s
                     delta, s = alpha.act(delta), s + alpha
-                self.stabilizer.extend(s)
+                self.stabilizer.extend(s, next_object)  # remove recursive
             else:
                 pass  # do something
-
 
 
 @dataclass
@@ -131,6 +164,9 @@ class GroupElement(Generic[T]):
 
     def __sub__(self, other: 'GroupElement') -> 'GroupElement':
         return self + (-other)
+
+    def is_identity(self) -> bool:
+        raise NotImplementedError
 
     def act(self, o: T) -> T:
         # raise NotImplementedError

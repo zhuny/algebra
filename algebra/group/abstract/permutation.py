@@ -91,5 +91,8 @@ class PermutationGroupElement(GroupElement[PermutationObject]):
             sequence.append(one)
         return str(sequence)
 
+    def is_identity(self) -> bool:
+        return len(self.perm_map) == 0
+
     def act(self, o: PermutationObject) -> PermutationObject:
         return self.perm_map.get(o, o)
