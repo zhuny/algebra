@@ -50,4 +50,4 @@ class TestPermutationGroupRep(unittest.TestCase):
 
         group = perm.group(e1, e2)
 
-        print(group.stabilizer_chain())
+        group.stabilizer_chain().show()

@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from queue import Queue
 from typing import List, TypeVar, Generic, Set, Dict, Optional
 
 T = TypeVar("T")
@@ -149,7 +150,29 @@ class StabilizerChain(Generic[T]):
                     delta, s = alpha.act(delta), s + alpha
                 self.stabilizer.extend(s, next_object)  # remove recursive
             else:
-                pass  # do something
+                queue = Queue()
+                for delta, transversal in self.transversal.items():
+                    queue.put((delta, transversal, False))
+
+                while queue.qsize() > 0:
+                    delta, transversal, is_new = queue.get()
+                    check_element = [alpha]
+                    if is_new:
+                        check_element.extend(self.group.generator)
+
+                    for element in check_element:
+                        gamma = element.act(delta)
+                        if gamma not in self.transversal:
+                            new_element = transversal + element
+                            self.transversal[gamma] = new_element
+                            queue.put((gamma, new_element, True))
+                        else:
+                            self.stabilizer.extend(
+                                transversal + element - self.transversal[gamma],
+                                next_object
+                            )
+
+                self.group.generator.append(alpha)
 
 
 @dataclass
