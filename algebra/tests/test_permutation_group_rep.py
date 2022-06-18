@@ -35,6 +35,10 @@ class TestPermutationGroupRep(unittest.TestCase):
 
         e1 = perm.element(*ol[:3])  # (0 1 2)
         e2 = perm.element(ol[2:5], ol[5:9])  # (2 3 4)(5 6 7 8)
+
+        print(f"{e1=!s}")
+        print(f"{e2=!s}")
+
         group = perm.group(e1, e2)  # <(0 1 2), (2 3 4)(5 6 7 8)>
 
         subgroup = group.stabilizer(ol[0])

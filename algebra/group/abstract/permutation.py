@@ -12,6 +12,12 @@ class PermutationObject:
     def __hash__(self):
         return hash((self.value, self.permutation))
 
+    def __str__(self):
+        return str(self.value)
+
+    def __lt__(self, other):
+        return self.value < other.value
+
 
 @dataclass
 class PermutationGroupRep(GroupRep):
@@ -76,7 +82,7 @@ class PermutationGroupElement(GroupElement[PermutationObject]):
     def __str__(self):
         done = set()
         sequence = []
-        for k, v in self.perm_map.items():
+        for k, v in sorted(self.perm_map.items()):
             if k in done:
                 continue
 
