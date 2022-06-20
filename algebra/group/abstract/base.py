@@ -22,6 +22,10 @@ class GroupRep:
 class Group(Generic[T]):
     represent: GroupRep
     generator: List['GroupElement']
+    _stabilizer_chain: Optional['StabilizerChain'] = None
+
+    def order(self):
+        return self.stabilizer_chain().order
 
     def object_list(self) -> List[T]:
         raise NotImplementedError
@@ -63,10 +67,14 @@ class Group(Generic[T]):
         )
 
     def stabilizer_chain(self) -> 'StabilizerChain':
+        if self._stabilizer_chain is not None:
+            return self._stabilizer_chain
+
         chain = StabilizerChain(group=self.represent.group())
         obj_iter = iter(self.represent.object_list())
         for g in self.generator:
             chain.extend(g, obj_iter)
+        self._stabilizer_chain = chain
         return chain
 
     def centralizer(self, element: 'GroupElement'):
