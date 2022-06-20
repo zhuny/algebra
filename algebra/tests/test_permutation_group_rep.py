@@ -72,3 +72,16 @@ class TestPermutationGroupRep(unittest.TestCase):
             ])
             dihedral = perm.group(e1, e2)
             self.assertEqual(dihedral.stabilizer_chain().order, 2 * i)
+
+    def test_mathieu_group(self):
+        with self.subTest("M11"):
+            perm = PermutationGroupRep(11)
+            ol = list(perm.object_list())
+
+            e1 = perm.element(ol)  # (1,2,3,4,5,6,7,8,9,10,11)
+            e2 = perm.element(  # (3,7,11,8)(4,10,5,6)
+                (ol[2], ol[6], ol[10], ol[7]),
+                (ol[3], ol[9], ol[4], ol[5])
+            )
+            m11 = perm.group(e1, e2)
+            self.assertEqual(m11.order(), 7920)
