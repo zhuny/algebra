@@ -66,7 +66,6 @@ class Group(Generic[T]):
         chain = StabilizerChain(group=self.represent.group())
         obj_iter = iter(self.represent.object_list())
         for g in self.generator:
-            print("Add to chain :", g)
             chain.extend(g, obj_iter)
         return chain
 
@@ -125,17 +124,16 @@ class StabilizerChain(Generic[T]):
                 return element.is_identity()
 
             base = element.act(stabilizer.point)
-            if base not in self.transversal:
+            if base not in stabilizer.transversal:
                 return False
 
-            t = self.transversal[base]
+            t = stabilizer.transversal[base]
             element -= t
             # TODO : representation may be needed
 
         return True
 
     def show(self):
-        v = self.point and self.point.value
         for stack in self.travel():
             print(f"=== STACK-{stack.depth} ===")
             print(f"Fixed Point : {stack.point}")
@@ -148,11 +146,6 @@ class StabilizerChain(Generic[T]):
 
     def extend(self, alpha: 'GroupElement', next_object):
         # It is implementation of Schreier-Sims algorithm
-        element_test = self.element_test(alpha)
-        print(">>>", alpha, element_test)
-        self.show()
-        input()
-
         if not self.element_test(alpha):  # Extend existing stabilizer chain
             if self.is_trivial():  # we are on the bottom of the chain
                 beta = self.point = next(next_object)  # pick random object from base point
@@ -192,10 +185,6 @@ class StabilizerChain(Generic[T]):
                             )
 
                 self.group.generator.append(alpha)
-
-        print("<<<", alpha, element_test)
-        self.show()
-        input()
 
 
 @dataclass
