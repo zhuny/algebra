@@ -45,13 +45,28 @@ class TestPermutationGroupRep(unittest.TestCase):
         for g1 in subgroup.generator:
             print(g1)
 
-    def test_stabilizer_chain(self):
-        perm = PermutationGroupRep(8)
-        ol = list(perm.object_list())
+    def test_stabilizer_chain_sym(self):
+        # Test with symmetric group
+        factorial = 2
+        for i in range(3, 11):
+            perm = PermutationGroupRep(i)
+            ol = list(perm.object_list())
 
-        e1 = perm.element(ol)
-        e2 = perm.element(ol[:2])
+            e1 = perm.element(ol)
+            e2 = perm.element(ol[:2])
 
-        group = perm.group(e1, e2)
+            # symmetric group of order
+            group = perm.group(e1, e2)
+            factorial *= i
+            self.assertEqual(group.stabilizer_chain().order, factorial)
 
-        group.stabilizer_chain().show()
+    def test_stabilizer_chain_diheral(self):
+        for i in range(4, 11):
+            perm = PermutationGroupRep(i)
+            ol = list(perm.object_list())
+
+            e1 = perm.element(ol)
+            e2 = perm.element([
+                (ol[j], ol[-j])
+                for j in range(1, (i+1)//2)
+            ])

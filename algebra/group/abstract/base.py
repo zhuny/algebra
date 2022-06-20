@@ -105,6 +105,13 @@ class StabilizerChain(Generic[T]):
     stabilizer: Optional['StabilizerChain'] = None
     depth: int = 0
 
+    @property
+    def order(self):
+        if self.is_trivial():
+            return 1
+        else:
+            return len(self.transversal) * self.stabilizer.order
+
     def is_trivial(self):
         return self.point is None
 
