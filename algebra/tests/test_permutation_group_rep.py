@@ -55,18 +55,20 @@ class TestPermutationGroupRep(unittest.TestCase):
             e1 = perm.element(ol)
             e2 = perm.element(ol[:2])
 
-            # symmetric group of order
+            # symmetric group of order `i`
             group = perm.group(e1, e2)
             factorial *= i
             self.assertEqual(group.stabilizer_chain().order, factorial)
 
-    def test_stabilizer_chain_diheral(self):
+    def test_stabilizer_chain_dihedral(self):
         for i in range(4, 11):
             perm = PermutationGroupRep(i)
             ol = list(perm.object_list())
 
             e1 = perm.element(ol)
-            e2 = perm.element([
+            e2 = perm.element(*[
                 (ol[j], ol[-j])
                 for j in range(1, (i+1)//2)
             ])
+            dihedral = perm.group(e1, e2)
+            self.assertEqual(dihedral.stabilizer_chain().order, 2 * i)
