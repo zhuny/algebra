@@ -85,3 +85,19 @@ class TestPermutationGroupRep(unittest.TestCase):
             )
             m11 = perm.group(e1, e2)
             self.assertEqual(m11.order(), 7920)
+
+        with self.subTest("M12"):
+            perm = PermutationGroupRep(12)
+            ol = list(perm.object_list())
+
+            e1 = perm.element(ol[:-1])  # (0123456789a)
+            e2 = perm.element(
+                (ol[0], ol[11]), (ol[1], ol[10]), (ol[2], ol[5]),
+                (ol[3], ol[7]), (ol[4], ol[8]), (ol[6], ol[9])
+            )  # (0b)(1a)(25)(37)(48)(69)
+            e3 = perm.element(
+                (ol[2], ol[6], ol[10], ol[7]),
+                (ol[3], ol[9], ol[4], ol[5])
+            )  # (26a7)(3945)
+            m12 = perm.group(e1, e2, e3)
+            self.assertEqual(m12.order(), 95_040)
