@@ -66,10 +66,12 @@ class TestPermutationGroupRep(unittest.TestCase):
             ol = list(perm.object_list())
 
             e1 = perm.element(ol)
-            e2 = perm.element(*[
-                (ol[j], ol[-j])
-                for j in range(1, (i+1)//2)
-            ])
+            e2 = perm.element(
+                *[
+                    (ol[j], ol[-j])
+                    for j in range(1, (i + 1) // 2)
+                ]
+            )
             dihedral = perm.group(e1, e2)
             self.assertEqual(dihedral.stabilizer_chain().order, 2 * i)
 
@@ -101,3 +103,28 @@ class TestPermutationGroupRep(unittest.TestCase):
             )  # (26a7)(3945)
             m12 = perm.group(e1, e2, e3)
             self.assertEqual(m12.order(), 95_040)
+
+        with self.subTest("M24"):
+            perm = PermutationGroupRep(24)
+            ol = list(perm.object_list())
+
+            e1 = self.from_num(
+                perm, ol,
+                ((1, 16, 8, 23, 13, 14, 5),
+                 (2, 7, 11, 19, 20, 24, 12), (3, 4, 17, 9, 22, 21, 15))
+            )
+            e2 = self.from_num(
+                perm, ol,
+                ((1, 24), (2, 21), (3, 10), (4, 22), (5, 9), (6, 23), (7, 8),
+                 (11, 18), (12, 20), (13, 14), (15, 19), (16, 17))
+            )
+            m24 = perm.group(e1, e2)
+            self.assertEqual(m24.order(), 244_823_040)
+
+    def from_num(self, perm, ol, nums):
+        return perm.element(
+            *[
+                [ol[i - 1] for i in num]
+                for num in nums
+            ]
+        )
