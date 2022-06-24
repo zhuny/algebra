@@ -8,10 +8,10 @@ setup(
     author='Jihun Yang',
     author_email='zhuny936772@gmail.com',
     license='unlicense',
-    packages=[
-        'algebra',
-        'algebra.group'
-    ],
+    packages=['algebra'],
+    package_dir={
+        'algebra': 'algebra'
+    },
     zip_safe=False,
     test_suite='algebra.tests',
     tests_require=[],
