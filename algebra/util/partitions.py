@@ -12,14 +12,14 @@ def integer_partition_with_max(n: int, i: int):
         return 1
 
     total = 0
-    for j in range(1, i+1):
-        total += integer_partition_with_max(n-i, j)
+    for j in range(1, i + 1):
+        total += integer_partition_with_max(n - i, j)
     return total
 
 
 def integer_partition(n):
     total = 0
-    for i in range(1, n+1):
+    for i in range(1, n + 1):
         total += integer_partition_with_max(n, i)
     return total
 
@@ -28,7 +28,7 @@ def prev_partition():
     step = 0
     sign = 1
     for i in itertools.count(1):
-        step += 2*i - 1
+        step += 2 * i - 1
         yield step, sign
         step += i
         yield step, sign
@@ -37,11 +37,11 @@ def prev_partition():
 
 def integer_partition2(n):
     result = [1]
-    for i in range(1, n+1):
+    for i in range(1, n + 1):
         total = 0
         for j, sign in prev_partition():
             if i >= j:
-                total += result[i-j] * sign
+                total += result[i - j] * sign
             else:
                 break
         result.append(total)

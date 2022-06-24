@@ -32,7 +32,6 @@ class GroupRep:
         ol = list(self.object_list())
         generator_list = []
         for element in elements:
-            print(element)
             rep_elem = [
                 [ol[i] for i in chain]
                 for chain in element
@@ -175,21 +174,23 @@ class StabilizerChain(Generic[T]):
         for stack in self.travel():
             print(f"=== STACK-{stack.depth} ===")
             print(f"Fixed Point : {stack.point}")
-            print(f"Transversal")
+            print("Transversal")
             for k, t in stack.transversal.items():
                 print(f"  - {k} : {t}")
-            print(f"Group Generator")
+            print("Group Generator")
             for g in stack.group.generator:
                 print(f"  - {g}")
+            print()
 
     def extend(self, alpha: 'GroupElement', next_object):
         # It is implementation of Schreier-Sims algorithm
         if not self.element_test(alpha):  # Extend existing stabilizer chain
             if self.is_trivial():  # we are on the bottom of the chain
-                beta = self.point = next(next_object)  # pick random object from base point
+                # pick random object from base point
+                beta = self.point = next(next_object)
                 self.stabilizer = StabilizerChain(  # Add a new layer
                     group=self.group.represent.group(),
-                    depth=self.depth+1
+                    depth=self.depth + 1
                 )
                 self.group.generator.append(alpha)
                 self.transversal[beta] = self.group.represent.identity
@@ -218,7 +219,8 @@ class StabilizerChain(Generic[T]):
                             queue.put((gamma, new_element, True))
                         else:
                             self.stabilizer.extend(
-                                transversal + element - self.transversal[gamma],
+                                transversal + element -
+                                self.transversal[gamma],
                                 next_object
                             )
 
