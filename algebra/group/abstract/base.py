@@ -14,8 +14,31 @@ class GroupRep:
     def object_list(self):
         raise NotImplementedError
 
+    def element(self, *args):
+        raise NotImplementedError
+
     def group(self, *elements):
         return Group(represent=self, generator=list(elements))
+
+    def group_(self, elements):
+        """
+        self.group_([
+            [[0, 1, 2, 3]],
+            [[0, 2], [1, 3]]
+        ])
+        :param elements:
+        :return:
+        """
+        ol = list(self.object_list())
+        generator_list = []
+        for element in elements:
+            print(element)
+            rep_elem = [
+                [ol[i] for i in chain]
+                for chain in element
+            ]
+            generator_list.append(self.element(*rep_elem))
+        return self.group(*generator_list)
 
 
 @dataclass
