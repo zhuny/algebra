@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from enum import Enum
 
+from algebra.group.abstract.permutation import PermutationGroupRep
 
-@dataclass
+
+@dataclass(unsafe_hash=True)
 class Point:
     x: int
     y: int
@@ -13,6 +15,29 @@ class Point:
         pos_value = {'x': 0, 'y': 0, 'z': 0}
         pos_value[axis.value] = value
         return cls(**pos_value)
+
+    def get_value(self, axis: 'Axis'):
+        return getattr(self, axis.value)
+
+    def rotate(self, axis: 'Axis'):
+        match_value = []
+        unmatch_value = []
+
+        for a in Axis:
+            if a == axis:
+                match_value.append(self.get_value(a))
+            else:
+                unmatch_value.append(self.get_value(a))
+        unmatch_value[0] *= -1
+
+        v = {}
+        for a in Axis:
+            if a == axis:
+                v[a.value] = match_value.pop()
+            else:
+                v[a.value] = unmatch_value.pop()
+
+        return Point(**v)
 
     def __add__(self, other: 'Point'):
         return Point(
@@ -25,11 +50,13 @@ class Point:
         return Point(self.x * other, self.y * other, self.z * other)
 
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class RubikFace:
     pos: Point
     norm: Point
-    index: int = -1
+
+    def get_value(self, axis: 'Axis'):
+        return self.pos.get_value(axis)
 
 
 class Axis(Enum):
@@ -38,10 +65,18 @@ class Axis(Enum):
     z = 'z'
 
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class Rotation:
     axis: Axis
     value: int
+
+    def __call__(self, element: RubikFace):
+        if element.get_value(self.axis) == self.value:
+            return RubikFace(
+                pos=element.pos.rotate(self.axis),
+                norm=element.norm.rotate(self.axis)
+            )
+        return element
 
 
 class Rubik:
@@ -75,11 +110,41 @@ class Rubik:
             yield Rotation(axis, -1)
             yield Rotation(axis, 1)
 
+    def group(self):
+        perm = PermutationGroupRep(len(self.face_list))
+        ol = perm.object_list()
+        face_map = dict(zip(self.face_list, ol))
+
+        generators = []
+
+        for rotate in self.rotate_list:
+            done_face = set()
+            seq = []
+            for face in self.face_list:
+                if face in done_face:
+                    continue
+                face_seq = []
+                while face not in done_face:
+                    face_seq.append(face_map[face])
+                    done_face.add(face)
+                    face = rotate(face)
+                seq.append(face_seq)
+            generators.append(perm.element(*seq))
+
+        return perm.group(*generators)
+
 
 def construct():
     rubik = Rubik()
-    print(rubik.face_list)
-    print(rubik.rotate_list)
+    for face in rubik.face_list:
+        print(face)
+    for rotate in rubik.rotate_list:
+        print(rotate)
+
+    group = rubik.group()
+    for gen in group.generator:
+        print(gen)
+    print(group.order())
 
 
 if __name__ == '__main__':
