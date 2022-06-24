@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='algebra',
@@ -8,10 +8,7 @@ setup(
     author='Jihun Yang',
     author_email='zhuny936772@gmail.com',
     license='unlicense',
-    packages=['algebra'],
-    package_dir={
-        'algebra': 'algebra'
-    },
+    packages=find_packages(),
     zip_safe=False,
     test_suite='algebra.tests',
     tests_require=[],
