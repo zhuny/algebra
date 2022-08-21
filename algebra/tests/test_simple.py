@@ -23,8 +23,8 @@ class TestRadicalMultiply(unittest.TestCase):
                     (Radical.sqrt(i * i + 1) - (i + 1)).is_positive()
                 )
 
-    @skip
     def test_sqrt_ceil(self):
         for i in range(2, 11):
             for j in range(i*i, (i+1)**2):
-                self.assertEqual(Radical.sqrt(j).ceil(), i)
+                with self.subTest(f"ceil(sqrt({j})) = {i}"):
+                    self.assertEqual(Radical.sqrt(j).ceil(), i)

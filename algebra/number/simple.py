@@ -39,8 +39,7 @@ class Searcher:
         self.end = self.get_middle()
 
     def show(self):
-        print(self.start, self.end)
-        input()
+        pass
 
 
 class Sign(Enum):
@@ -124,8 +123,6 @@ class Radical:
         a_sign = a.get_sign()
         b_sign = b.get_sign()
 
-        print(self, prime, a, b, a_sign, b_sign)
-
         if a_sign == b_sign:
             return a_sign
 
@@ -137,7 +134,6 @@ class Radical:
         determine = a * a - b * b * prime
 
         if a_sign == Sign.POSITIVE and b_sign == Sign.NEGATIVE:
-            print(determine)
             return determine.get_sign()
         elif a_sign == Sign.NEGATIVE and b_sign == Sign.POSITIVE:
             return (-determine).get_sign()
