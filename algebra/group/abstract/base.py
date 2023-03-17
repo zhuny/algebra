@@ -145,7 +145,7 @@ class ElementContainer:
             acted_element = group_element.act(element)
             if acted_element != element:
                 self.element_used.add(element)
-                return acted_element
+                return element
 
 
 @dataclass

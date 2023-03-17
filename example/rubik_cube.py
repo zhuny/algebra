@@ -144,6 +144,8 @@ def construct():
     group = rubik.group()
     for gen in group.generator:
         print(gen)
+    chain = group.stabilizer_chain()
+    chain.show()
     print(group.order())
 
 
