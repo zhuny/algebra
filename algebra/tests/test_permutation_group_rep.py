@@ -233,6 +233,23 @@ class TestPermutationGroupRep(unittest.TestCase):
         normal_closure_e5 = sym_group.normal_closure([e5])
         self.assertEqual(normal_closure_e5.order(), 24)
 
+    def test_element_test(self):
+        perm = PermutationGroupRep(8)
+        ol = list(perm.object_list())
+
+        group = perm.group(
+            perm.element(ol[:4]), perm.element(ol[:2]),
+            perm.element(ol[4:]), perm.element(ol[4:6])
+        )
+
+        self.assertEqual(group.order(), 24 * 24)
+
+        # 그룹 원소가 아닌 값 넣어보기
+        with self.assertRaises(ValueError):
+            group.normal_closure([
+                perm.element(ol[3:5])
+            ])
+
     def from_num(self, perm, ol, nums):
         return perm.element(
             *[
