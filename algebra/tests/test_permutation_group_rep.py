@@ -201,6 +201,38 @@ class TestPermutationGroupRep(unittest.TestCase):
         normal_closure_e4 = sym_group.normal_closure([e4])
         self.assertEqual(normal_closure_e4.order(), factorial_10)
 
+    def test_normal_closure_4(self):
+        """
+        Test normal closure using S_4
+        Known fack - The non-trivial normal subgroup of S_4 are V_4 and A_4
+
+        :return:
+        """
+        # Create S_4
+        perm = PermutationGroupRep(4)
+        ol = list(perm.object_list())
+
+        e1 = perm.element(ol)
+        e2 = perm.element(ol[:2])
+        sym_group = perm.group(e1, e2)
+
+        self.assertEqual(sym_group.order(), 24)
+
+        # This normal closure should be V_4
+        e3 = perm.element(ol[:2], ol[2:])
+        normal_closure_e3 = sym_group.normal_closure([e3])
+        self.assertEqual(normal_closure_e3.order(), 4)
+
+        # This normal closure should be A_4
+        e4 = perm.element(ol[:3])
+        normal_closure_e4 = sym_group.normal_closure([e4])
+        self.assertEqual(normal_closure_e4.order(), 12)
+
+        # This normal closure should be itself
+        e5 = perm.element(ol[:])
+        normal_closure_e5 = sym_group.normal_closure([e5])
+        self.assertEqual(normal_closure_e5.order(), 24)
+
     def from_num(self, perm, ol, nums):
         return perm.element(
             *[
