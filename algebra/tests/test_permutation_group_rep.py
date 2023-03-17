@@ -121,6 +121,55 @@ class TestPermutationGroupRep(unittest.TestCase):
             m24 = perm.group(e1, e2)
             self.assertEqual(m24.order(), 244_823_040)
 
+    def test_rubik_cube(self):
+        perm = PermutationGroupRep(54)
+        ol = list(perm.object_list())
+
+        generator_index = [
+            [
+                [0, 2, 8, 6], [1, 5, 7, 3], [18, 45, 29, 38],
+                [19, 46, 28, 37], [20, 47, 27, 36]
+            ],
+            [
+                [9, 11, 17, 15], [10, 14, 16, 12], [24, 51, 35, 44],
+                [25, 52, 34, 43], [26, 53, 33, 42]
+            ],
+            [
+                [0, 45, 11, 42], [1, 48, 10, 39], [2, 51, 9, 36],
+                [18, 20, 26, 24], [19, 23, 25, 21]
+            ],
+            [
+                [6, 47, 17, 44], [7, 50, 16, 41], [8, 53, 15, 38],
+                [27, 29, 35, 33], [28, 32, 34, 30]
+            ],
+            [
+                [0, 27, 15, 24], [3, 30, 12, 21], [6, 33, 9, 18],
+                [36, 38, 44, 42], [37, 41, 43, 39]
+            ],
+            [
+                [2, 29, 17, 26], [5, 32, 14, 23], [8, 35, 11, 20],
+                [45, 47, 53, 51], [46, 50, 52, 48]
+            ]
+        ]
+        generator = [
+            self.from_num(perm, ol, index) for index in generator_index
+        ]
+
+        group = perm.group(*generator)
+
+        # Check order of Rubik's Cube
+        self.assertEqual(
+            group.order(),
+            43_252_003_274_489_856_000
+        )
+
+        # Check stabilizer chain optimizing
+        for stabilizer in group.stabilizer_chain().travel():
+            self.assertTrue(
+                stabilizer.point is None or
+                len(stabilizer.transversal) > 1
+            )
+
     def from_num(self, perm, ol, nums):
         return perm.element(
             *[
