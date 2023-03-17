@@ -129,11 +129,23 @@ class Group(Generic[T]):
 
 class ElementContainer:
     def __init__(self, element_list):
-        self.element_list = list(element_list)
-        self.element_iter = iter(self.element_list)
+        self.element_set = set(element_list)
+        self.element_iter = self.iter_repeat()
+        self.element_used = set()
 
-    def get_next(self):
-        return next(self.element_iter)
+    def iter_repeat(self):
+        while True:
+            for element in self.element_set:
+                yield element
+
+    def get_next(self, group_element: 'GroupElement'):
+        for element in self.element_iter:
+            if element in self.element_used:
+                continue
+            acted_element = group_element.act(element)
+            if acted_element != element:
+                self.element_used.add(element)
+                return acted_element
 
 
 @dataclass
@@ -196,7 +208,7 @@ class StabilizerChain(Generic[T]):
         if not self.element_test(alpha):  # Extend existing stabilizer chain
             if self.is_trivial():  # we are on the bottom of the chain
                 # pick random object from base point
-                beta = self.point = next_object.get_next()
+                beta = self.point = next_object.get_next(alpha)
                 self.stabilizer = StabilizerChain(  # Add a new layer
                     group=self.group.represent.group(),
                     depth=self.depth + 1
