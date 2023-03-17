@@ -170,6 +170,37 @@ class TestPermutationGroupRep(unittest.TestCase):
                 len(stabilizer.transversal) > 1
             )
 
+    def test_normal_closure_10(self):
+        """
+        Test normal closure using S_10
+        Known fact - The only non-trivial normal subgroup of S_10 is A_10
+        So, for given element e,
+            if e is in A_10, the normal closure of {e} is A_10.
+            if e is not in A_10, the normal closure of {e} is S_10.
+        :return:
+        """
+        # Create S_10
+        perm = PermutationGroupRep(10)
+        ol = list(perm.object_list())
+
+        e1 = perm.element(ol)
+        e2 = perm.element(ol[:2])
+        sym_group = perm.group(e1, e2)
+
+        factorial_10 = 10 * 9 * 8 * 7 * 6 * 5 * 4 * 3 * 2 * 1
+
+        self.assertEqual(sym_group.order(), factorial_10)
+
+        # This normal closure should be A_10
+        e3 = perm.element(ol[:3])
+        normal_closure_e3 = sym_group.normal_closure([e3])
+        self.assertEqual(normal_closure_e3.order(), factorial_10 // 2)
+
+        # This normal closure should be itself
+        e4 = perm.element(ol[:4])
+        normal_closure_e4 = sym_group.normal_closure([e4])
+        self.assertEqual(normal_closure_e4.order(), factorial_10)
+
     def from_num(self, perm, ol, nums):
         return perm.element(
             *[
