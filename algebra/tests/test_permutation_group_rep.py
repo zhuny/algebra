@@ -170,6 +170,86 @@ class TestPermutationGroupRep(unittest.TestCase):
                 len(stabilizer.transversal) > 1
             )
 
+    def test_normal_closure_10(self):
+        """
+        Test normal closure using S_10
+        Known fact - The only non-trivial normal subgroup of S_10 is A_10
+        So, for given element e,
+            if e is in A_10, the normal closure of {e} is A_10.
+            if e is not in A_10, the normal closure of {e} is S_10.
+        :return:
+        """
+        # Create S_10
+        perm = PermutationGroupRep(10)
+        ol = list(perm.object_list())
+
+        e1 = perm.element(ol)
+        e2 = perm.element(ol[:2])
+        sym_group = perm.group(e1, e2)
+
+        factorial_10 = 10 * 9 * 8 * 7 * 6 * 5 * 4 * 3 * 2 * 1
+
+        self.assertEqual(sym_group.order(), factorial_10)
+
+        # This normal closure should be A_10
+        e3 = perm.element(ol[:3])
+        normal_closure_e3 = sym_group.normal_closure([e3])
+        self.assertEqual(normal_closure_e3.order(), factorial_10 // 2)
+
+        # This normal closure should be itself
+        e4 = perm.element(ol[:4])
+        normal_closure_e4 = sym_group.normal_closure([e4])
+        self.assertEqual(normal_closure_e4.order(), factorial_10)
+
+    def test_normal_closure_4(self):
+        """
+        Test normal closure using S_4
+        Known fack - The non-trivial normal subgroup of S_4 are V_4 and A_4
+
+        :return:
+        """
+        # Create S_4
+        perm = PermutationGroupRep(4)
+        ol = list(perm.object_list())
+
+        e1 = perm.element(ol)
+        e2 = perm.element(ol[:2])
+        sym_group = perm.group(e1, e2)
+
+        self.assertEqual(sym_group.order(), 24)
+
+        # This normal closure should be V_4
+        e3 = perm.element(ol[:2], ol[2:])
+        normal_closure_e3 = sym_group.normal_closure([e3])
+        self.assertEqual(normal_closure_e3.order(), 4)
+
+        # This normal closure should be A_4
+        e4 = perm.element(ol[:3])
+        normal_closure_e4 = sym_group.normal_closure([e4])
+        self.assertEqual(normal_closure_e4.order(), 12)
+
+        # This normal closure should be itself
+        e5 = perm.element(ol[:])
+        normal_closure_e5 = sym_group.normal_closure([e5])
+        self.assertEqual(normal_closure_e5.order(), 24)
+
+    def test_element_test(self):
+        perm = PermutationGroupRep(8)
+        ol = list(perm.object_list())
+
+        group = perm.group(
+            perm.element(ol[:4]), perm.element(ol[:2]),
+            perm.element(ol[4:]), perm.element(ol[4:6])
+        )
+
+        self.assertEqual(group.order(), 24 * 24)
+
+        # 그룹 원소가 아닌 값 넣어보기
+        with self.assertRaises(ValueError):
+            group.normal_closure([
+                perm.element(ol[3:5])
+            ])
+
     def from_num(self, perm, ol, nums):
         return perm.element(
             *[

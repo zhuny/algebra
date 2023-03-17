@@ -97,6 +97,9 @@ class PermutationGroupElement(GroupElement[PermutationObject]):
             sequence.append(one)
         return str(sequence)
 
+    def __hash__(self):
+        return hash((self.group, str(self)))
+
     def is_identity(self) -> bool:
         return len(self.perm_map) == 0
 

@@ -99,6 +99,31 @@ class Group(Generic[T]):
         self._stabilizer_chain = chain
         return chain
 
+    def element_test(self, element: 'GroupElement'):
+        return self.stabilizer_chain().element_test(element)
+
+    def normal_closure(self, element_list: List['GroupElement']):
+        for element in element_list:
+            if not self.element_test(element):
+                raise ValueError('Element should be belong to this group')
+
+        chain = StabilizerChain(group=self.represent.group())
+        obj_iter = ElementContainer(self.represent.object_list())
+
+        insert_queue = set(element_list)
+        while insert_queue:
+            element = insert_queue.pop()
+
+            for generator in self.generator:
+                new_element = -generator + element + generator
+                if not chain.element_test(new_element):
+                    chain.extend(new_element, obj_iter)
+                    insert_queue.add(new_element)
+
+        new_group = self.represent.group(*chain.group.generator)
+        new_group._stabilizer_chain = chain
+        return new_group
+
     def centralizer(self, element: 'GroupElement'):
         pass
 
@@ -189,6 +214,7 @@ class StabilizerChain(Generic[T]):
             element -= t
             # TODO : representation may be needed
 
+        # Unreachable
         return True
 
     def show(self):
