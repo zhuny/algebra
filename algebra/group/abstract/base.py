@@ -93,7 +93,7 @@ class Group(Generic[T]):
             return self._stabilizer_chain
 
         chain = StabilizerChain(group=self.represent.group())
-        obj_iter = iter(self.represent.object_list())
+        obj_iter = ElementContainer(self.represent.object_list())
         for g in self.generator:
             chain.extend(g, obj_iter)
         self._stabilizer_chain = chain
@@ -125,6 +125,15 @@ class Group(Generic[T]):
 
     def g_quotients(self, others: 'Group'):
         pass
+
+
+class ElementContainer:
+    def __init__(self, element_list):
+        self.element_list = list(element_list)
+        self.element_iter = iter(self.element_list)
+
+    def get_next(self):
+        return next(self.element_iter)
 
 
 @dataclass
@@ -182,12 +191,12 @@ class StabilizerChain(Generic[T]):
                 print(f"  - {g}")
             print()
 
-    def extend(self, alpha: 'GroupElement', next_object):
+    def extend(self, alpha: 'GroupElement', next_object: ElementContainer):
         # It is implementation of Schreier-Sims algorithm
         if not self.element_test(alpha):  # Extend existing stabilizer chain
             if self.is_trivial():  # we are on the bottom of the chain
                 # pick random object from base point
-                beta = self.point = next(next_object)
+                beta = self.point = next_object.get_next()
                 self.stabilizer = StabilizerChain(  # Add a new layer
                     group=self.group.represent.group(),
                     depth=self.depth + 1
