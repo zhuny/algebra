@@ -158,7 +158,7 @@ class Group(Generic[T]):
 
         for element in self.element_list():
             if self.is_commute(element):
-                if chain.element_test(element):
+                if not chain.element_test(element):
                     chain.extend(element, obj_iter)
 
         return chain.construct()
