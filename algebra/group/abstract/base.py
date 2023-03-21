@@ -47,7 +47,7 @@ class StabilizerTraveler:
     def visit(self):
         stack = [(
             self.group.stabilizer_chain(),
-            self.group.represent.identity()
+            self.group.represent.identity
         )]
 
         while stack:
@@ -168,6 +168,12 @@ class Group(Generic[T]):
             left = gen + element
             right = element + gen
             if left != right:
+                return False
+        return True
+
+    def is_trivial(self):
+        for gen in self.generator:
+            if not gen.is_identity():
                 return False
         return True
 
