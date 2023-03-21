@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from queue import Queue
-from typing import List, TypeVar, Generic, Set, Dict, Optional
+from typing import List, TypeVar, Generic, Set, Dict, Optional, Iterator
 
 T = TypeVar("T")
 
@@ -40,6 +40,30 @@ class GroupRep:
         return self.group(*generator_list)
 
 
+class StabilizerTraveler:
+    def __init__(self, group):
+        self.group: Group = group
+
+    def visit(self):
+        stack = [(
+            self.group.stabilizer_chain(),
+            self.group.represent.identity()
+        )]
+
+        while stack:
+            chain, element = stack.pop()
+            chain: StabilizerChain
+            element: GroupElement
+            if chain.is_trivial():
+                yield element
+            else:
+                for t in chain.transversal.values():
+                    stack.append((
+                        chain.stabilizer,
+                        element + t
+                    ))
+
+
 @dataclass
 class Group(Generic[T]):
     represent: GroupRep
@@ -51,6 +75,9 @@ class Group(Generic[T]):
 
     def object_list(self) -> List[T]:
         raise NotImplementedError
+
+    def element_list(self) -> Iterator['GroupElement']:
+        return StabilizerTraveler(self).visit()
 
     def orbit(self, o: T) -> Set[T]:
         done = set()
