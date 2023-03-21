@@ -70,6 +70,9 @@ class Group(Generic[T]):
     generator: List['GroupElement']
     _stabilizer_chain: Optional['StabilizerChain'] = None
 
+    def copy(self):
+        return self.represent.group(*self.generator)
+
     def order(self):
         return self.stabilizer_chain().order
 
@@ -147,9 +150,26 @@ class Group(Generic[T]):
                     chain.extend(new_element, obj_iter)
                     insert_queue.add(new_element)
 
-        new_group = self.represent.group(*chain.group.generator)
-        new_group._stabilizer_chain = chain
-        return new_group
+        return chain.construct()
+
+    def center(self):
+        chain = StabilizerChain(group=self.represent.group())
+        obj_iter = ElementContainer(self.represent.object_list())
+
+        for element in self.element_list():
+            if self.is_commute(element):
+                if chain.element_test(element):
+                    chain.extend(element, obj_iter)
+
+        return chain.construct()
+
+    def is_commute(self, element: 'GroupElement'):
+        for gen in self.generator:
+            left = gen + element
+            right = element + gen
+            if left != right:
+                return False
+        return True
 
     def centralizer(self, element: 'GroupElement'):
         pass
@@ -299,6 +319,11 @@ class StabilizerChain(Generic[T]):
                             )
 
                 self.group.generator.append(alpha)
+
+    def construct(self):
+        new_group = self.group.copy()
+        new_group._stabilizer_chain = self
+        return new_group
 
 
 @dataclass
