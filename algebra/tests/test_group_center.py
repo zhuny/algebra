@@ -21,6 +21,7 @@ class TestGroupCenter(unittest.TestCase):
                 self.assertEqual(group.order(), factorial)
 
                 symm_center = group.center()
+                self.assertTrue(group.is_normal(symm_center))
                 self.assertTrue(symm_center.is_trivial())
 
     def test_abelian_group(self):
@@ -41,6 +42,7 @@ class TestGroupCenter(unittest.TestCase):
                 self.assertEqual(group.order(), x * y)
 
                 center = group.center()
+                self.assertTrue(group.is_normal(center))
                 self.assertEqual(center.order(), x * y)
 
     def test_dihedral_even(self):
@@ -67,5 +69,6 @@ class TestGroupCenter(unittest.TestCase):
             for i in range(1, n * 2):
                 gen += r
 
+            self.assertTrue(dihedral.is_normal(center))
             self.assertEqual(center.order(), 2)
             self.assertTrue(center.element_test(gen))

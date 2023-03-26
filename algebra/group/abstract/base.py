@@ -177,6 +177,14 @@ class Group(Generic[T]):
                 return False
         return True
 
+    def is_normal(self, subgroup: 'Group'):
+        for sub_gen in subgroup.generator:
+            for gen in self.generator:
+                conjugate = gen + sub_gen - gen
+                if not subgroup.element_test(conjugate):
+                    return False
+        return True
+
     def centralizer(self, element: 'GroupElement'):
         pass
 
