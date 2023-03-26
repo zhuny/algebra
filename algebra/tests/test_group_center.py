@@ -72,3 +72,29 @@ class TestGroupCenter(unittest.TestCase):
             self.assertTrue(dihedral.is_normal(center))
             self.assertEqual(center.order(), 2)
             self.assertTrue(center.element_test(gen))
+
+    def test_normal_check(self):
+        perm = PermutationGroupRep(4)
+        ol = list(perm.object_list())
+
+        symmetric = perm.group(
+            perm.element(ol),
+            perm.element(ol[:2])
+        )
+
+        # V4 is normal subgroup of S4
+        g1 = perm.group(
+            perm.element([ol[0], ol[1]], [ol[2], ol[3]]),
+            perm.element([ol[0], ol[2]], [ol[1], ol[3]])
+        )
+        self.assertTrue(symmetric.is_normal(g1))
+
+        g2 = perm.group(
+            perm.element([ol[0], ol[1]], [ol[2], ol[3]])
+        )
+        self.assertFalse(symmetric.is_normal(g2))
+
+        g3 = perm.group(
+            perm.element(ol)
+        )
+        self.assertFalse(symmetric.is_normal(g3))
