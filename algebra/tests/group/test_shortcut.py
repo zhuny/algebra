@@ -1,6 +1,7 @@
 import unittest
 
-from algebra.group.abstract.shortcut import symmetric_group, alternative_group
+from algebra.group.abstract.shortcut import symmetric_group, alternative_group, \
+    dihedral_group
 
 
 class TestShortcut(unittest.TestCase):
@@ -35,3 +36,9 @@ class TestShortcut(unittest.TestCase):
             alternative_group(1).order(),
             1
         )
+
+    def test_dihedral_group_correct(self):
+        for i in range(1, 30):
+            d_n = dihedral_group(i)
+
+            self.assertEqual(d_n.order(), i * 2)

@@ -40,3 +40,14 @@ def alternative_group(n: int):
         [[i-2, i-1, i]]
         for i in range(2, n)
     ])
+
+
+def dihedral_group(n: int):
+    _check_positive_integer(n)
+
+    rep = PermutationGroupRep(n * 2)
+
+    return rep.group_([
+        [list(range(n)), list(range(n, 2 * n))],
+        [[i, n + i] for i in range(n)]
+    ])
