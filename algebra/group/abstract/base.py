@@ -18,6 +18,13 @@ class GroupRep:
         raise NotImplementedError
 
     def group(self, *elements):
+        for element in elements:
+            if not isinstance(element, GroupElement):
+                raise TypeError("GroupElement should be given")
+
+            if element.group != self:
+                raise ValueError("Element should be belong to this group")
+
         return Group(represent=self, generator=list(elements))
 
     def group_(self, elements):
