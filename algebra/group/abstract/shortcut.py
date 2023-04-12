@@ -48,6 +48,6 @@ def dihedral_group(n: int):
     rep = PermutationGroupRep(n * 2)
 
     return rep.group_([
-        [list(range(n)), list(range(n, 2 * n))],
+        [list(range(n)), list(range(n, 2 * n))[::-1]],
         [[i, n + i] for i in range(n)]
     ])

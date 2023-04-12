@@ -363,6 +363,9 @@ class GroupElement(Generic[T]):
     def is_identity(self) -> bool:
         raise NotImplementedError
 
+    def order(self) -> int:
+        raise NotImplementedError
+
     def act(self, o: T) -> T:
         # raise NotImplementedError
         """

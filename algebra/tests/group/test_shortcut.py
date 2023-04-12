@@ -1,3 +1,5 @@
+import collections
+import math
 import unittest
 
 from algebra.group.abstract.shortcut import symmetric_group, alternative_group, \
@@ -38,7 +40,22 @@ class TestShortcut(unittest.TestCase):
         )
 
     def test_dihedral_group_correct(self):
-        for i in range(1, 30):
+        for i in range(3, 25):
             d_n = dihedral_group(i)
 
             self.assertEqual(d_n.order(), i * 2)
+
+            # get element list and calculate order
+            order_count = collections.defaultdict(int)
+            for e in d_n.element_list():
+                order_count[e.order()] += 1
+
+            # solution - we know the structure
+            known_order_count = collections.defaultdict(int)
+            known_order_count[1] += 1
+            known_order_count[2] += i
+
+            for o in range(1, i):
+                known_order_count[i // math.gcd(o, i)] += 1
+
+            self.assertEqual(order_count, known_order_count)
