@@ -2,8 +2,9 @@ import collections
 import math
 import unittest
 
-from algebra.group.abstract.shortcut import symmetric_group, alternative_group, \
-    dihedral_group
+from algebra.group.abstract.shortcut import (
+    symmetric_group, alternative_group, dihedral_group
+)
 
 
 class TestShortcut(unittest.TestCase):

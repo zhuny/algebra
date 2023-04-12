@@ -37,7 +37,7 @@ def alternative_group(n: int):
         return rep.group()
 
     return rep.group_([
-        [[i-2, i-1, i]]
+        [[i - 2, i - 1, i]]
         for i in range(2, n)
     ])
 
