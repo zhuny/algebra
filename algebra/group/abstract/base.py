@@ -89,6 +89,13 @@ class Group(Generic[T]):
     def element_list(self) -> Iterator['GroupElement']:
         return StabilizerTraveler(self).visit()
 
+    def is_abelian(self):
+        for g1 in self.generator:
+            for g2 in self.generator:
+                if g1 + g2 != g2 + g1:
+                    return False
+        return True
+
     def orbit(self, o: T) -> Set[T]:
         done = set()
         queue = {o}

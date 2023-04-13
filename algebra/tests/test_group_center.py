@@ -38,6 +38,8 @@ class TestGroupCenter(unittest.TestCase):
                     perm.element(ol[x:])
                 )
 
+                self.assertTrue(group.is_abelian())
+
                 # TODO: Check this group is abelian
                 self.assertEqual(group.order(), x * y)
 

@@ -51,3 +51,10 @@ def dihedral_group(n: int):
         [list(range(n)), list(range(n, 2 * n))[::-1]],
         [[i, n + i] for i in range(n)]
     ])
+
+
+def quaternion_group():
+    return PermutationGroupRep(8).group_([
+        [[0, 2, 1, 3], [4, 7, 5, 6]],  # i
+        [[0, 4, 1, 5], [2, 6, 3, 7]]  # j
+    ])

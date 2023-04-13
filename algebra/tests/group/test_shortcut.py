@@ -3,7 +3,7 @@ import math
 import unittest
 
 from algebra.group.abstract.shortcut import (
-    symmetric_group, alternative_group, dihedral_group
+    symmetric_group, alternative_group, dihedral_group, quaternion_group
 )
 
 
@@ -60,3 +60,18 @@ class TestShortcut(unittest.TestCase):
                 known_order_count[i // math.gcd(o, i)] += 1
 
             self.assertEqual(order_count, known_order_count)
+
+    def test_quaternion_group_correct(self):
+        """
+        Quaternion 인지 확인
+        """
+        q8 = quaternion_group()
+        self.assertEqual(q8.order(), 8)
+        self.assertFalse(q8.is_abelian())
+
+        order_4_list = [
+            e
+            for e in q8.element_list()
+            if e.order() == 4
+        ]
+        self.assertEqual(len(order_4_list), 6)
