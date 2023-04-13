@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Dict
 
 from algebra.group.abstract.base import GroupRep, GroupElement
+from algebra.number.util import lcm
 
 
 @dataclass
@@ -79,9 +80,8 @@ class PermutationGroupElement(GroupElement[PermutationObject]):
             perm_map={v: k for k, v in self.perm_map.items()}
         )
 
-    def __str__(self):
+    def _to_seq(self):
         done = set()
-        sequence = []
         for k, v in sorted(self.perm_map.items()):
             if k in done:
                 continue
@@ -94,8 +94,10 @@ class PermutationGroupElement(GroupElement[PermutationObject]):
                 s1 = self.perm_map[s1]
                 if s1 == k:
                     break
-            sequence.append(one)
-        return str(sequence)
+            yield one
+
+    def __str__(self):
+        return str(list(self._to_seq()))
 
     def __hash__(self):
         return hash((self.group, str(self)))
@@ -105,3 +107,9 @@ class PermutationGroupElement(GroupElement[PermutationObject]):
 
     def act(self, o: PermutationObject) -> PermutationObject:
         return self.perm_map.get(o, o)
+
+    def order(self) -> int:
+        order = 1
+        for seq in self._to_seq():
+            order = lcm(order, len(seq))
+        return order

@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from queue import Queue
-from typing import List, TypeVar, Generic, Set, Dict, Optional
+from typing import List, TypeVar, Generic, Set, Dict, Optional, Iterator
 
 T = TypeVar("T")
 
@@ -18,6 +18,13 @@ class GroupRep:
         raise NotImplementedError
 
     def group(self, *elements):
+        for element in elements:
+            if not isinstance(element, GroupElement):
+                raise TypeError("GroupElement should be given")
+
+            if element.group != self:
+                raise ValueError("Element should be belong to this group")
+
         return Group(represent=self, generator=list(elements))
 
     def group_(self, elements):
@@ -40,17 +47,54 @@ class GroupRep:
         return self.group(*generator_list)
 
 
+class StabilizerTraveler:
+    def __init__(self, group):
+        self.group: Group = group
+
+    def visit(self):
+        stack = [(
+            self.group.stabilizer_chain(),
+            self.group.represent.identity
+        )]
+
+        while stack:
+            chain, element = stack.pop()
+            chain: StabilizerChain
+            element: GroupElement
+            if chain.is_trivial():
+                yield element
+            else:
+                for t in chain.transversal.values():
+                    stack.append((
+                        chain.stabilizer,
+                        element + t
+                    ))
+
+
 @dataclass
 class Group(Generic[T]):
     represent: GroupRep
     generator: List['GroupElement']
     _stabilizer_chain: Optional['StabilizerChain'] = None
 
+    def copy(self):
+        return self.represent.group(*self.generator)
+
     def order(self):
         return self.stabilizer_chain().order
 
     def object_list(self) -> List[T]:
         raise NotImplementedError
+
+    def element_list(self) -> Iterator['GroupElement']:
+        return StabilizerTraveler(self).visit()
+
+    def is_abelian(self):
+        for g1 in self.generator:
+            for g2 in self.generator:
+                if g1 + g2 != g2 + g1:
+                    return False
+        return True
 
     def orbit(self, o: T) -> Set[T]:
         done = set()
@@ -120,9 +164,40 @@ class Group(Generic[T]):
                     chain.extend(new_element, obj_iter)
                     insert_queue.add(new_element)
 
-        new_group = self.represent.group(*chain.group.generator)
-        new_group._stabilizer_chain = chain
-        return new_group
+        return chain.construct()
+
+    def center(self):
+        chain = StabilizerChain(group=self.represent.group())
+        obj_iter = ElementContainer(self.represent.object_list())
+
+        for element in self.element_list():
+            if self.is_commute(element):
+                if not chain.element_test(element):
+                    chain.extend(element, obj_iter)
+
+        return chain.construct()
+
+    def is_commute(self, element: 'GroupElement'):
+        for gen in self.generator:
+            left = gen + element
+            right = element + gen
+            if left != right:
+                return False
+        return True
+
+    def is_trivial(self):
+        for gen in self.generator:
+            if not gen.is_identity():
+                return False
+        return True
+
+    def is_normal(self, subgroup: 'Group'):
+        for sub_gen in subgroup.generator:
+            for gen in self.generator:
+                conjugate = gen + sub_gen - gen
+                if not subgroup.element_test(conjugate):
+                    return False
+        return True
 
     def centralizer(self, element: 'GroupElement'):
         pass
@@ -273,6 +348,11 @@ class StabilizerChain(Generic[T]):
 
                 self.group.generator.append(alpha)
 
+    def construct(self):
+        new_group = self.group.copy()
+        new_group._stabilizer_chain = self
+        return new_group
+
 
 @dataclass
 class GroupElement(Generic[T]):
@@ -288,6 +368,9 @@ class GroupElement(Generic[T]):
         return self + (-other)
 
     def is_identity(self) -> bool:
+        raise NotImplementedError
+
+    def order(self) -> int:
         raise NotImplementedError
 
     def act(self, o: T) -> T:
