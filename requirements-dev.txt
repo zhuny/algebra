@@ -1,2 +1,2 @@
-autopep8==1.5.7
-pybadges==2.2.1
+autopep8==2.0.2
+pybadges==3.0.0
