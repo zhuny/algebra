@@ -64,6 +64,10 @@ class Radical:
     body: List['RadicalElement'] = field(default_factory=list)
 
     @classmethod
+    def from_num(cls, number: Number):
+        return cls(body=[RadicalElement(number)])
+
+    @classmethod
     def sqrt(cls, number):
         base_list = []
         multiply = 1
@@ -82,6 +86,9 @@ class Radical:
 
     def __neg__(self):
         return Radical(body=[-e for e in self.body])
+
+    def __add__(self, other):
+        return self._normalize(self.body + other.body)
 
     def __sub__(self, other):
         return self._normalize(
@@ -226,8 +233,12 @@ class Radical:
 
 @dataclass
 class RadicalElement:
-    multiply: int
+    multiply: Number  # will be normalized to Fraction.
     base_split: Set[int] = field(default_factory=set)
+
+    def __post_init__(self):
+        if not isinstance(self.multiply, Fraction):
+            self.multiply = Fraction(self.multiply)
 
     @property
     def base_number(self):
@@ -250,7 +261,7 @@ class RadicalElement:
     def __neg__(self):
         return RadicalElement(
             multiply=-self.multiply,
-            base_split=self.base_split
+            base_split=set(self.base_split)
         )
 
     def __mul__(self, other):
