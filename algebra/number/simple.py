@@ -1,7 +1,9 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Set, Dict
+from fractions import Fraction
+from typing import List, Set, Dict, Union
 
+from algebra.number.types import Number, NumberType
 from algebra.number.util import factorize
 
 
@@ -95,6 +97,15 @@ class Radical:
             for e1 in self.body
         ])
 
+    def __truediv__(self, other: Union['Radical', Number]):
+        if isinstance(other, Radical):
+            return self * other.inv()
+        else:
+            return self._normalize([
+                elem / other
+                for elem in self.body
+            ])
+
     def __gt__(self, other):
         return (self - other).get_sign() == Sign.POSITIVE
 
@@ -153,6 +164,33 @@ class Radical:
                 searcher.move_down()
         return searcher.get_middle()
 
+    def inv(self):
+        if len(self.body) == 0:
+            raise ZeroDivisionError('Zero')
+
+        current = self
+        inverse = self.from_num(1)
+
+        while True:
+            prime = current._get_any_prime()
+            if prime is None:
+                inverse /= current._get_constant()
+                break
+
+            a = Radical()
+            b = Radical()
+
+            for e in current.body:
+                if prime in e.base_split:
+                    b.body.append(e.copy())
+                else:
+                    a.body.append(e.copy())
+
+            inverse *= a - b
+            current = a * a - b * b
+
+        return inverse
+
     def _normalize(self, body_list: List['RadicalElement']):
         base: Dict[int, RadicalElement] = {}
         for element in body_list:
@@ -179,6 +217,11 @@ class Radical:
         for element in self.body:
             for prime in element.base_split:
                 return prime
+
+    def _get_constant(self):
+        for element in self.body:
+            if len(element.base_split) == 0:
+                return element.multiply
 
 
 @dataclass
@@ -220,3 +263,11 @@ class RadicalElement:
             else:
                 self_set.add(base)
         return RadicalElement(multiply=multiply, base_split=self_set)
+
+    def __truediv__(self, other: Number):
+        assert isinstance(other, NumberType), type(other)
+
+        return RadicalElement(
+            multiply=self.multiply / other,
+            base_split=set(self.base_split)
+        )
