@@ -42,7 +42,7 @@ steps:
       - |
           curl -Os https://uploader.codecov.io/latest/linux/codecov
           chmod +x codecov
-        ./codecov -t ${_CODECOV_TOKEN}
+          ./codecov -t ${_CODECOV_TOKEN}
     id: 'codecov'
     waitFor: ['py3-test']
   - name: python:3.8
