@@ -1,7 +1,6 @@
 import unittest
-from fractions import Fraction
 
-from algebra.number.simple import Radical, RadicalElement
+from algebra.number.simple import Radical
 
 
 class TestRadicalMultiply(unittest.TestCase):
