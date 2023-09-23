@@ -1,7 +1,9 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Set, Dict
+from fractions import Fraction
+from typing import List, Set, Dict, Union
 
+from algebra.number.types import Number, NumberType
 from algebra.number.util import factorize
 
 
@@ -62,6 +64,10 @@ class Radical:
     body: List['RadicalElement'] = field(default_factory=list)
 
     @classmethod
+    def from_num(cls, number: Number):
+        return cls(body=[RadicalElement(number)])
+
+    @classmethod
     def sqrt(cls, number):
         base_list = []
         multiply = 1
@@ -81,6 +87,9 @@ class Radical:
     def __neg__(self):
         return Radical(body=[-e for e in self.body])
 
+    def __add__(self, other):
+        return self._normalize(self.body + other.body)
+
     def __sub__(self, other):
         return self._normalize(
             self.body + [
@@ -94,6 +103,15 @@ class Radical:
             for e2 in self._get_body(other)
             for e1 in self.body
         ])
+
+    def __truediv__(self, other: Union['Radical', Number]):
+        if isinstance(other, Radical):
+            return self * other.inv()
+        else:
+            return self._normalize([
+                elem / other
+                for elem in self.body
+            ])
 
     def __gt__(self, other):
         return (self - other).get_sign() == Sign.POSITIVE
@@ -153,6 +171,33 @@ class Radical:
                 searcher.move_down()
         return searcher.get_middle()
 
+    def inv(self):
+        if len(self.body) == 0:
+            raise ZeroDivisionError('Zero')
+
+        current = self
+        inverse = self.from_num(1)
+
+        while True:
+            prime = current._get_any_prime()
+            if prime is None:
+                inverse /= current._get_constant()
+                break
+
+            a = Radical()
+            b = Radical()
+
+            for e in current.body:
+                if prime in e.base_split:
+                    b.body.append(e.copy())
+                else:
+                    a.body.append(e.copy())
+
+            inverse *= a - b
+            current = a * a - b * b
+
+        return inverse
+
     def _normalize(self, body_list: List['RadicalElement']):
         base: Dict[int, RadicalElement] = {}
         for element in body_list:
@@ -180,11 +225,20 @@ class Radical:
             for prime in element.base_split:
                 return prime
 
+    def _get_constant(self):
+        for element in self.body:
+            if len(element.base_split) == 0:
+                return element.multiply
+
 
 @dataclass
 class RadicalElement:
-    multiply: int
+    multiply: Number  # will be normalized to Fraction.
     base_split: Set[int] = field(default_factory=set)
+
+    def __post_init__(self):
+        if not isinstance(self.multiply, Fraction):
+            self.multiply = Fraction(self.multiply)
 
     @property
     def base_number(self):
@@ -207,7 +261,7 @@ class RadicalElement:
     def __neg__(self):
         return RadicalElement(
             multiply=-self.multiply,
-            base_split=self.base_split
+            base_split=set(self.base_split)
         )
 
     def __mul__(self, other):
@@ -220,3 +274,11 @@ class RadicalElement:
             else:
                 self_set.add(base)
         return RadicalElement(multiply=multiply, base_split=self_set)
+
+    def __truediv__(self, other: Number):
+        assert isinstance(other, NumberType), type(other)
+
+        return RadicalElement(
+            multiply=self.multiply / other,
+            base_split=set(self.base_split)
+        )

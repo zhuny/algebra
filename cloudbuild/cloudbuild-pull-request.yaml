@@ -35,18 +35,16 @@ steps:
     dir: '.'
     env:
       - "PYTHONPATH=./.venv"
-  - name: python:3.8
-    entrypoint: python3
+  - name: gcr.io/cloud-builders/gcloud
+    entrypoint: bash
     args:
-      - -m
-      - codecov
-      - -t
-      - ${_CODECOV_TOKEN}
-    id: 'py3-codecov'
+      - -c
+      - |
+          curl -Os https://uploader.codecov.io/latest/linux/codecov
+          chmod +x codecov
+          ./codecov -t ${_CODECOV_TOKEN}
+    id: 'codecov'
     waitFor: ['py3-test']
-    dir: '.'
-    env:
-      - "PYTHONPATH=./.venv"
   - name: python:3.8
     entrypoint: python3
     args:
@@ -55,7 +53,7 @@ steps:
       - report
       - --fail-under=95
     id: 'py3-coverage'
-    waitFor: ['py3-codecov']
+    waitFor: ['codecov']
     dir: '.'
     env:
       - "PYTHONPATH=./.venv"
