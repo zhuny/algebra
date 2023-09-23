@@ -35,27 +35,16 @@ steps:
     dir: '.'
     env:
       - "PYTHONPATH=./.venv"
-  - name: ubuntu
+  - name: gcr.io/cloud-builders/gcloud
+    entrypoint: bash
     args:
-      - curl
-      - Os
-      - https://uploader.codecov.io/latest/linux/codecov
-    id: 'codecov-download'
-    waitFor: ['py3-test']
-  - name: ubuntu
-    args:
-      - chmod
-      - '+x'
-      - codecov
-    id: 'codecov-executable'
-    waitFor: ['codecov-download']
-  - name: ubuntu
-    args:
-      - ./codecov
-      - -t
-      - ${_CODECOV_TOKEN}
+      - -c
+      - |
+          curl -Os https://uploader.codecov.io/latest/linux/codecov
+          chmod +x codecov
+        ./codecov -t ${_CODECOV_TOKEN}
     id: 'codecov'
-    waitFor: ['codecov-executable']
+    waitFor: ['py3-test']
   - name: python:3.8
     entrypoint: python3
     args:
