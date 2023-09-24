@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from queue import Queue
-from typing import List, TypeVar, Generic, Set, Dict, Optional, Iterator
+from typing import List, TypeVar, Generic, Set, Dict, Optional, Iterator, Union
 
 T = TypeVar("T")
 
@@ -67,7 +67,7 @@ class StabilizerTraveler:
                 for t in chain.transversal.values():
                     stack.append((
                         chain.stabilizer,
-                        element + t
+                        element + t.element
                     ))
 
 
@@ -139,7 +139,7 @@ class Group(Generic[T]):
         chain = StabilizerChain(group=self.represent.group())
         obj_iter = ElementContainer(self.represent.object_list())
         for g in self.generator:
-            chain.extend(ElementInfo(g), obj_iter)
+            chain.extend(g, obj_iter)
         self._stabilizer_chain = chain
         return chain
 
@@ -161,7 +161,7 @@ class Group(Generic[T]):
             for generator in self.generator:
                 new_element = -generator + element + generator
                 if not chain.element_test(new_element):
-                    chain.extend(new_element, obj_iter, False)
+                    chain.extend(new_element, obj_iter)
                     insert_queue.add(new_element)
 
         return chain.construct()
@@ -342,7 +342,7 @@ class StabilizerChain(Generic[T]):
             print()
 
     def extend(self,
-               alpha: ElementInfo,
+               alpha: Union[ElementInfo, 'GroupElement'],
                next_object: ElementContainer,
                is_factor: bool = False):
         """
@@ -351,6 +351,9 @@ class StabilizerChain(Generic[T]):
         :param is_factor: Whether element has factor info
         :return:
         """
+        if isinstance(alpha, GroupElement):
+            alpha = ElementInfo(alpha)
+
         # It is implementation of Schreier-Sims algorithm
         if not self.element_test(alpha.element):
             # Extend existing stabilizer chain
