@@ -132,14 +132,22 @@ class Group(Generic[T]):
             generator=new_generator
         )
 
-    def stabilizer_chain(self) -> 'StabilizerChain':
+    def stabilizer_chain(self, is_factor: bool = False) -> 'StabilizerChain':
         if self._stabilizer_chain is not None:
-            return self._stabilizer_chain
+            # check factor info
+            if not is_factor or self._stabilizer_chain.is_factor:
+                return self._stabilizer_chain
 
-        chain = StabilizerChain(group=self.represent.group())
+        chain = StabilizerChain(
+            group=self.represent.group(),
+            is_factor=is_factor
+        )
         obj_iter = ElementContainer(self.represent.object_list())
         for g in self.generator:
+            if is_factor:
+                g = ElementInfo(g, [g])
             chain.extend(g, obj_iter)
+
         self._stabilizer_chain = chain
         return chain
 
@@ -292,6 +300,7 @@ class StabilizerChain(Generic[T]):
     )
     stabilizer: Optional['StabilizerChain'] = None
     depth: int = 0
+    is_factor: bool = False
 
     @property
     def order(self):
@@ -343,12 +352,10 @@ class StabilizerChain(Generic[T]):
 
     def extend(self,
                alpha: Union[ElementInfo, 'GroupElement'],
-               next_object: ElementContainer,
-               is_factor: bool = False):
+               next_object: ElementContainer):
         """
         :param alpha: Inserted element
         :param next_object: Object for permutation
-        :param is_factor: Whether element has factor info
         :return:
         """
         if isinstance(alpha, GroupElement):
@@ -368,7 +375,7 @@ class StabilizerChain(Generic[T]):
                 self.generator_factor[alpha.element] = alpha
                 self.transversal[beta] = ElementInfo(
                     self.group.represent.identity,
-                    [] if is_factor else None
+                    [] if self.is_factor else None
                 )
 
                 delta = alpha.element.act(beta)
