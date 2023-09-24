@@ -139,7 +139,7 @@ class Group(Generic[T]):
         chain = StabilizerChain(group=self.represent.group())
         obj_iter = ElementContainer(self.represent.object_list())
         for g in self.generator:
-            chain.extend(g, obj_iter)
+            chain.extend(ElementInfo(g), obj_iter)
         self._stabilizer_chain = chain
         return chain
 
@@ -249,10 +249,23 @@ class ElementContainer:
 
 
 @dataclass
+class ElementInfo:
+    element: 'GroupElement'
+    factor: List['GroupElement'] = field(default_factory=list)
+
+    def __post_init__(self):
+        if len(self.factor) == 0:
+            self.factor.append(self.element)
+
+
+@dataclass
 class StabilizerChain(Generic[T]):
     group: Group
     point: T = None
-    transversal: Dict[T, 'GroupElement'] = field(default_factory=dict)
+    transversal: Dict[T, ElementInfo] = field(default_factory=dict)
+    generator_factor: Dict['GroupElement', ElementInfo] = field(
+        default_factory=dict
+    )
     stabilizer: Optional['StabilizerChain'] = None
     depth: int = 0
 
@@ -286,7 +299,7 @@ class StabilizerChain(Generic[T]):
                 return False
 
             t = stabilizer.transversal[base]
-            element -= t
+            element -= t.element
             # TODO : representation may be needed
 
         # Unreachable
@@ -304,23 +317,31 @@ class StabilizerChain(Generic[T]):
                 print(f"  - {g}")
             print()
 
-    def extend(self, alpha: 'GroupElement', next_object: ElementContainer):
+    def extend(self, alpha: ElementInfo, next_object: ElementContainer):
         # It is implementation of Schreier-Sims algorithm
-        if not self.element_test(alpha):  # Extend existing stabilizer chain
+        if not self.element_test(alpha.element):  # Extend existing stabilizer chain
             if self.is_trivial():  # we are on the bottom of the chain
                 # pick random object from base point
-                beta = self.point = next_object.get_next(alpha)
+                beta = self.point = next_object.get_next(alpha.element)
                 self.stabilizer = StabilizerChain(  # Add a new layer
                     group=self.group.represent.group(),
                     depth=self.depth + 1
                 )
-                self.group.generator.append(alpha)
-                self.transversal[beta] = self.group.represent.identity
-                delta = alpha.act(beta)
+                self.group.generator.append(alpha.element)
+                self.generator_factor[alpha.element] = alpha
+                self.transversal[beta] = ElementInfo(
+                    self.group.represent.identity,
+                    []
+                )
+
+                delta = alpha.element.act(beta)
                 s = alpha  # orbit algorithm for single generator group
+
                 while delta != beta:
                     self.transversal[delta] = s
-                    delta, s = alpha.act(delta), s + alpha
+
+                    delta, s = alpha.element.act(delta), s + alpha
+
                 self.stabilizer.extend(s, next_object)  # remove recursive
             else:
                 queue = Queue()
@@ -329,12 +350,12 @@ class StabilizerChain(Generic[T]):
 
                 while queue.qsize() > 0:
                     delta, transversal, is_new = queue.get()
-                    check_element = [alpha]
+                    check_element = [transversal]
                     if is_new:
-                        check_element.extend(self.group.generator)
+                        check_element.extend(self.generator_factor.values())
 
                     for element in check_element:
-                        gamma = element.act(delta)
+                        gamma = element.element.act(delta)
                         if gamma not in self.transversal:
                             new_element = transversal + element
                             self.transversal[gamma] = new_element
@@ -346,7 +367,7 @@ class StabilizerChain(Generic[T]):
                                 next_object
                             )
 
-                self.group.generator.append(alpha)
+                self.group.generator.append(alpha.element)
 
     def construct(self):
         new_group = self.group.copy()
