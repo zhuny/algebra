@@ -58,7 +58,7 @@ class TestPermutationGroupRep(unittest.TestCase):
             # symmetric group of order `i`
             group = perm.group(e1, e2)
             factorial *= i
-            self.assertEqual(group.stabilizer_chain().order, factorial)
+            self.assertEqual(group.order(), factorial)
 
     def test_stabilizer_chain_dihedral(self):
         for i in range(4, 11):
