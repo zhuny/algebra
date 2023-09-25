@@ -25,7 +25,7 @@ class PermutationGroupRep(GroupRep):
     degree: int
 
     def __hash__(self):
-        return hash(f"PGR{self.degree}")
+        return id(self)
 
     @property
     def identity(self):
@@ -37,6 +37,10 @@ class PermutationGroupRep(GroupRep):
                 permutation=self,
                 value=i
             )
+
+    def check_object(self, o: PermutationObject):
+        if o.permutation != self:
+            raise ValueError('Permutation Not Correct')
 
     def element(self, *args):
         if args:

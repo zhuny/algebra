@@ -14,6 +14,9 @@ class GroupRep:
     def object_list(self):
         raise NotImplementedError
 
+    def check_object(self, o):
+        raise NotImplementedError
+
     def element(self, *args):
         raise NotImplementedError
 
@@ -77,6 +80,11 @@ class Group(Generic[T]):
     generator: List['GroupElement']
     _stabilizer_chain: Optional['StabilizerChain'] = None
 
+    def show(self):
+        print("Generator")
+        for g in self.generator:
+            print('-', g)
+
     def copy(self):
         return self.represent.group(*self.generator)
 
@@ -106,6 +114,8 @@ class Group(Generic[T]):
         return done
 
     def stabilizer(self, o: T) -> 'Group':
+        self.represent.check_object(o)
+
         done = set()
         queue = {o}
         transversal = {o: self.represent.identity}
@@ -126,8 +136,18 @@ class Group(Generic[T]):
 
         return Group(
             represent=self.represent,
-            generator=new_generator
+            generator=[
+                g
+                for g in new_generator
+                if not g.is_identity()
+            ]
         )
+
+    def stabilizer_many(self, obj_list: List[T]) -> 'Group':
+        current = self
+        for obj in obj_list:
+            current = current.stabilizer(obj)
+        return current
 
     def stabilizer_chain(self, is_factor: bool = False) -> 'StabilizerChain':
         if self._stabilizer_chain is not None:

@@ -28,3 +28,4 @@ class TestHomomorphism(unittest.TestCase):
         hom = GroupHomomorphism(domain, codomain, m)
         hom_image = hom.image()
         self.assertEqual(hom_image.order(), 1)  # trivial group
+        self.assertEqual(hom.kernel().order(), domain.order())

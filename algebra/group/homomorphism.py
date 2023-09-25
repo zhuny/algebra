@@ -21,7 +21,7 @@ class GroupDirectProductRep(PermutationGroupRep):
         self.object_map_right = dict(zip(object_list, self.object_list()))
         self.object_map_left = dict(zip(self.object_list(), object_list))
 
-    def right_map(self, item: List[GroupElement]):
+    def right_element_map(self, item: List[GroupElement]):
         if len(item) != len(self.subgroup_list):
             raise ValueError('Dimension not matched')
 
@@ -38,6 +38,25 @@ class GroupDirectProductRep(PermutationGroupRep):
                     mapping[map_right[o1]] = map_right[o2]
 
         return self.element(mapping)
+
+    def right_object_map(self, obj):
+        return self.object_map_right[obj]
+
+    def left_element_mep(self, element: GroupElement):
+        if element.group != self:
+            raise ValueError('Group not Matched')
+
+        item = []
+        for subgroup in self.subgroup_list:
+            gen = {}
+            for o1 in subgroup.object_list():
+                o2 = self.object_map_right[o1]
+                o3 = element.act(o2)
+                if o2 != o3:
+                    gen[o1] = self.object_map_left[o3]
+            item.append(subgroup.element(gen))
+
+        return item
 
     def _sub_object_list(self):
         for subgroup in self.subgroup_list:
@@ -67,6 +86,20 @@ class GroupHomomorphism:
         if product_order != self.domain.order():
             raise ValueError('Mapping not Hom')
 
+    def kernel(self) -> 'Group':
+        direct = self.as_direct_product()
+        stabilizer = direct.stabilizer_many([
+            direct.represent.right_object_map(o)
+            for o in self.codomain.represent.object_list()
+        ])
+
+        generator = []
+        for g in stabilizer.generator:
+            item = direct.represent.left_element_mep(g)
+            generator.append(item[0])
+
+        return self.domain.represent.group(*generator)
+
     def image(self):
         return self.codomain.represent.group(
             *self.mapping.values()
@@ -81,7 +114,7 @@ class GroupHomomorphism:
 
         # generator 생성
         generator = [
-            group_rep.right_map(list(items))
+            group_rep.right_element_map(list(items))
             for items in self.mapping.items()
         ]
 
