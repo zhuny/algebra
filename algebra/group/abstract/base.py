@@ -154,6 +154,13 @@ class Group(Generic[T]):
     def element_test(self, element: 'GroupElement'):
         return self.stabilizer_chain().element_test(element)
 
+    def factor(self, element: 'GroupElement'):
+        chain = self.stabilizer_chain(True)
+        if not self.element_test(element):
+            raise ValueError('Element not in the Group')
+
+        return chain.factor(element)
+
     def normal_closure(self, element_list: List['GroupElement']):
         for element in element_list:
             if not self.element_test(element):
@@ -333,10 +340,26 @@ class StabilizerChain(Generic[T]):
 
             t = stabilizer.transversal[base]
             element -= t.element
-            # TODO : representation may be needed
 
         # Unreachable
         return True
+
+    def factor(self, element: 'GroupElement') -> List['GroupElement']:
+        if element.is_identity():
+            return []
+
+        factor_list = []
+
+        for stabilizer in self.travel():
+            if stabilizer.point is None:
+                break
+
+            base = element.act(stabilizer.point)
+            info = stabilizer.transversal[base]
+            element -= info.element
+            factor_list.extend(info.factor)
+
+        return factor_list
 
     def show(self):
         for stack in self.travel():
