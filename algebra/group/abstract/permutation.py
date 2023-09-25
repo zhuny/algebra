@@ -45,14 +45,19 @@ class PermutationGroupRep(GroupRep):
 
         i = self.identity
         for seq in args:
-            if len(set(seq)) != len(seq):
-                raise ValueError("Sequence has a unique value")
+            mapping = {}
 
-            d = {}
-            for a, b in zip(seq, seq[1:] + seq[:1]):
-                d[a] = b
+            if isinstance(seq, (tuple, list)):
+                if len(set(seq)) != len(seq):
+                    raise ValueError("Sequence has a unique value")
+                mapping.update(zip(seq, seq[1:] + seq[:1]))
 
-            i += PermutationGroupElement(group=self, perm_map=d)
+            elif isinstance(seq, dict):
+                if set(seq) != set(seq.values()):
+                    raise ValueError("Should be same")
+                mapping.update(seq)
+
+            i += PermutationGroupElement(group=self, perm_map=mapping)
 
         return i
 

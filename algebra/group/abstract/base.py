@@ -83,9 +83,6 @@ class Group(Generic[T]):
     def order(self):
         return self.stabilizer_chain().order
 
-    def object_list(self) -> List[T]:
-        raise NotImplementedError
-
     def element_list(self) -> Iterator['GroupElement']:
         return StabilizerTraveler(self).visit()
 

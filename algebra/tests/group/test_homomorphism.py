@@ -1,6 +1,7 @@
 import unittest
 
-from algebra.group.abstract.shortcut import dihedral_group
+from algebra.group.abstract.shortcut import dihedral_group, symmetric_group
+from algebra.group.homomorphism import GroupHomomorphism
 
 
 class TestHomomorphism(unittest.TestCase):
@@ -16,3 +17,12 @@ class TestHomomorphism(unittest.TestCase):
                 target += f
 
             self.assertEqual(target, element, 'factor check')
+
+    def test_trivial_hom(self):
+        domain = symmetric_group(8)
+        codomain = dihedral_group(4)
+        m = {
+            g: codomain.represent.identity
+            for g in domain.generator
+        }
+        GroupHomomorphism(domain, codomain, m)
