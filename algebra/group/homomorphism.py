@@ -1,8 +1,47 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, fields, field
 from typing import Dict, List
 
 from algebra.group.abstract.base import Group, GroupElement, GroupRep, T
 from algebra.group.abstract.permutation import PermutationGroupRep
+
+
+@dataclass
+class GroupDirectProductRep(PermutationGroupRep):
+    subgroup_list: List[GroupRep]
+
+    def __hash__(self):
+        return hash(f"GDPR{self.degree}")
+
+    def __init__(self, group_rep_list):
+        self.subgroup_list = group_rep_list
+
+        object_list = list(self._sub_object_list())
+        super().__init__(len(object_list))
+
+        self.object_map_right = dict(zip(object_list, self.object_list()))
+        self.object_map_left = dict(zip(self.object_list(), object_list))
+
+    def right_map(self, item: List[GroupElement]):
+        if len(item) != len(self.subgroup_list):
+            raise ValueError('Dimension not matched')
+
+        for i, g in zip(item, self.subgroup_list):
+            if i.group != g:
+                raise ValueError('Group not matched')
+
+        mapping = {}
+        map_right = self.object_map_right
+        for i in item:
+            for o1 in i.group.object_list():
+                o2 = i.act(o1)
+                if o1 != o2:
+                    mapping[map_right[o1]] = map_right[o2]
+
+        return self.element(mapping)
+
+    def _sub_object_list(self):
+        for subgroup in self.subgroup_list:
+            yield from subgroup.object_list()
 
 
 @dataclass
@@ -28,26 +67,28 @@ class GroupHomomorphism:
         if product_order != self.domain.order():
             raise ValueError('Mapping not Hom')
 
+    def image(self):
+        return self.codomain.represent.group(
+            *self.mapping.values()
+        )
+
     def as_direct_product(self) -> Group:
         # rep 생성
-        object_list = []
-        object_list.extend(self.domain.represent.object_list())
-        object_list.extend(self.codomain.represent.object_list())
-        group_rep = PermutationGroupRep(degree=len(object_list))
-        object_map = dict(zip(object_list, group_rep.object_list()))
+        group_rep = GroupDirectProductRep([
+            self.domain.represent,
+            self.codomain.represent
+        ])
 
-        generator = []
-
-        # mapping 치환하기
-        for target, source in self.mapping.items():
-            g = {}
-            g.update(self._scan_group(target, self.domain, object_map))
-            g.update(self._scan_group(source, self.codomain, object_map))
-            generator.append(group_rep.element(g))
+        # generator 생성
+        generator = [
+            group_rep.right_map(list(items))
+            for items in self.mapping.items()
+        ]
 
         return group_rep.group(*generator)
 
-    def _scan_group(self, element: GroupElement, group: Group, object_map):
+    @staticmethod
+    def _scan_group(element: GroupElement, group: Group, object_map):
         for o1 in group.represent.object_list():
             o2 = element.act(o1)
             if o1 != o2:

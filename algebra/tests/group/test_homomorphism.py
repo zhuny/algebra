@@ -25,4 +25,6 @@ class TestHomomorphism(unittest.TestCase):
             g: codomain.represent.identity
             for g in domain.generator
         }
-        GroupHomomorphism(domain, codomain, m)
+        hom = GroupHomomorphism(domain, codomain, m)
+        hom_image = hom.image()
+        self.assertEqual(hom_image.order(), 1)  # trivial group
