@@ -11,6 +11,19 @@ def _check_positive_integer(n: Any):
         raise ValueError("Positive integer should be given")
 
 
+def cyclic_group(n: int):
+    assert n < 20
+
+    rep = PermutationGroupRep(n)
+
+    if n == 1:
+        return rep.group()
+
+    return rep.group_([
+        [list(range(n))]
+    ])
+
+
 def symmetric_group(n: int):
     _check_positive_integer(n)
 

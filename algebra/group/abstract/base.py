@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from queue import Queue
-from typing import List, TypeVar, Generic, Set, Dict, Optional, Iterator
+from typing import List, TypeVar, Generic, Set, Dict, Optional, Iterator, Union
 
 T = TypeVar("T")
 
@@ -12,6 +12,9 @@ class GroupRep:
         raise NotImplementedError
 
     def object_list(self):
+        raise NotImplementedError
+
+    def check_object(self, o):
         raise NotImplementedError
 
     def element(self, *args):
@@ -67,7 +70,7 @@ class StabilizerTraveler:
                 for t in chain.transversal.values():
                     stack.append((
                         chain.stabilizer,
-                        element + t
+                        element + t.element
                     ))
 
 
@@ -77,14 +80,16 @@ class Group(Generic[T]):
     generator: List['GroupElement']
     _stabilizer_chain: Optional['StabilizerChain'] = None
 
+    def show(self):
+        print("Generator")
+        for g in self.generator:
+            print('-', g)
+
     def copy(self):
         return self.represent.group(*self.generator)
 
     def order(self):
         return self.stabilizer_chain().order
-
-    def object_list(self) -> List[T]:
-        raise NotImplementedError
 
     def element_list(self) -> Iterator['GroupElement']:
         return StabilizerTraveler(self).visit()
@@ -109,6 +114,8 @@ class Group(Generic[T]):
         return done
 
     def stabilizer(self, o: T) -> 'Group':
+        self.represent.check_object(o)
+
         done = set()
         queue = {o}
         transversal = {o: self.represent.identity}
@@ -129,22 +136,47 @@ class Group(Generic[T]):
 
         return Group(
             represent=self.represent,
-            generator=new_generator
+            generator=[
+                g
+                for g in new_generator
+                if not g.is_identity()
+            ]
         )
 
-    def stabilizer_chain(self) -> 'StabilizerChain':
-        if self._stabilizer_chain is not None:
-            return self._stabilizer_chain
+    def stabilizer_many(self, obj_list: List[T]) -> 'Group':
+        current = self
+        for obj in obj_list:
+            current = current.stabilizer(obj)
+        return current
 
-        chain = StabilizerChain(group=self.represent.group())
+    def stabilizer_chain(self, is_factor: bool = False) -> 'StabilizerChain':
+        if self._stabilizer_chain is not None:
+            # check factor info
+            if not is_factor or self._stabilizer_chain.is_factor:
+                return self._stabilizer_chain
+
+        chain = StabilizerChain(
+            group=self.represent.group(),
+            is_factor=is_factor
+        )
         obj_iter = ElementContainer(self.represent.object_list())
         for g in self.generator:
+            if is_factor:
+                g = ElementInfo(g, [g])
             chain.extend(g, obj_iter)
+
         self._stabilizer_chain = chain
         return chain
 
     def element_test(self, element: 'GroupElement'):
         return self.stabilizer_chain().element_test(element)
+
+    def factor(self, element: 'GroupElement'):
+        chain = self.stabilizer_chain(True)
+        if not self.element_test(element):
+            raise ValueError('Element not in the Group')
+
+        return chain.factor(element)
 
     def normal_closure(self, element_list: List['GroupElement']):
         for element in element_list:
@@ -242,6 +274,7 @@ class ElementContainer:
         for element in self.element_iter:
             if element in self.element_used:
                 continue
+
             acted_element = group_element.act(element)
             if acted_element != element:
                 self.element_used.add(element)
@@ -249,12 +282,49 @@ class ElementContainer:
 
 
 @dataclass
+class ElementInfo:
+    element: 'GroupElement'
+    factor: Optional[List['GroupElement']] = None
+
+    def __add__(self, other):
+        if not isinstance(other, ElementInfo):
+            raise TypeError('ElementInfo is required')
+
+        element = self.element + other.element
+        if self.factor is None or other.factor is None:
+            factor = None
+        else:
+            factor = self.factor + other.factor
+
+        return ElementInfo(element, factor)
+
+    def __sub__(self, other):
+        if not isinstance(other, ElementInfo):
+            raise TypeError('ElementInfo is required')
+
+        return self + (-other)
+
+    def __neg__(self):
+        if self.factor is None:
+            factor = None
+        else:
+            factor = [-f for f in self.factor]
+            factor.reverse()
+
+        return ElementInfo(-self.element, factor)
+
+
+@dataclass
 class StabilizerChain(Generic[T]):
     group: Group
     point: T = None
-    transversal: Dict[T, 'GroupElement'] = field(default_factory=dict)
+    transversal: Dict[T, ElementInfo] = field(default_factory=dict)
+    generator_factor: Dict['GroupElement', ElementInfo] = field(
+        default_factory=dict
+    )
     stabilizer: Optional['StabilizerChain'] = None
     depth: int = 0
+    is_factor: bool = False
 
     @property
     def order(self):
@@ -286,11 +356,27 @@ class StabilizerChain(Generic[T]):
                 return False
 
             t = stabilizer.transversal[base]
-            element -= t
-            # TODO : representation may be needed
+            element -= t.element
 
         # Unreachable
         return True
+
+    def factor(self, element: 'GroupElement') -> List['GroupElement']:
+        if element.is_identity():
+            return []
+
+        factor_list = []
+
+        for stabilizer in self.travel():
+            if stabilizer.point is None:
+                break
+
+            base = element.act(stabilizer.point)
+            info = stabilizer.transversal[base]
+            element -= info.element
+            factor_list.extend(info.factor)
+
+        return factor_list
 
     def show(self):
         for stack in self.travel():
@@ -298,29 +384,47 @@ class StabilizerChain(Generic[T]):
             print(f"Fixed Point : {stack.point}")
             print("Transversal")
             for k, t in stack.transversal.items():
-                print(f"  - {k} : {t}")
+                print(f"  - {k} : {t.element}")
             print("Group Generator")
             for g in stack.group.generator:
                 print(f"  - {g}")
             print()
 
-    def extend(self, alpha: 'GroupElement', next_object: ElementContainer):
+    def extend(self,
+               alpha: Union[ElementInfo, 'GroupElement'],
+               next_object: ElementContainer):
+        """
+        :param alpha: Inserted element
+        :param next_object: Object for permutation
+        :return:
+        """
+        if isinstance(alpha, GroupElement):
+            alpha = ElementInfo(alpha)
+
         # It is implementation of Schreier-Sims algorithm
-        if not self.element_test(alpha):  # Extend existing stabilizer chain
+        if not self.element_test(alpha.element):
+            # Extend existing stabilizer chain
             if self.is_trivial():  # we are on the bottom of the chain
                 # pick random object from base point
-                beta = self.point = next_object.get_next(alpha)
+                beta = self.point = next_object.get_next(alpha.element)
                 self.stabilizer = StabilizerChain(  # Add a new layer
                     group=self.group.represent.group(),
                     depth=self.depth + 1
                 )
-                self.group.generator.append(alpha)
-                self.transversal[beta] = self.group.represent.identity
-                delta = alpha.act(beta)
+                self.group.generator.append(alpha.element)
+                self.generator_factor[alpha.element] = alpha
+                self.transversal[beta] = ElementInfo(
+                    self.group.represent.identity,
+                    [] if self.is_factor else None
+                )
+
+                delta = alpha.element.act(beta)
                 s = alpha  # orbit algorithm for single generator group
+
                 while delta != beta:
                     self.transversal[delta] = s
-                    delta, s = alpha.act(delta), s + alpha
+                    delta, s = alpha.element.act(delta), s + alpha
+
                 self.stabilizer.extend(s, next_object)  # remove recursive
             else:
                 queue = Queue()
@@ -331,22 +435,22 @@ class StabilizerChain(Generic[T]):
                     delta, transversal, is_new = queue.get()
                     check_element = [alpha]
                     if is_new:
-                        check_element.extend(self.group.generator)
+                        check_element.extend(self.generator_factor.values())
 
                     for element in check_element:
-                        gamma = element.act(delta)
+                        gamma = element.element.act(delta)
                         if gamma not in self.transversal:
                             new_element = transversal + element
                             self.transversal[gamma] = new_element
                             queue.put((gamma, new_element, True))
                         else:
                             self.stabilizer.extend(
-                                transversal + element -
-                                self.transversal[gamma],
+                                transversal + element - self.transversal[gamma],
                                 next_object
                             )
 
-                self.group.generator.append(alpha)
+                self.group.generator.append(alpha.element)
+                self.generator_factor[alpha.element] = alpha
 
     def construct(self):
         new_group = self.group.copy()
