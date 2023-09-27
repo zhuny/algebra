@@ -235,7 +235,7 @@ class Group(Generic[T]):
 
     def is_normal(self, subgroup: 'Group'):
         for sub_gen in subgroup.generator:
-            if self.element_test(sub_gen):
+            if not self.element_test(sub_gen):
                 # Not subgroup
                 return False
             for gen in self.generator:
