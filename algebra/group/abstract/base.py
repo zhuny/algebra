@@ -1,3 +1,4 @@
+import random
 from dataclasses import dataclass, field
 from queue import Queue
 from typing import List, TypeVar, Generic, Set, Dict, Optional, Iterator, Union
@@ -171,6 +172,15 @@ class Group(Generic[T]):
     def element_test(self, element: 'GroupElement'):
         return self.stabilizer_chain().element_test(element)
 
+    def random_element(self) -> 'GroupElement':
+        element = self.represent.identity
+        for stabilizer in self.stabilizer_chain().travel():
+            if stabilizer.is_trivial():
+                break
+            info = random.choice(list(stabilizer.transversal.values()))
+            element += info.element
+        return element
+
     def factor(self, element: 'GroupElement'):
         chain = self.stabilizer_chain(True)
         if not self.element_test(element):
@@ -225,9 +235,13 @@ class Group(Generic[T]):
 
     def is_normal(self, subgroup: 'Group'):
         for sub_gen in subgroup.generator:
+            if not self.element_test(sub_gen):
+                # Not subgroup
+                return False
             for gen in self.generator:
                 conjugate = gen + sub_gen - gen
                 if not subgroup.element_test(conjugate):
+                    # Not normal
                     return False
         return True
 
