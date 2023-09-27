@@ -1,7 +1,7 @@
-from dataclasses import dataclass, fields, field
+from dataclasses import dataclass
 from typing import Dict, List
 
-from algebra.group.abstract.base import Group, GroupElement, GroupRep, T
+from algebra.group.abstract.base import Group, GroupElement, GroupRep
 from algebra.group.abstract.permutation import PermutationGroupRep
 
 
