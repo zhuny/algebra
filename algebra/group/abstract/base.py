@@ -235,9 +235,13 @@ class Group(Generic[T]):
 
     def is_normal(self, subgroup: 'Group'):
         for sub_gen in subgroup.generator:
+            if self.element_test(sub_gen):
+                # Not subgroup
+                return False
             for gen in self.generator:
                 conjugate = gen + sub_gen - gen
                 if not subgroup.element_test(conjugate):
+                    # Not normal
                     return False
         return True
 

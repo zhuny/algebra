@@ -54,3 +54,4 @@ class TestHomomorphism(unittest.TestCase):
 
         self.assertEqual(hom.image().order(), 2)
         self.assertEqual(hom.kernel().order(), 20_160)
+        self.assertTrue(domain.is_normal(hom.kernel()))
