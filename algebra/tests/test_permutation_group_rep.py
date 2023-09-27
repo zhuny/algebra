@@ -170,6 +170,10 @@ class TestPermutationGroupRep(unittest.TestCase):
                 len(stabilizer.transversal) > 1
             )
 
+        for i in range(30):
+            random_element = group.random_element()
+            self.assertTrue(group.element_test(random_element))
+
     def test_normal_closure_10(self):
         """
         Test normal closure using S_10
