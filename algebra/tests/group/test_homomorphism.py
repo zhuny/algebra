@@ -1,6 +1,5 @@
 import unittest
 
-from algebra.group.abstract.base import ElementInfo
 from algebra.group.abstract.shortcut import dihedral_group, symmetric_group, \
     cyclic_group, alternative_group
 from algebra.group.homomorphism import GroupHomomorphism
