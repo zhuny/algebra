@@ -1,3 +1,4 @@
+import collections
 import random
 from dataclasses import dataclass, field
 from queue import Queue
@@ -308,7 +309,7 @@ class ElementInfo:
         if self.factor is None or other.factor is None:
             factor = None
         else:
-            factor = self.factor + other.factor
+            factor = self._normalize_factor(self.factor + other.factor)
 
         return ElementInfo(element, factor)
 
@@ -326,6 +327,40 @@ class ElementInfo:
             factor.reverse()
 
         return ElementInfo(-self.element, factor)
+
+    def show(self):
+        print(self.element)
+        if self.factor is not None:
+            for factor in self.factor:
+                print('-', factor)
+            print('-', len(self.factor))
+
+    def length(self):
+        return len(self.factor) if self.factor else 0
+
+    def _normalize_factor(self, factor_list):
+        factor_count = []
+
+        for factor in factor_list:
+            if factor_count and (factor_count[-1][0] - factor).is_identity():
+                factor_count[-1][1] += 1
+            elif factor_count and (factor_count[-1][0] + factor).is_identity():
+                factor_count[-1][1] -= 1
+            else:
+                factor_count.append([factor, 1])
+            if factor_count[-1][1] == 0:
+                factor_count.pop()
+
+        factor_result = []
+        for factor, count in factor_count:
+            order_it = count % factor.order()
+            order_left = -count % factor.order()
+
+            if order_it > order_left:
+                order_it = order_left
+                factor = -factor
+            factor_result.extend([factor] * order_it)
+        return factor_result
 
 
 @dataclass
@@ -379,7 +414,10 @@ class StabilizerChain(Generic[T]):
         if element.is_identity():
             return []
 
-        factor_list = []
+        factor_info = ElementInfo(
+            self.group.represent.identity,
+            []
+        )
 
         for stabilizer in self.travel():
             if stabilizer.point is None:
@@ -388,9 +426,9 @@ class StabilizerChain(Generic[T]):
             base = element.act(stabilizer.point)
             info = stabilizer.transversal[base]
             element -= info.element
-            factor_list.extend(info.factor)
+            factor_info += info
 
-        return factor_list
+        return factor_info.factor
 
     def show(self):
         for stack in self.travel():
@@ -423,7 +461,8 @@ class StabilizerChain(Generic[T]):
                 beta = self.point = next_object.get_next(alpha.element)
                 self.stabilizer = StabilizerChain(  # Add a new layer
                     group=self.group.represent.group(),
-                    depth=self.depth + 1
+                    depth=self.depth + 1,
+                    is_factor=self.is_factor
                 )
                 self.group.generator.append(alpha.element)
                 self.generator_factor[alpha.element] = alpha
@@ -445,23 +484,43 @@ class StabilizerChain(Generic[T]):
                 for delta, transversal in self.transversal.items():
                     queue.put((delta, transversal, False))
 
+                new_orbit = collections.defaultdict(list)
+
                 while queue.qsize() > 0:
                     delta, transversal, is_new = queue.get()
                     check_element = [alpha]
                     if is_new:
-                        check_element.extend(self.generator_factor.values())
+                        for generator in self.generator_factor.values():
+                            check_element.append(generator)
+                            check_element.append(-generator)
 
                     for element in check_element:
                         gamma = element.element.act(delta)
+                        new_element = transversal + element
+
                         if gamma not in self.transversal:
-                            new_element = transversal + element
-                            self.transversal[gamma] = new_element
-                            queue.put((gamma, new_element, True))
+                            if gamma not in new_orbit:
+                                queue.put((gamma, new_element, True))
+                            new_orbit[gamma].append(new_element)
                         else:
                             self.stabilizer.extend(
-                                transversal + element - self.transversal[gamma],
+                                new_element - self.transversal[gamma],
                                 next_object
                             )
+
+                for gamma, new_element_list in new_orbit.items():
+                    new_element = min(
+                        new_element_list,
+                        key=lambda e: e.length()
+                    )
+                    self.transversal[gamma] = new_element
+                    for another_element in new_element_list:
+                        if new_element == another_element:
+                            continue
+                        self.stabilizer.extend(
+                            another_element - new_element,
+                            next_object
+                        )
 
                 self.group.generator.append(alpha.element)
                 self.generator_factor[alpha.element] = alpha

@@ -123,9 +123,8 @@ class TestPermutationGroupRep(unittest.TestCase):
 
     def test_rubik_cube(self):
         perm = PermutationGroupRep(54)
-        ol = list(perm.object_list())
 
-        generator_index = [
+        group = perm.group_([
             [
                 [0, 2, 8, 6], [1, 5, 7, 3], [18, 45, 29, 38],
                 [19, 46, 28, 37], [20, 47, 27, 36]
@@ -150,12 +149,7 @@ class TestPermutationGroupRep(unittest.TestCase):
                 [2, 29, 17, 26], [5, 32, 14, 23], [8, 35, 11, 20],
                 [45, 47, 53, 51], [46, 50, 52, 48]
             ]
-        ]
-        generator = [
-            self.from_num(perm, ol, index) for index in generator_index
-        ]
-
-        group = perm.group(*generator)
+        ])
 
         # Check order of Rubik's Cube
         self.assertEqual(
