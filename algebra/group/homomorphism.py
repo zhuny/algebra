@@ -86,6 +86,21 @@ class GroupHomomorphism:
         if product_order != self.domain.order():
             raise ValueError('Mapping not Hom')
 
+    def value(self, element):
+        if not self.domain.element_test(element):
+            raise ValueError('Not Element of domain')
+
+        value = self.codomain.represent.identity
+
+        mapping = {}
+        for g, h in self.mapping.items():
+            mapping[g] = h
+            mapping[-g] = -h
+
+        for f in self.domain.factor(element):
+            value += mapping[f]
+        return value
+
     def kernel(self) -> 'Group':
         direct = self.as_direct_product()
         stabilizer = direct.stabilizer_many([
