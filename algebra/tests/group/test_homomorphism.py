@@ -1,5 +1,6 @@
 import unittest
 
+from algebra.group.abstract.base import ElementInfo
 from algebra.group.abstract.shortcut import dihedral_group, symmetric_group, \
     cyclic_group, alternative_group
 from algebra.group.homomorphism import GroupHomomorphism
@@ -8,16 +9,35 @@ from algebra.group.homomorphism import GroupHomomorphism
 class TestHomomorphism(unittest.TestCase):
     def test_factor(self):
         g = dihedral_group(10)
+
+        generator_with_inv = []
+        for generator in g.generator:
+            generator_with_inv.append(generator)
+            generator_with_inv.append(-generator)
+
         for element in g.element_list():
             # 모두 합쳐서 값이 맞는지 확인
             target = g.represent.identity
 
             for f in g.factor(element):
                 # generator만 나왔는지 확인
-                self.assertIn(f, g.generator, 'generator only')
+                self.assertIn(f, generator_with_inv, 'generator only')
                 target += f
 
             self.assertEqual(target, element, 'factor check')
+
+    def test_factor_symmetric(self):
+        g = symmetric_group(10)
+        total_count = 30
+        total_factor_length = 0
+
+        for _ in range(total_count):
+            element = g.random_element()
+            factor_list = g.factor(element)
+            total_factor_length += len(factor_list)
+
+        print(f'average length : {total_factor_length / total_count}')
+        print(g.order())
 
     def test_trivial_hom(self):
         domain = symmetric_group(8)
