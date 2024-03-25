@@ -58,7 +58,7 @@ class DisjointSet:
         return list(root_collect.values())
 
 
-class FinestBlockSystem:
+class MinimalBlockSystem:
     def __init__(self, group):
         self.group: Group = group
 
@@ -72,7 +72,7 @@ class FinestBlockSystem:
 
     def calculate(self):
         min_system_size = 0
-        finest_block_system = None
+        minimal_block_system = None
 
         # calculate finest block system for each seed
         ol = self.group.represent.object_list()
@@ -80,9 +80,9 @@ class FinestBlockSystem:
             block_system = self._block_system_with_seed(pair)
             if min_system_size < len(block_system):
                 min_system_size = len(block_system)
-                finest_block_system = block_system
+                minimal_block_system = block_system
 
-        return finest_block_system
+        return minimal_block_system
 
     def _block_system_with_seed(self, seed_set):
         ds = DisjointSet(self.group.represent.object_list())
