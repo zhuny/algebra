@@ -273,6 +273,11 @@ class Group(Generic[T]):
     def g_quotients(self, others: 'Group'):
         pass
 
+    def finest_block_system(self):
+        from algebra.group.block_system import FinestBlockSystem
+
+        return FinestBlockSystem(self).calculate()
+
 
 class ElementContainer:
     def __init__(self, element_list):
