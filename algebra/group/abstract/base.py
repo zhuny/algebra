@@ -72,7 +72,7 @@ class StabilizerTraveler:
                 for t in chain.transversal.values():
                     stack.append((
                         chain.stabilizer,
-                        element + t.element
+                        t.element + element
                     ))
 
 
@@ -179,7 +179,7 @@ class Group(Generic[T]):
             if stabilizer.is_trivial():
                 break
             info = random.choice(list(stabilizer.transversal.values()))
-            element += info.element
+            element = info.element + element
         return element
 
     def factor(self, element: 'GroupElement'):
@@ -277,6 +277,17 @@ class Group(Generic[T]):
         from algebra.group.block_system import MinimalBlockSystem
 
         return MinimalBlockSystem(self).calculate()
+
+    def sylow_group(self, p):
+        from algebra.group.sylow_group import SylowGroupCalculation
+
+        return SylowGroupCalculation(self, p).calculate()
+
+    def is_p_group(self, p):
+        order = self.order()
+        while order % p == 0:
+            order //= p
+        return order == 1
 
 
 class ElementContainer:
@@ -555,12 +566,24 @@ class GroupElement(Generic[T]):
     def order(self) -> int:
         raise NotImplementedError
 
+    def pow(self, p: int) -> 'GroupElement':
+        # TODO: 더 좋은 방법이 있을 것이다.
+        if p == 0:
+            return self.group.identity
+
+        element = self if p > 0 else -self
+        p = abs(p)
+
+        value = element
+        for i in range(1, p):
+            value += element
+        return value
+
     def act(self, o: T) -> T:
-        # raise NotImplementedError
         """
         "Group Action" on some Set and T is a element of the set.
 
         :param o: Element on T
         :return: Another T
         """
-        pass
+        raise NotImplementedError
