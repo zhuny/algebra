@@ -99,19 +99,7 @@ class ODRadical(RingBase):
         return min(self.key_list())
 
     def minimum_polynomial(self):
-        rrp = RowReducePolynomial()
-        rrp.append(self.from_number(1, 1))
-
-        current = self
-        degree = set()
-        for i in itertools.count(1):
-            rrp.append(current)
-            degree.update(current.key_list())
-            current *= self
-
-            if len(degree) == i:
-                break
-
+        rrp = RowReducePolynomial(self)
         return rrp.reduce()
 
     def key_list(self):
@@ -196,13 +184,26 @@ class ODRadicalElement:
 
 
 class RowReducePolynomial:
-    def __init__(self):
+    def __init__(self, number):
         self.body: list[Row] = []
+        self.number = number
 
     def append(self, number: ODRadical):
         self.body.append(Row(len(self.body), number))
 
     def reduce_iter(self):
+        yield self.append(self.number.from_number(1, 1))
+
+        current = self.number
+        degree = set()
+        for i in itertools.count(1):
+            yield self.append(current)
+            degree.update(current.key_list())
+            current *= self
+
+            if len(degree) == i:
+                break
+
         for row1, row2 in itertools.combinations(self.body, 2):
             key = row1.number.min_key()
             num1 = row1.number.get(key)
