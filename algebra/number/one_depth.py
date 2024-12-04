@@ -199,7 +199,7 @@ class RowReducePolynomial:
         for i in itertools.count(1):
             yield self.append(current)
             degree.update(current.key_list())
-            current *= self
+            current *= self.number
 
             if len(degree) == i:
                 break
