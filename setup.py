@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='algebra',
-    version='0.0.1',
+    version='0.0.2',
     description='Symbolic Algebra Implementation',
     url='git@github.com:zhuny/algebra',
     author='Jihun Yang',
