@@ -18,11 +18,9 @@ class RingBase:
         return self * other
 
     def __eq__(self, other):
-        print("HI EQ")
         return (self - other).is_zero()
 
     def __ne__(self, other):
-        print("HI EQ")
         return not (self == other)
 
     def is_zero(self):

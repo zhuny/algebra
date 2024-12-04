@@ -23,3 +23,12 @@ class TestRadicalMultiply(unittest.TestCase):
 
         self.assertEqual(min_poly.degree, 15)
         self.assertTrue(min_poly(r).is_zero())
+
+    def test_sqrt_radical(self):
+        a1 = ODRadical.from_number(8, root=2)
+        r = a1 * a1
+
+        print(a1)
+
+        self.assertTrue(2 in a1.body[0].power)
+        self.assertTrue(r == 8)

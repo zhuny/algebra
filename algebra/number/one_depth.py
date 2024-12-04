@@ -1,6 +1,5 @@
 import collections
 import itertools
-import math
 from dataclasses import dataclass
 from fractions import Fraction
 from typing import Any, Union
@@ -42,7 +41,7 @@ class ElementMerger:
         return ODRadical(body=result)
 
 
-@dataclass
+@dataclass(eq=False)
 class ODRadical(RingBase):
     body: list['ODRadicalElement']
 
@@ -131,9 +130,10 @@ class ODRadicalElement:
         power_dict = {}
 
         for k, v in factorize(number).items():
-            if v > root:
+            if v >= root:
                 multiply *= pow(k, v // root)
                 v %= root
+
             power_dict[k] = Fraction(1, root)
 
         return cls(
@@ -171,11 +171,13 @@ class ODRadicalElement:
             for p, e in itertools.chain(self.power.items(),
                                         other.power.items()):
                 power_dict[p] += e
-            multiply = self.multiply
+
+            multiply = self.multiply * other.multiply
             for p, e in power_dict.items():
                 if 1 <= e:
                     multiply *= pow(p, int(e))
                     power_dict[p] = e % 1
+
             return ODRadicalElement(
                 multiply=multiply,
                 power=remove_zero(power_dict)
