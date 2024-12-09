@@ -1,3 +1,7 @@
+from dataclasses import dataclass
+from typing import List, Any
+
+
 class RingBase:
     def __add__(self, other):
         raise NotImplementedError(self)
@@ -25,3 +29,9 @@ class RingBase:
 
     def is_zero(self):
         raise NotImplementedError(self)
+
+
+@dataclass
+class CalculationStep:
+    name: str
+    argv: List[Any]

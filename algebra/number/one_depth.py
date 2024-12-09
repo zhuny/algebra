@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 from typing import Any, Union
 
-from algebra.number.base import RingBase
+from algebra.number.base import RingBase, CalculationStep
 from algebra.number.types import NumberType, Number
 from algebra.number.util import factorize
 from algebra.polynomial.polynomial import Polynomial
@@ -86,6 +86,19 @@ class ODRadical(RingBase):
         else:
             raise TypeError("Unknown Type")
 
+    def __truediv__(self, other):
+        upper = self
+        lower: ODRadical = other
+
+        while True:
+            if lower.is_integer():
+                return upper * (1 / lower.get_integer())
+
+            left, right, key = lower._split(False)
+            mul = left - right
+            upper *= mul
+            lower *= mul
+
     def is_zero(self):
         return len(self.body) == 0
 
@@ -105,6 +118,143 @@ class ODRadical(RingBase):
     def key_list(self):
         for element in self.body:
             yield element.key
+
+    def is_integer(self):
+        if len(self.body) > 1:
+            return False
+
+        for element in self.body:
+            if element.key == ():
+                return True
+            else:
+                return False
+
+        return True
+
+    def get_integer(self):
+        assert self.is_integer()
+        for element in self.body:
+            return element.multiply
+
+    def _split(self, pop=True):
+        key = self._get_any_root()
+        left = ODRadical([])
+        right = ODRadical([])
+
+        for body in self.body:
+            if key in body.power:
+                if pop:
+                    body = body.pop(key)
+                right.body.append(body)
+            else:
+                left.body.append(body)
+
+        return left, right, key
+
+    def _get_any_root(self):
+        for element in self.body:
+            for key in element.power:
+                if key > 1:
+                    return key
+
+        raise ValueError("Maybe Integer")
+
+    def _is_all_positive(self):
+        for element in self.body:
+            if element.multiply < 0:
+                return False
+        return True
+
+    def _is_all_negative(self):
+        for element in self.body:
+            if element.multiply > 0:
+                return False
+        return True
+
+    def is_positive(self):
+        current = self
+
+        while True:
+            if current._is_all_positive():
+                return True
+            elif current._is_all_negative():
+                return False
+
+            left, right, key = current._split()
+
+            left_positive = left.is_positive()
+            right_positive = right.is_positive()
+
+            if left_positive and right_positive:
+                return True
+            if not (left_positive or right_positive):
+                return False
+
+            d = left * left - right * right * key
+            if left_positive:
+                current = d
+            else:
+                current = -d
+
+    def __ceil__(self):
+        if self.is_integer():
+            return self.get_integer()
+
+        if self.is_positive():
+            start = 0
+            end = None
+        else:
+            start = None
+            end = 0
+
+        bs = BinarySearch(start, end)
+        while bs.is_long():
+            mid = bs.get_middle()
+            if (self - mid).is_positive():
+                bs.set_start(mid)
+            else:
+                bs.set_end(mid)
+
+        return bs.start
+
+
+class ProgrammingError(Exception):
+    pass
+
+
+class BinarySearch:
+    def __init__(self, start: int, end: int):
+        self.start = start
+        self.end = end
+
+        self.search_limit = 100
+
+    def set_start(self, start):
+        self.start = start
+
+    def set_end(self, end):
+        self.end = end
+
+    def is_long(self) -> bool:
+        return (
+            self.start is None or
+            self.end is None or
+            self.end - self.start > 1
+        )
+
+    def get_middle(self):
+        if self.start is None:
+            if self.end == 0:
+                return -1
+            else:
+                return self.end * 2
+        elif self.end is None:
+            if self.start == 0:
+                return 1
+            else:
+                return self.start * 2
+        else:
+            return (self.start + self.end) // 2
 
 
 @dataclass
@@ -132,6 +282,11 @@ class ODRadicalElement:
     @classmethod
     def wrap_number(cls, number):
         return cls(multiply=number, power={})
+
+    def pop(self, key):
+        power = dict(self.power)
+        power.pop(key, None)
+        return ODRadicalElement(self.multiply, power)
 
     def __str__(self):
         sign = '+' if self.multiply > 0 else '-'
@@ -192,12 +347,18 @@ class RowReducePolynomial:
         self.body.append(Row(len(self.body), number))
 
     def reduce_iter(self):
-        yield self.append(self.number.from_number(1, 1))
+        yield CalculationStep(
+            name="Add",
+            argv=[self.append(self.number.from_number(1, 1))]
+        )
 
         current = self.number
         degree = set()
         for i in itertools.count(1):
-            yield self.append(current)
+            yield CalculationStep(
+                name="Add",
+                argv=[self.append(current)]
+            )
             degree.update(current.key_list())
             current *= self.number
 
@@ -212,7 +373,10 @@ class RowReducePolynomial:
                 continue
 
             row2.sub(row1, num2 / num1)
-            yield
+            yield CalculationStep(
+                name="Sub",
+                argv=[row1, row2]
+            )
 
     def reduce(self):
         for _ in self.reduce_iter():
