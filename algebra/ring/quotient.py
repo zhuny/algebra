@@ -73,3 +73,8 @@ class QuotientRingElement(RingElement):
             ring=self.ring,
             element=self.element * other.element
         )
+
+    def __eq__(self, other):
+        return self.ring.ideal.is_equivalent(
+            self.element, other.element
+        )

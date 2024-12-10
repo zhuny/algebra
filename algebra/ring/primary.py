@@ -1,7 +1,7 @@
 import functools
 import math
 from dataclasses import dataclass
-from typing import TypeVar, Generic, Type, Any
+from typing import Type, Any
 
 from algebra.ring.base import Ring, RingElement
 from algebra.ring.quotient import Ideal
@@ -18,16 +18,17 @@ class BuiltinWrapRingElement(RingElement):
         return self.value == 1
 
     def __add__(self, other):
-        cls: Type[BuiltinWrapRingElement] = type(self)
-        return cls(ring=self.ring, value=self.value + other.value)
+        return self._wrap_it(self.value + other.value)
 
     def __neg__(self):
-        cls: Type[BuiltinWrapRingElement] = type(self)
-        return cls(ring=self.ring, value=-self.value)
+        return self._wrap_it(-self.value)
 
     def __mul__(self, other):
+        return self._wrap_it(self.value * other.value)
+
+    def _wrap_it(self, value):
         cls: Type[BuiltinWrapRingElement] = type(self)
-        return cls(ring=self.ring, value=self.value * other.value)
+        return cls(ring=self.ring, value=value)
 
 
 ################
