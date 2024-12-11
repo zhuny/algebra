@@ -6,6 +6,12 @@ class Field:
     def element(self, *args) -> 'FieldElement':
         raise NotImplementedError(self)
 
+    def zero(self):
+        raise NotImplementedError(self)
+
+    def one(self):
+        raise NotImplementedError(self)
+
 
 @dataclass
 class FieldElement:

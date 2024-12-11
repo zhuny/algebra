@@ -12,11 +12,23 @@ class Ring:
     def one(self):
         raise NotImplementedError(self)
 
-    def __truediv__(self, other):
+    def __truediv__(self, ideal):
         from algebra.ring.quotient import Ideal, QuotientRing
-        assert isinstance(other, Ideal)
 
-        return QuotientRing(parent=self, ideal=other)
+        if not isinstance(ideal, Ideal):
+            raise TypeError("Ideal should be given")
+
+        return QuotientRing(parent=self, ideal=ideal)
+
+    def ideal(self, element_list: list['RingElement']):
+        for element in element_list:
+            if element.ring != self:
+                raise ValueError("Elements should be element of self")
+
+        return self._build_ideal(element_list)
+
+    def _build_ideal(self, element_list: list['RingElement']):
+        raise NotImplementedError(self)
 
 
 @dataclass
