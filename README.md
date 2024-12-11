@@ -11,7 +11,7 @@
 
 ### Install
 ```
-pip install ssh+git://github.com/zhuny/algebra
+pip install ssh+https://github.com/zhuny/algebra
 ```
 
 ### Dev
