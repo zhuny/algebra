@@ -3,6 +3,7 @@ from fractions import Fraction
 from typing import List, Dict
 
 from algebra.number.types import Number, NumberType
+from algebra.ring.base import Ring, RingElement
 from algebra.util.zero_dict import ZeroValueSkip
 
 
@@ -47,7 +48,7 @@ class Monomial:
 
 
 @dataclass
-class MultiVariableElement:
+class MultiVariableElement(RingElement):
     ring: 'MultiVariableRing'
     coefficient: Dict[Monomial, Number] = field(default_factory=dict)
 
@@ -192,7 +193,7 @@ class MultiVariableElement:
 
 
 @dataclass(unsafe_hash=True)
-class MultiVariableRing:
+class MultiVariableRing(Ring):
     # TODO: variable name
     # TODO: setting monomial ordering. Now, use lexical order
     number: int  # the number of variables.

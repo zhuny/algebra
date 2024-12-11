@@ -1,22 +1,40 @@
 import collections
 import functools
 import itertools
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from fractions import Fraction
 from operator import itemgetter
 from typing import List, Dict, Union
 
+from algebra.field.base import Field
 from algebra.matrix.matrix import Matrix
 from algebra.number.types import NumberType, Number
 from algebra.number.util import lcm, divisor_function, divisor_list
+from algebra.ring.base import Ring, RingElement
 
 
-@dataclass(init=False)
-class Polynomial:
-    body: Dict[int, Number]
-    degree: int
+class PolynomialRing(Ring):
+    field: 'Field'
+    name: str
 
-    def __init__(self, body: Union[List[Number], Dict[int, Number]] = None):
+    def element(self, ring_input):
+        return Polynomial(
+            body=ring_input,
+            ring=self
+        )
+
+
+@dataclass
+class Polynomial(RingElement):
+    body: Dict[int, Number] = field(default_factory=dict)
+    degree: int = 0
+    ring: PolynomialRing = None
+
+    def __post_init__(self):
+        if self.ring is None:
+            raise ValueError()
+
+        body = self.body
         if body is None:
             body = {}
         elif isinstance(body, list):
