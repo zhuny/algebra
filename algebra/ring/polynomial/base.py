@@ -6,6 +6,8 @@ from typing import List
 
 from algebra.field.base import Field, FieldElement
 from algebra.ring.base import Ring, RingElement
+from algebra.ring.polynomial.naming import VariableNameGenerator, \
+    VariableNameListGenerator, VariableNameIndexGenerator
 from algebra.ring.quotient import Ideal, QuotientRing, QuotientRingElement
 from algebra.util.decorator import iter_to_str
 
@@ -29,7 +31,7 @@ class PolynomialRing(Ring):
             if self.number <= 3:
                 self.naming = VariableNameListGenerator('xyz')
             else:
-                self.naming = VariableNameListGenerator('abc')
+                self.naming = VariableNameIndexGenerator('x')
         if not self.naming.check_range(self.number):
             raise ValueError('Invalid naming range')
 
@@ -291,33 +293,3 @@ class PolynomialQuotientRing(QuotientRing):
 class PolynomialQuotientRingElement(QuotientRingElement):
     def minimal_polynomial(self):
         print(self.element)
-
-
-class VariableNameGenerator:
-    def get(self, index: int) -> str:
-        raise NotImplementedError(self)
-
-    def check_range(self, length: int) -> bool:
-        raise NotImplementedError(self)
-
-
-class VariableNameListGenerator(VariableNameGenerator):
-    def __init__(self, name_list):
-        self.name_list: list[str] = list(name_list)
-
-    def get(self, index) -> str:
-        return self.name_list[index]
-
-    def check_range(self, length) -> bool:
-        return length <= len(self.name_list)
-
-
-class VariableNameIndexGenerator(VariableNameGenerator):
-    def __init__(self, name):
-        self.name = name
-
-    def get(self, index: int) -> str:
-        return f'{self.name}{index}'
-
-    def check_range(self, length) -> bool:
-        return True
