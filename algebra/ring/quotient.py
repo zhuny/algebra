@@ -36,7 +36,7 @@ class QuotientRing(Ring):
         return self.element(1)
 
 
-@dataclass
+@dataclass(eq=False)
 class QuotientRingElement(RingElement):
     ring: QuotientRing
     element: RingElement

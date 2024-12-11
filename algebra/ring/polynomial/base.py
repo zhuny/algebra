@@ -286,8 +286,9 @@ class PolynomialQuotientRing(QuotientRing):
         return PolynomialQuotientRingElement(ring=self, element=parent.element)
 
 
-@dataclass
+@dataclass(eq=False)
 class PolynomialQuotientRingElement(QuotientRingElement):
     def minimal_polynomial(self):
-        print(self.element)
-        print(self.ring)
+        pass
+        # print(self.element)
+        # print(self.ring)

@@ -40,7 +40,6 @@ class TestPolynomial(unittest.TestCase):
         f2 = x + y + z
         self.assertEqual(str(f2), 'x+y+z')
 
-    @unittest.skip
     def test_quotient(self):
         pr = PolynomialRing(field=RationalField())
         f = pr.element([1, 0, 1])
