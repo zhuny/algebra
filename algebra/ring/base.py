@@ -12,6 +12,14 @@ class Ring:
     def one(self):
         raise NotImplementedError(self)
 
+    def __truediv__(self, ideal):
+        from algebra.ring.quotient import Ideal, QuotientRing
+
+        if not isinstance(ideal, Ideal):
+            raise TypeError("Ideal should be given")
+
+        return QuotientRing(parent=self, ideal=ideal)
+
 
 @dataclass
 class RingElement:
