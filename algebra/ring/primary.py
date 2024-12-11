@@ -44,7 +44,9 @@ class IntegerRing(Ring):
     def one(self):
         return self.element(1)
 
-    def ideal(self, element_list):
+    def _build_ideal(self,
+                     element_list: list['IntegerRingElement']
+                     ) -> 'IntegerIdeal':
         return IntegerIdeal(
             ring=self,
             generator=element_list

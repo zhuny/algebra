@@ -20,6 +20,16 @@ class Ring:
 
         return QuotientRing(parent=self, ideal=ideal)
 
+    def ideal(self, element_list: list['RingElement']):
+        for element in element_list:
+            if element.ring != self:
+                raise ValueError("Elements should be element of self")
+
+        return self._build_ideal(element_list)
+
+    def _build_ideal(self, element_list: list['RingElement']):
+        raise NotImplementedError(self)
+
 
 @dataclass
 class RingElement:
