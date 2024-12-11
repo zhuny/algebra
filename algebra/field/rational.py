@@ -30,10 +30,13 @@ class RationalFieldElement(FieldElement):
         return self._wrap(-self.value)
 
     def __mul__(self, other):
-        if not isinstance(other, RationalFieldElement):
+        if isinstance(other, (int, Fraction)):
+            return self._wrap(self.value * other)
+        elif isinstance(other, RationalFieldElement):
+            self._check_type(other)
+            return self._wrap(self.value * other.value)
+        else:
             return NotImplemented
-        self._check_type(other)
-        return self._wrap(self.value * other.value)
 
     def inverse(self):
         return self._wrap(1 / self.value)
@@ -43,6 +46,9 @@ class RationalFieldElement(FieldElement):
             return self.value == other.value
         else:
             return self.value == other
+
+    def is_zero(self):
+        return self.value == 0
 
     def _wrap(self, number):
         return RationalFieldElement(field=self.field, value=Fraction(number))

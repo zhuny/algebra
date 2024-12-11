@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Type
 
 from algebra.ring.base import Ring, RingElement
 
@@ -21,22 +22,18 @@ class QuotientRing(Ring):
     ideal: Ideal
 
     def element(self, *args):
-        return QuotientRingElement(
-            ring=self,
-            element=self.parent.element(*args)
-        )
+        if len(args) == 1 and isinstance(args[0], RingElement):
+            element = args[0]
+        else:
+            element = self.parent.element(*args)
+
+        return QuotientRingElement(ring=self, element=element)
 
     def zero(self):
-        return QuotientRingElement(
-            ring=self,
-            element=self.parent.zero()
-        )
+        return self.element(0)
 
     def one(self):
-        return QuotientRingElement(
-            ring=self,
-            element=self.parent.one()
-        )
+        return self.element(1)
 
 
 @dataclass

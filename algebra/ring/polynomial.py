@@ -1,11 +1,12 @@
 import collections
 import itertools
 from dataclasses import dataclass
+from fractions import Fraction
 from typing import List
 
 from algebra.field.base import Field, FieldElement
 from algebra.ring.base import Ring, RingElement
-from algebra.ring.quotient import Ideal
+from algebra.ring.quotient import Ideal, QuotientRing, QuotientRingElement
 from algebra.util.decorator import iter_to_str
 
 
@@ -17,6 +18,10 @@ class PolynomialRing(Ring):
 
     def __hash__(self) -> int:
         return id(self)
+
+    def __truediv__(self, ideal: 'PolynomialIdeal') -> 'PolynomialQuotientRing':
+        super().__truediv__(ideal)  # 타입 확인 용
+        return PolynomialQuotientRing(parent=self, ideal=ideal)
 
     def __post_init__(self):
         # Define and check naming
@@ -42,6 +47,17 @@ class PolynomialRing(Ring):
             coefficient_map[power_monomial] = self.field.element(coefficient)
 
         return PolynomialRingElement(ring=self, value=coefficient_map)
+
+    def variables(self):
+        for i in range(self.number):
+            power = [0] * self.number
+            power[i] = 1
+            yield PolynomialRingElement(
+                ring=self,
+                value={
+                    Monomial(power=power, ring=self): self.field.one()
+                }
+            )
 
     def _build_ideal(self,
                      element_list: list['PolynomialRingElement']
@@ -74,7 +90,7 @@ class PolynomialRingElement(RingElement):
         if self.value:
             self._degree = max(self.value)
         else:
-            self._degree = Monomial(ring=self.ring, power=[0]*self.ring.number)
+            self._degree = self.constant_monomial()
 
     @iter_to_str
     def __str__(self):
@@ -103,13 +119,22 @@ class PolynomialRingElement(RingElement):
             is_first = False
 
     def __add__(self, other):
+        if not isinstance(other, (int, Fraction, PolynomialRingElement)):
+            return NotImplemented
+
         value_map = collections.defaultdict(self.ring.field.zero)
 
         for pow1, coef1 in itertools.chain(self.value.items(),
-                                           other.value.items()):
+                                           self._wrap_iter(other)):
             value_map[pow1] += coef1
 
         return PolynomialRingElement(ring=self.ring, value=value_map)
+
+    def _wrap_iter(self, other):
+        if isinstance(other, (int, Fraction)):
+            yield self.constant_monomial(), self.ring.field.element(other)
+        elif isinstance(other, PolynomialRingElement):
+            yield from other.value.items()
 
     def __neg__(self):
         return PolynomialRingElement(
@@ -135,6 +160,18 @@ class PolynomialRingElement(RingElement):
 
     def __rmul__(self, other):
         return self * other
+
+    def __truediv__(self, other):
+        if isinstance(other, (int, Fraction)):
+            other = self.ring.field.element(other)
+
+        if other.is_zero():
+            raise ValueError('Cannot divide by zero')
+
+        return PolynomialRingElement(
+            ring=self.ring,
+            value={k: v / other for k, v in self.value.items()}
+        )
 
     def __mod__(self, other):
         return self.__divmod__(other)[1]
@@ -175,6 +212,9 @@ class PolynomialRingElement(RingElement):
 
     def sorted_term(self):
         return sorted(self.value.items(), reverse=True)
+
+    def constant_monomial(self):
+        return Monomial(ring=self.ring, power=[0]*self.ring.number)
 
 
 @dataclass(order=True)  # order can be different by user.
@@ -238,6 +278,19 @@ class PolynomialIdeal(Ideal):
         for generator in self.generator:
             element %= generator
         return element.is_zero()
+
+
+@dataclass
+class PolynomialQuotientRing(QuotientRing):
+    def element(self, *args):
+        parent = super().element(*args)
+        return PolynomialQuotientRingElement(ring=self, element=parent)
+
+
+@dataclass
+class PolynomialQuotientRingElement(QuotientRingElement):
+    def minimal_polynomial(self):
+        print(self.element)
 
 
 class VariableNameGenerator:
