@@ -1,65 +1,11 @@
 from dataclasses import dataclass, field
 from fractions import Fraction
-from typing import List, Dict
+from typing import Dict
 
 from algebra.number.types import Number, NumberType
+from algebra.ring.polynomial import VariableNameListGenerator, Monomial
 from algebra.util.decorator import iter_to_str
 from algebra.util.zero_dict import ZeroValueSkip
-
-
-@dataclass(order=True)  # order can be diff by user.
-class Monomial:
-    power: List[int]
-    ring: 'MultiVariableRing'
-
-    def __post_init__(self):
-        for i, p in enumerate(self.power):
-            if p < 0:
-                raise ValueError(f"{i}-th index is negative.")
-
-    @iter_to_str
-    def __str__(self):
-        for index, power in enumerate(self.power):
-            if power == 0:
-                continue
-            yield self.ring.naming.get(index)
-            if power > 1:
-                yield f'^{power}'
-
-    def __hash__(self):
-        return hash((tuple(self.power), self.ring))
-
-    def __mul__(self, other):
-        if isinstance(other, Monomial):
-            if self.ring != other.ring:
-                raise ValueError("Operation can be with same ring")
-
-            power = [x + y for x, y in zip(self.power, other.power)]
-            return Monomial(power=power, ring=self.ring)
-
-    def __truediv__(self, other):
-        if not self.is_divisible(other):
-            raise ValueError("Cannot Divisible")
-        if self.ring != other.ring:
-            raise ValueError("Operation can be with same ring")
-
-        power = [x - y for x, y in zip(self.power, other.power)]
-        return Monomial(power=power, ring=self.ring)
-
-    def is_constant(self):
-        for power in self.power:
-            if power > 0:
-                return False
-        return True
-
-    def is_divisible(self, other: 'Monomial'):
-        if self.ring != other.ring:
-            raise ValueError("Operation can be with same ring")
-
-        for x, y in zip(self.power, other.power):
-            if x < y:
-                return False
-        return True
 
 
 @dataclass
@@ -268,33 +214,3 @@ class MultiVariableRing:
                 Monomial(power=[0] * self.number, ring=self): number
             }
         )
-
-
-class VariableNameGenerator:
-    def get(self, index: int) -> str:
-        raise NotImplementedError(self)
-
-    def check_range(self, length: int) -> bool:
-        raise NotImplementedError(self)
-
-
-class VariableNameListGenerator(VariableNameGenerator):
-    def __init__(self, name_list):
-        self.name_list: list[str] = list(name_list)
-
-    def get(self, index) -> str:
-        return self.name_list[index]
-
-    def check_range(self, length) -> bool:
-        return length <= len(self.name_list)
-
-
-class VariableNameIndexGenerator(VariableNameGenerator):
-    def __init__(self, name):
-        self.name = name
-
-    def get(self, index: int) -> str:
-        return f'{self.name}{index}'
-
-    def check_range(self, length) -> bool:
-        return True

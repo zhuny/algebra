@@ -11,7 +11,7 @@ class TestPolynomialRing(unittest.TestCase):
         f = pr.element([1, 0, 1])
         f2 = f * f
 
-        self.assertEqual(f2.degree, 4)
+        self.assertEqual(f2.lead_monomial().power[0], 4)
 
     def test_ideal(self):
         pr = PolynomialRing(field=RationalField())
