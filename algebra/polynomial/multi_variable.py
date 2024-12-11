@@ -3,6 +3,7 @@ from fractions import Fraction
 from typing import List, Dict
 
 from algebra.number.types import Number, NumberType
+from algebra.util.decorator import iter_to_str
 from algebra.util.zero_dict import ZeroValueSkip
 
 
@@ -15,6 +16,15 @@ class Monomial:
         for i, p in enumerate(self.power):
             if p < 0:
                 raise ValueError(f"{i}-th index is negative.")
+
+    @iter_to_str
+    def __str__(self):
+        for index, power in enumerate(self.power):
+            if power == 0:
+                continue
+            yield self.ring.naming.get(index)
+            if power > 1:
+                yield f'^{power}'
 
     def __hash__(self):
         return hash((tuple(self.power), self.ring))
@@ -35,6 +45,12 @@ class Monomial:
 
         power = [x - y for x, y in zip(self.power, other.power)]
         return Monomial(power=power, ring=self.ring)
+
+    def is_constant(self):
+        for power in self.power:
+            if power > 0:
+                return False
+        return True
 
     def is_divisible(self, other: 'Monomial'):
         if self.ring != other.ring:
@@ -63,6 +79,32 @@ class MultiVariableElement:
     def _check(self, other):
         if self.ring != other.ring:
             raise ValueError("Operation can be with same ring")
+
+    @iter_to_str
+    def __str__(self):
+        coefficient_list = sorted(self.coefficient.items(), reverse=True)
+        is_first = True
+        for monomial, coefficient in coefficient_list:
+            # check sign
+            if coefficient > 0:
+                if is_first:
+                    pass
+                else:
+                    yield '+'
+            else:
+                yield '-'
+
+            # check digit
+            abs_coefficient = abs(coefficient)
+            if abs_coefficient == 1:
+                if monomial.is_constant():
+                    yield '1'
+            else:
+                yield str(abs_coefficient)
+
+            yield str(monomial)
+
+            is_first = False
 
     def __eq__(self, other):
         if isinstance(other, NumberType):
@@ -193,9 +235,18 @@ class MultiVariableElement:
 
 @dataclass(unsafe_hash=True)
 class MultiVariableRing:
-    # TODO: variable name
     # TODO: setting monomial ordering. Now, use lexical order
     number: int  # the number of variables.
+    naming: 'VariableNameGenerator' = None
+
+    def __post_init__(self):
+        if self.naming is None:
+            if self.number <= 3:
+                self.naming = VariableNameListGenerator('xyz')
+            else:
+                self.naming = VariableNameListGenerator('abc')
+        if not self.naming.check_range(self.number):
+            raise ValueError('Invalid naming range')
 
     def variables(self):
         for i in range(self.number):
@@ -217,3 +268,33 @@ class MultiVariableRing:
                 Monomial(power=[0] * self.number, ring=self): number
             }
         )
+
+
+class VariableNameGenerator:
+    def get(self, index: int) -> str:
+        raise NotImplementedError(self)
+
+    def check_range(self, length: int) -> bool:
+        raise NotImplementedError(self)
+
+
+class VariableNameListGenerator(VariableNameGenerator):
+    def __init__(self, name_list):
+        self.name_list: list[str] = list(name_list)
+
+    def get(self, index) -> str:
+        return self.name_list[index]
+
+    def check_range(self, length) -> bool:
+        return length <= len(self.name_list)
+
+
+class VariableNameIndexGenerator(VariableNameGenerator):
+    def __init__(self, name):
+        self.name = name
+
+    def get(self, index: int) -> str:
+        return f'{self.name}{index}'
+
+    def check_range(self, length) -> bool:
+        return True
