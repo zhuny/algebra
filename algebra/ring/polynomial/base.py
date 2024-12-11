@@ -1,5 +1,6 @@
 import collections
 import itertools
+import re
 from dataclasses import dataclass
 from fractions import Fraction
 from typing import List
@@ -98,24 +99,20 @@ class PolynomialRingElement(RingElement):
     def __str__(self):
         coefficient_list = sorted(self.value.items(), reverse=True)
         is_first = True
+        abs_one_re = re.compile(r"[+-]?1")
+
         for monomial, coefficient in coefficient_list:
             # check sign
-            if coefficient > 0:
-                if is_first:
-                    pass
-                else:
-                    yield '+'
-            else:
-                yield '-'
+            c_str = str(coefficient)
+            if not (is_first or c_str.startswith('-')):
+                c_str = '+' + c_str
 
             # check digit
-            abs_coefficient = abs(coefficient)
-            if abs_coefficient == 1:
-                if monomial.is_constant():
-                    yield '1'
-            else:
-                yield str(abs_coefficient)
+            if abs_one_re.fullmatch(c_str):
+                if not monomial.is_constant():
+                    c_str = c_str.rstrip('1')
 
+            yield c_str
             yield str(monomial)
 
             is_first = False
@@ -286,10 +283,11 @@ class PolynomialIdeal(Ideal):
 class PolynomialQuotientRing(QuotientRing):
     def element(self, *args):
         parent = super().element(*args)
-        return PolynomialQuotientRingElement(ring=self, element=parent)
+        return PolynomialQuotientRingElement(ring=self, element=parent.element)
 
 
 @dataclass
 class PolynomialQuotientRingElement(QuotientRingElement):
     def minimal_polynomial(self):
         print(self.element)
+        print(self.ring)

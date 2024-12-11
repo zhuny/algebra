@@ -20,6 +20,9 @@ class RationalField(Field):
 class RationalFieldElement(FieldElement):
     value: Fraction
 
+    def __str__(self):
+        return str(self.value)
+
     def __add__(self, other):
         return self._wrap(self.value + other.value)
 
@@ -39,10 +42,8 @@ class RationalFieldElement(FieldElement):
         return self._wrap(1 / self.value)
 
     def __eq__(self, other):
-        if isinstance(other, RationalFieldElement):
-            return self.value == other.value
-        else:
-            return self.value == other
+        left, right = self._wrap_compare(other)
+        return left == right
 
     def is_zero(self):
         return self.value == 0
@@ -54,3 +55,14 @@ class RationalFieldElement(FieldElement):
         if self.field != other.field:
             raise ValueError(
                 "RationalFieldElement does not have the same field")
+
+    def __gt__(self, other):
+        left, right = self._wrap_compare(other)
+        return left > right
+
+    def _wrap_compare(self, other):
+        other_value = other
+        if isinstance(other, RationalFieldElement):
+            other_value = other.value
+
+        return self.value, other_value
