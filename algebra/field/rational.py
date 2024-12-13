@@ -9,12 +9,6 @@ class RationalField(Field):
     def element(self, value) -> 'FieldElement':
         return RationalFieldElement(field=self, value=Fraction(value))
 
-    def zero(self):
-        return self.element(0)
-
-    def one(self):
-        return self.element(1)
-
 
 @dataclass(eq=False)
 class RationalFieldElement(FieldElement):

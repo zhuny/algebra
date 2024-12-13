@@ -7,10 +7,10 @@ class Field:
         raise NotImplementedError(self)
 
     def zero(self):
-        raise NotImplementedError(self)
+        return self.element(0)
 
     def one(self):
-        raise NotImplementedError(self)
+        return self.element(1)
 
 
 @dataclass
