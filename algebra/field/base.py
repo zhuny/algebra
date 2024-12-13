@@ -34,3 +34,9 @@ class FieldElement:
 
     def inv(self):
         raise NotImplementedError(self)
+
+    def is_zero(self):
+        raise NotImplementedError(self)
+
+    def is_one(self):
+        raise NotImplementedError(self)

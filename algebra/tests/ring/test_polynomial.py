@@ -2,7 +2,8 @@ import unittest
 from fractions import Fraction
 
 from algebra.field.rational import RationalField
-from algebra.ring.polynomial.base import PolynomialRing, PolynomialIdeal
+from algebra.ring.polynomial.base import PolynomialRing, PolynomialIdeal, \
+    PolynomialRingElement
 from algebra.ring.quotient import QuotientRing
 
 
@@ -50,7 +51,6 @@ class TestPolynomial(unittest.TestCase):
         f2 = modulo.element([1, 2, 2, 4])
         self.assertTrue(f1 == f2)
 
-    @unittest.skip
     def test_minimal_polynomial(self):
         pr = PolynomialRing(field=RationalField(), number=2)
         x, y = pr.variables()
@@ -61,8 +61,12 @@ class TestPolynomial(unittest.TestCase):
         quotient: QuotientRing = pr / ideal
 
         f = quotient.element(3 * x - 2 * y)
-        mp = f.minimal_polynomial()
-        self.assertEqual(mp.get(3), Fraction(24, 7))
-        self.assertEqual(mp.get(2), Fraction(-6527, 49))
-        self.assertEqual(mp.get(1), Fraction(5868, 7))
-        self.assertEqual(mp.get(0), Fraction(10967, 28))
+        mp: PolynomialRingElement = f.minimal_polynomial()
+
+        expected = mp.ring.element([
+            Fraction(10967, 28), Fraction(5868, 7),
+            Fraction(-6527, 49), Fraction(24, 7),
+            1
+        ])
+
+        self.assertEqual(mp, expected)

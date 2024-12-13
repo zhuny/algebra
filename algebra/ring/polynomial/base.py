@@ -42,6 +42,8 @@ class PolynomialRing(Ring):
             coefficient_iter = coefficient_value.items()
         elif isinstance(coefficient_value, list):
             coefficient_iter = enumerate(coefficient_value)
+        elif isinstance(coefficient_value, (int, Fraction)):
+            coefficient_iter = [(0, Fraction(coefficient_value))]
         else:
             raise ValueError('coefficient_value must be dict or list')
 
@@ -69,7 +71,7 @@ class PolynomialRing(Ring):
 
     def _wrap_monomial(self, power: int | list[int]):
         if isinstance(power, int):
-            power = [power]
+            power = [power] + [0] * (self.number - 1)
 
         if len(power) != self.number:
             raise ValueError("Monomial degree is not matched")
@@ -85,9 +87,11 @@ class PolynomialRingElement(RingElement):
 
     def __post_init__(self):
         # drop zero element
-        for index, coefficient in list(self.value.items()):
-            if coefficient == 0:
-                self.value.pop(index)
+        self.value = {
+            index: coefficient
+            for index, coefficient in self.value.items()
+            if not coefficient.is_zero()
+        }
 
         # degree setting
         if self.value:
@@ -151,6 +155,9 @@ class PolynomialRingElement(RingElement):
             for pow1, coef1 in self.value.items():
                 for pow2, coef2 in other.value.items():
                     value_map[pow1 * pow2] += coef1 * coef2
+        elif isinstance(other, Monomial):
+            for pow1, coef1 in self.value.items():
+                value_map[pow1 * other] += coef1
         else:
             for pow1, coef1 in self.value.items():
                 value_map[pow1] += coef1 * other
@@ -200,6 +207,9 @@ class PolynomialRingElement(RingElement):
             current
         )
 
+    def __getitem__(self, item):
+        return self.value[item]
+
     def is_zero(self):
         return len(self.value) == 0
 
@@ -207,7 +217,10 @@ class PolynomialRingElement(RingElement):
         return self._degree
 
     def lead_coefficient(self):
-        return self.value[self._degree]
+        if self.value:
+            return self.value[self._degree]
+        else:
+            return self.ring.field.zero()
 
     def sorted_term(self):
         return sorted(self.value.items(), reverse=True)
@@ -246,6 +259,8 @@ class Monomial:
             power = [x + y for x, y in zip(self.power, other.power)]
             return Monomial(power=power, ring=self.ring)
 
+        return NotImplemented
+
     def __truediv__(self, other):
         if not self.is_divisible(other):
             raise ValueError("Cannot Divisible")
@@ -270,9 +285,17 @@ class Monomial:
                 return False
         return True
 
+    def gcd(self, other: 'Monomial'):
+        return Monomial(
+            power=[min(x, y) for x, y in zip(self.power, other.power)],
+            ring=self.ring
+        )
+
 
 @dataclass
 class PolynomialIdeal(Ideal):
+    generator: list[PolynomialRingElement]
+
     def is_contained(self, element):
         for generator in self.generator:
             element %= generator
@@ -281,6 +304,9 @@ class PolynomialIdeal(Ideal):
 
 @dataclass
 class PolynomialQuotientRing(QuotientRing):
+    parent: PolynomialRing
+    ideal: PolynomialIdeal
+
     def element(self, *args):
         parent = super().element(*args)
         return PolynomialQuotientRingElement(ring=self, element=parent.element)
@@ -288,7 +314,12 @@ class PolynomialQuotientRing(QuotientRing):
 
 @dataclass(eq=False)
 class PolynomialQuotientRingElement(QuotientRingElement):
+    ring: PolynomialQuotientRing
+    element: PolynomialRingElement
+
     def minimal_polynomial(self):
-        pass
-        # print(self.element)
-        # print(self.ring)
+        from algebra.ring.polynomial.buchberger import BuchbergerAlgorithm
+
+        ba = BuchbergerAlgorithm(self.ring.ideal.generator)
+        ba.run()
+        return ba.minimal_polynomial(self.element)
