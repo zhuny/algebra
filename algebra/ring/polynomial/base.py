@@ -42,10 +42,8 @@ class PolynomialRing(Ring):
             coefficient_iter = coefficient_value.items()
         elif isinstance(coefficient_value, list):
             coefficient_iter = enumerate(coefficient_value)
-        elif isinstance(coefficient_value, (int, Fraction)):
-            coefficient_iter = [(0, Fraction(coefficient_value))]
         else:
-            raise ValueError('coefficient_value must be dict or list')
+            coefficient_iter = [(0, coefficient_value)]
 
         for power, coefficient in coefficient_iter:
             power_monomial = self._wrap_monomial(power)
@@ -208,7 +206,10 @@ class PolynomialRingElement(RingElement):
         )
 
     def __getitem__(self, item):
-        return self.value[item]
+        if item in self.value:
+            return self.value[item]
+        else:
+            return self.ring.element(0)
 
     def is_zero(self):
         return len(self.value) == 0

@@ -54,9 +54,12 @@ class QuotientRingElement(RingElement):
         )
 
     def __add__(self, other):
+        if not self._is_valid_value(other):
+            raise ValueError("Ring not matched")
+
         return QuotientRingElement(
             ring=self.ring,
-            element=self.element + other.element
+            element=self.element + self._wrap_value(other)
         )
 
     def __neg__(self):
@@ -66,12 +69,29 @@ class QuotientRingElement(RingElement):
         )
 
     def __mul__(self, other):
+        if not self._is_valid_value(other):
+            raise ValueError("Ring not matched")
+
         return QuotientRingElement(
             ring=self.ring,
-            element=self.element * other.element
+            element=self.element * self._wrap_value(other)
         )
 
     def __eq__(self, other):
         return self.ring.ideal.is_equivalent(
             self.element, other.element
         )
+
+    def _is_valid_value(self, other):
+        if isinstance(other, QuotientRingElement):
+            return self.ring == other.ring
+        else:
+            # TODO: ring 에 element 값 확인하기
+            return isinstance(other, int)
+
+    @staticmethod
+    def _wrap_value(other):
+        if isinstance(other, QuotientRingElement):
+            return other.element
+        elif isinstance(other, int):
+            return other

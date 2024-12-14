@@ -50,6 +50,9 @@ class RingElement:
     def __add__(self, other):
         raise NotImplementedError(self)
 
+    def __radd__(self, other):
+        return self.__add__(other)
+
     def __sub__(self, other):
         return self + (-other)
 
@@ -58,3 +61,13 @@ class RingElement:
 
     def __mul__(self, other):
         raise NotImplementedError(self)
+
+    def __pow__(self, power, modulo=None):
+        if not (isinstance(power, int) and power >= 1):
+            return NotImplemented
+
+        # TODO: More efficient implementation needed
+        current = self
+        for i in range(1, power):
+            current *= self
+        return current

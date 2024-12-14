@@ -42,6 +42,9 @@ class RationalFieldElement(FieldElement):
     def is_zero(self):
         return self.value == 0
 
+    def is_one(self):
+        return self.value == 1
+
     def _wrap(self, number):
         return RationalFieldElement(field=self.field, value=Fraction(number))
 

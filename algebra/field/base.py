@@ -13,9 +13,12 @@ class Field:
         return self.element(1)
 
 
-@dataclass
+@dataclass(eq=False)
 class FieldElement:
     field: Field
+
+    def __str__(self):
+        raise NotImplementedError(self)
 
     def __add__(self, other):
         raise NotImplementedError(self)
@@ -31,6 +34,9 @@ class FieldElement:
 
     def __truediv__(self, other):
         return self * other.inv()
+
+    def __eq__(self, other):
+        return (self - other).is_zero()
 
     def inv(self):
         raise NotImplementedError(self)

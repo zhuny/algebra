@@ -96,7 +96,7 @@ class BuchbergerAlgorithm:
                    ) -> PolynomialRingElement:
         for another in self.result:
             element %= another
-        if monic and element.lead_coefficient() != 0:
+        if monic and not element.lead_coefficient().is_zero():
             element /= element.lead_coefficient()
         return element
 

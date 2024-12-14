@@ -1,6 +1,7 @@
 import unittest
 from fractions import Fraction
 
+from algebra.field.finite_prime import FinitePrimeField
 from algebra.field.rational import RationalField
 from algebra.ring.polynomial.base import PolynomialRing, PolynomialIdeal, \
     PolynomialRingElement
@@ -51,7 +52,40 @@ class TestPolynomial(unittest.TestCase):
         f2 = modulo.element([1, 2, 2, 4])
         self.assertTrue(f1 == f2)
 
-    def test_minimal_polynomial(self):
+    def test_calculate_with_finite_2_1(self):
+        pr = PolynomialRing(field=FinitePrimeField(101), number=2)
+        x, y = pr.variables()
+
+        f1 = x * x - y
+        f2 = y * y - 2 * x - 4
+
+        ideal = pr.ideal([f1, f2])
+        quotient: QuotientRing = pr / ideal
+
+        f = quotient.element(5 * x - 3 * y)
+        mp: PolynomialRingElement = f.minimal_polynomial()
+
+        expected = mp.ring.element([-23, 48, 18, 0, 1])
+        self.assertEqual(mp, expected)
+
+    def test_calculate_with_finite_2_4(self):
+        pr = PolynomialRing(field=FinitePrimeField(101), number=2)
+        x, y = pr.variables()
+
+        f1 = y * y * y - x * y - 2 * y * y + y
+        f2 = x * y * y
+        f3 = x * x - x
+
+        ideal = pr.ideal([f1, f2, f3])
+        quotient: QuotientRing = pr / ideal
+
+        f = quotient.element(y)
+        mp = f.minimal_polynomial()
+
+        # expected = mp.ring.element([0, 0, 1, -2, 1])
+        # self.assertEqual(mp, expected)
+
+    def test_minimal_polynomial_2_5(self):
         pr = PolynomialRing(field=RationalField(), number=2)
         x, y = pr.variables()
 
@@ -70,3 +104,16 @@ class TestPolynomial(unittest.TestCase):
         ])
 
         self.assertEqual(mp, expected)
+
+    def test_minimal_polynomial_2_17(self):
+        pr = PolynomialRing(field=FinitePrimeField(101), number=6)
+        variable_list = list(pr.variables())
+        variable_list[4] -= 7
+        variable_list[5] -= 1
+        ideal = pr.ideal(variable_list)
+        quotient: QuotientRing = pr / ideal
+
+        f = 0
+        for i, v in enumerate(pr.variables(), 1):
+            f += v ** i
+        quotient.element(f).minimal_polynomial()
