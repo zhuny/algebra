@@ -117,3 +117,23 @@ class TestPolynomial(unittest.TestCase):
         for i, v in enumerate(pr.variables(), 1):
             f += v ** i
         quotient.element(f).minimal_polynomial()
+
+    def test_minimal_polynomial_2_2(self):
+        pr = PolynomialRing(field=FinitePrimeField(23), number=3)
+        x, y, z = pr.variables()
+
+        g1 = self._poly(x,
+                        [1, 8, -6, -8, 4, -4, 5,
+                         8, 5, -4, 5, 2, -7, 4, 10, 3, 8])
+        g2 = self._poly(y,
+                        [1, 9, -9, 7, -8, -4, 9, 1, -5, 7, 1, 10])
+        g3 = self._poly(z, [1, -7, 2, 11, -1, 5])
+        quotient = pr / pr.ideal([g1, g2, g3])
+        f = quotient.element(z).minimal_polynomial()
+        self.assertEqual(sum(f.lead_monomial().power), 880)
+
+    def _poly(self, v, coe_list):
+        result = 0
+        for c in coe_list:
+            result = result * v + c
+        return result
