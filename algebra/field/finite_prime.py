@@ -13,7 +13,13 @@ class FinitePrimeField(Field):
             raise ValueError("Prime should be given")
 
     def element(self, number) -> 'FieldElement':
-        return FinitePrimeFieldElement(self, number % self.char)
+        if isinstance(number, int):
+            return FinitePrimeFieldElement(self, number % self.char)
+        elif isinstance(number, FinitePrimeFieldElement):
+            if number.field == self:
+                return number
+
+        raise ValueError("Invalid element")
 
 
 @dataclass
@@ -39,11 +45,27 @@ class FinitePrimeFieldElement(FieldElement):
 
         return self._wrap_result(self.value * self._wrap_value(other))
 
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
     def __eq__(self, other):
         return (
             self._is_valid_value(other) and
             self.value == self._wrap_value(other)
         )
+
+    def __pow__(self, power):
+        if not isinstance(power, int):
+            raise ValueError("Power should be integer")
+        if power < 0:
+            if self.is_zero():
+                raise ValueError("Zero power not allowed")
+
+            base = self.inv()
+        else:
+            base = self
+
+        return self._wrap_result(pow(base.value, power, self.field.char))
 
     def inv(self):
         if self.field.char <= 3:
