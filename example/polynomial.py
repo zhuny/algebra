@@ -77,8 +77,43 @@ def test_monomial_ordering():
     )
 
 
+@assert_wrap
+def test_grobner_base_small():
+    pr = PolynomialRing(
+        field=RationalField(),
+        number=2, monomial_ordering=GradedReverseLexicographicOrdering()
+    )
+    x, y = pr.variables()
+
+    g1 = x * x + y * y - 1
+    g2 = x * y - 2
+    quotient = pr / pr.ideal([g1, g2])
+
+    f = quotient.element(2 * x ** 3 - x * x * y + y ** 3 + 3 * y)
+    print(f.minimal_polynomial())
+
+
+@assert_wrap
+def test_grobner_base_medium():
+    pr = PolynomialRing(
+        field=RationalField(),
+        number=3, monomial_ordering=GradedReverseLexicographicOrdering()
+    )
+    x, y, z = pr.variables()
+
+    g1 = (x - y) ** 3 - z * z
+    g2 = (z - x) ** 3 - y * y
+    g3 = (y - z) ** 3 - x * x
+    quotient = pr / pr.ideal([g1, g2, g3])
+
+    f = quotient.element(x ** 10)
+    print(f.minimal_polynomial())
+
+
 def main():
     test_monomial_ordering()
+    test_grobner_base_small()
+    test_grobner_base_medium()
 
 
 if __name__ == "__main__":

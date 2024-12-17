@@ -15,7 +15,7 @@ class BuchbergerAlgorithm:
     def calc_degree(self):
         mono_list = [mono for mono, _ in self.output]
         lcm = functools.reduce(
-            self.common_multiplier,
+            lambda x, y: x.lcm(y),
             mono_list
         )
         permutation_set = [list(range(p)) for p in lcm.power]
@@ -39,6 +39,13 @@ class BuchbergerAlgorithm:
             s_poly = self.get_reduce(s_poly)
             self.append_result(s_poly)
 
+        print("Result:")
+        for i, element in enumerate(self.result):
+            print(f'{i}.', element[1])
+        print("Reduced:")
+        for mono, element in self.output:
+            print(mono, element)
+
         self.calc_degree()
 
     def append_result(self, element):
@@ -59,7 +66,7 @@ class BuchbergerAlgorithm:
         i = 0
         while i < len(self.result):
             for j in range(i):
-                yield self.result[j], self.result[i]
+                yield self.result[j][1], self.result[i][1]
             i += 1
 
     def s_polynomial(self,
@@ -80,18 +87,6 @@ class BuchbergerAlgorithm:
                 (e1_mono / e3) * e2 / e2_c
         )
 
-    def common_divisor(self, e1_mono, e2_mono):
-        return Monomial(
-            power=[min(x, y) for x, y in zip(e1_mono.power, e2_mono.power)],
-            ring=e1_mono.ring
-        )
-
-    def common_multiplier(self, e1_mono, e2_mono):
-        return Monomial(
-            power=[max(x, y) for x, y in zip(e1_mono.power, e2_mono.power)],
-            ring=e1_mono.ring
-        )
-
     def get_reduce(self, element: PolynomialRingElement, monic=True
                    ) -> PolynomialRingElement:
         for another in self.result:
@@ -100,8 +95,12 @@ class BuchbergerAlgorithm:
             element /= element.lead_coefficient()
         return element
 
-    def is_zero(self, element: PolynomialRingElement) -> bool:
-        return len(element.coefficient) == 0
+    def get_reduce2(self, element: PolynomialRingElement, monic=True):
+        for mono, another in self.output:
+            element %= another
+        if monic and not element.lead_coefficient().is_zero():
+            element /= element.lead_coefficient()
+        return element
 
     def minimal_polynomial(self, element: PolynomialRingElement):
         result_ring = PolynomialRing(element.ring.field)

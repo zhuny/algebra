@@ -305,9 +305,15 @@ class Monomial:
                 return False
         return True
 
-    def gcd(self, other: 'Monomial'):
+    def gcd(self, other: 'Monomial') -> 'Monomial':
         return Monomial(
             power=[min(x, y) for x, y in zip(self.power, other.power)],
+            ring=self.ring
+        )
+
+    def lcm(self, other: 'Monomial') -> 'Monomial':
+        return Monomial(
+            power=[max(x, y) for x, y in zip(self.power, other.power)],
             ring=self.ring
         )
 
@@ -342,4 +348,7 @@ class PolynomialQuotientRingElement(QuotientRingElement):
 
         ba = BuchbergerAlgorithm(self.ring.ideal.generator)
         ba.run()
+        print('Original :', self.element)
+        print('Reduce1 :', ba.get_reduce(self.element))
+        print('Reduce2 :', ba.get_reduce2(self.element))
         return ba.minimal_polynomial(self.element)
