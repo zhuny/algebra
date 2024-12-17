@@ -29,78 +29,79 @@ class BuchbergerAlgorithm:
                 degree += 1
         self.degree = degree
 
-    def run(self):
-        for element in self.element_list:
-            element = self.get_reduce(element)
-            self.append_result(element)
-
-        for e1, e2 in self.element_pair_iter():
-            s_poly = self.s_polynomial(e1, e2)
-            s_poly = self.get_reduce(s_poly)
-            self.append_result(s_poly)
-
+    def show(self):
         print("Result:")
         for i, element in enumerate(self.result):
-            print(f'{i}.', element[1])
-        print("Reduced:")
+            print(f'{i}.', element)
+        print("Output:")
         for mono, element in self.output:
             print(mono, element)
+        input()
+
+    def run(self):
+        for element in self.element_list:
+            self.append_result(element)
+            # self.show()
+
+        for e1, e2 in self.element_pair_iter():
+            self.append_result(e1.s_polynomial(e2))
+            # self.show()
 
         self.calc_degree()
 
     def append_result(self, element):
+        element = self.get_reduce(element)
+
         if element.is_zero():
             return
 
         self.result.append(element)
 
-        element_mono = element.lead_monomial()
-        self.output = [
-            (prev_mono, prev)
-            for prev_mono, prev in self.output
-            if not prev_mono.is_divisible(element_mono)
-        ]
-        self.output.append((element_mono, element))
+        # reduced form
+        element_monomial = element.lead_monomial()
+        for monomial, prev in self.output:
+            if element_monomial.is_divisible(monomial):
+                return
+
+        new_output = []
+
+        for monomial, prev in self.output:
+            if monomial.is_divisible(element_monomial):
+                continue
+
+            new_output.append((monomial, prev % element))
+
+        new_output.append((element_monomial, element))
+        self.output = new_output
 
     def element_pair_iter(self):
         i = 0
         while i < len(self.result):
             for j in range(i):
-                yield self.result[j][1], self.result[i][1]
+                yield self.result[j], self.result[i]
             i += 1
-
-    def s_polynomial(self,
-                     e1: PolynomialRingElement,
-                     e2: PolynomialRingElement) -> PolynomialRingElement:
-        if e1.is_zero() or e2.is_zero():
-            return e1.ring.element([])
-
-        e1_mono = e1.lead_monomial()
-        e1_c = e1.lead_coefficient()
-        e2_mono = e2.lead_monomial()
-        e2_c = e2.lead_coefficient()
-
-        e3 = e1_mono.gcd(e2_mono)
-
-        return (
-                (e2_mono / e3) * e1 / e1_c -
-                (e1_mono / e3) * e2 / e2_c
-        )
 
     def get_reduce(self, element: PolynomialRingElement, monic=True
                    ) -> PolynomialRingElement:
-        for another in self.result:
-            element %= another
+        skip = 0
+        for another in self.repeat_output():
+            q, element = divmod(element, another)
+            if q.is_zero():
+                skip += 1
+                if skip >= len(self.output):
+                    break
+            else:
+                skip = 0
+
         if monic and not element.lead_coefficient().is_zero():
             element /= element.lead_coefficient()
+
         return element
 
-    def get_reduce2(self, element: PolynomialRingElement, monic=True):
-        for mono, another in self.output:
-            element %= another
-        if monic and not element.lead_coefficient().is_zero():
-            element /= element.lead_coefficient()
-        return element
+    def repeat_output(self):
+        while self.output:
+            for _, element in self.output:
+                yield element
 
     def minimal_polynomial(self, element: PolynomialRingElement):
         result_ring = PolynomialRing(element.ring.field)

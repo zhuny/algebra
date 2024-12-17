@@ -248,6 +248,23 @@ class PolynomialRingElement(RingElement):
     def constant_monomial(self):
         return Monomial(ring=self.ring, power=[0]*self.ring.number)
 
+    def s_polynomial(self, e2: 'PolynomialRingElement'
+                     ) -> 'PolynomialRingElement':
+        if self.is_zero() or e2.is_zero():
+            return self.ring.element([])
+
+        self_mono = self.lead_monomial()
+        self_c = self.lead_coefficient()
+        e2_mono = e2.lead_monomial()
+        e2_c = e2.lead_coefficient()
+
+        e3 = self_mono.gcd(e2_mono)
+
+        return (
+                (e2_mono / e3) * self / self_c -
+                (self_mono / e3) * e2 / e2_c
+        )
+
 
 @dataclass
 class Monomial:
@@ -348,7 +365,4 @@ class PolynomialQuotientRingElement(QuotientRingElement):
 
         ba = BuchbergerAlgorithm(self.ring.ideal.generator)
         ba.run()
-        print('Original :', self.element)
-        print('Reduce1 :', ba.get_reduce(self.element))
-        print('Reduce2 :', ba.get_reduce2(self.element))
         return ba.minimal_polynomial(self.element)

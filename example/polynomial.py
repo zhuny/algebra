@@ -1,4 +1,5 @@
 import functools
+import time
 
 from algebra.field.rational import RationalField
 from algebra.ring.polynomial.base import PolynomialRing
@@ -12,18 +13,21 @@ class AssertWrap:
         self.f = f
         self.args = args
         self.kwargs = kwargs
+        self.start = None
 
     def run(self):
         return self.f(*self.args, **self.kwargs)
 
     def __enter__(self):
+        self.start = time.time()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        print(self.f.__name__, time.time() - self.start, end=' ')
         if isinstance(exc_val, AssertionError):
-            print(self.f.__name__, self.args, self.kwargs, 'Error')
+            print(self.args, self.kwargs, 'Error')
         else:
-            print(self.f.__name__, 'OK')
+            print('OK')
 
 
 def assert_wrap(f):
