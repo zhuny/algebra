@@ -1,4 +1,5 @@
 import collections
+import dataclasses
 import itertools
 import re
 from dataclasses import dataclass
@@ -7,6 +8,8 @@ from typing import List
 
 from algebra.field.base import Field, FieldElement
 from algebra.ring.base import Ring, RingElement
+from algebra.ring.polynomial.monomial_ordering import MonomialOrderingBase, \
+    LexicographicMonomialOrdering
 from algebra.ring.polynomial.naming import VariableNameGenerator, \
     VariableNameListGenerator, VariableNameIndexGenerator
 from algebra.ring.quotient import Ideal, QuotientRing, QuotientRingElement
@@ -18,6 +21,9 @@ class PolynomialRing(Ring):
     field: Field
     number: int = 1
     naming: 'VariableNameGenerator' = None
+    monomial_ordering: MonomialOrderingBase = dataclasses.field(
+        default_factory=LexicographicMonomialOrdering
+    )
 
     def __hash__(self) -> int:
         return id(self)
@@ -50,6 +56,12 @@ class PolynomialRing(Ring):
             coefficient_map[power_monomial] = self.field.element(coefficient)
 
         return PolynomialRingElement(ring=self, value=coefficient_map)
+
+    def zero(self):
+        return self.element(0)
+
+    def one(self):
+        return self.element(1)
 
     def variables(self):
         for i in range(self.number):
@@ -93,17 +105,16 @@ class PolynomialRingElement(RingElement):
 
         # degree setting
         if self.value:
-            self._degree = max(self.value)
+            self._degree = max(self.value, key=self.ring.monomial_ordering.key)
         else:
             self._degree = self.constant_monomial()
 
     @iter_to_str
     def __str__(self):
-        coefficient_list = sorted(self.value.items(), reverse=True)
         is_first = True
         abs_one_re = re.compile(r"[+-]?1")
 
-        for monomial, coefficient in coefficient_list:
+        for monomial, coefficient in self.sorted_term():
             # check sign
             c_str = str(coefficient)
             if not (is_first or c_str.startswith('-')):
@@ -224,13 +235,21 @@ class PolynomialRingElement(RingElement):
             return self.ring.field.zero()
 
     def sorted_term(self):
-        return sorted(self.value.items(), reverse=True)
+        for monomial in self.sorted_monomial():
+            yield monomial, self.value[monomial]
+
+    def sorted_monomial(self):
+        return sorted(
+            self.value.keys(),
+            key=self.ring.monomial_ordering.key,
+            reverse=True
+        )
 
     def constant_monomial(self):
         return Monomial(ring=self.ring, power=[0]*self.ring.number)
 
 
-@dataclass(order=True)  # order can be different by user.
+@dataclass
 class Monomial:
     power: List[int]
     ring: 'PolynomialRing'
