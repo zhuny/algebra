@@ -97,6 +97,15 @@ def test_grobner_base_small():
     print(f.minimal_polynomial())
 
 
+def show_ideal(ideal):
+    print("Ideal Info")
+    print("Degree :", ideal.degree())
+    print("GB :")
+    for element in ideal.grobner_base():
+        print("=>", element)
+    print()
+
+
 @assert_wrap
 def test_grobner_base_medium():
     pr = PolynomialRing(
@@ -108,16 +117,42 @@ def test_grobner_base_medium():
     g1 = (x - y) ** 3 - z * z
     g2 = (z - x) ** 3 - y * y
     g3 = (y - z) ** 3 - x * x
-    quotient = pr / pr.ideal([g1, g2, g3])
+    ideal = pr.ideal([g1, g2, g3])
+    show_ideal(ideal)
+    print((x ** 10) % ideal)
+    # print(ideal.radical())
 
-    f = quotient.element(x ** 10)
-    print(f.minimal_polynomial())
+    ideal2 = pr.ideal([x, y, z])
+    show_ideal(ideal2)
+
+    # print(ideal.saturation(ideal2))
+
+
+@assert_wrap
+def test_radical_number():
+    pr = PolynomialRing(
+        field=RationalField(),
+        number=3, monomial_ordering=GradedReverseLexicographicOrdering()
+    )
+    x, y, z = pr.variables()
+
+    g1 = x * x - 2  # sqrt(2)
+    g2 = y * y - 8  # sqrt(8)
+    g3 = z - x + y  # sqrt(8) - sqrt(2) = sqrt(2)
+    ideal = pr.ideal([g1, g2, g3])
+
+    show_ideal(ideal)
+
+    # zeros : +-3sqrt(2), +-sqrt(2)
+    quotient = pr / ideal
+    print(quotient.element(z).minimal_polynomial())
 
 
 def main():
     test_monomial_ordering()
     test_grobner_base_small()
     test_grobner_base_medium()
+    test_radical_number()
 
 
 if __name__ == "__main__":

@@ -103,6 +103,9 @@ class BuchbergerAlgorithm:
             for _, element in self.output:
                 yield element
 
+    def get_basis(self):
+        return [element for _, element in self.output]
+
     def minimal_polynomial(self, element: PolynomialRingElement):
         result_ring = PolynomialRing(element.ring.field)
 

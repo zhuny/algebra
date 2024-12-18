@@ -189,9 +189,15 @@ class PolynomialRingElement(RingElement):
         )
 
     def __mod__(self, other):
-        return self.__divmod__(other)[1]
+        if not isinstance(other, PolynomialRingElement):
+            return NotImplemented
+
+        return divmod(self, other)[1]
 
     def __divmod__(self, other: 'PolynomialRingElement'):
+        if not isinstance(other, PolynomialRingElement):
+            return NotImplemented
+
         lm = other.lead_monomial()
         lc = other.lead_coefficient()
 
@@ -338,11 +344,30 @@ class Monomial:
 @dataclass
 class PolynomialIdeal(Ideal):
     generator: list[PolynomialRingElement]
+    _algorithm = None
 
     def is_contained(self, element):
         for generator in self.generator:
             element %= generator
         return element.is_zero()
+
+    def degree(self):
+        return self.algorithm.degree
+
+    def grobner_base(self):
+        return self.algorithm.get_basis()
+
+    def __rmod__(self, other):
+        return self.algorithm.get_reduce(other, monic=False)
+
+    @property
+    def algorithm(self):
+        if self._algorithm is None:
+            from algebra.ring.polynomial.buchberger import BuchbergerAlgorithm
+            self._algorithm = BuchbergerAlgorithm(self.generator)
+            self._algorithm.run()
+
+        return self._algorithm
 
 
 @dataclass
@@ -361,8 +386,4 @@ class PolynomialQuotientRingElement(QuotientRingElement):
     element: PolynomialRingElement
 
     def minimal_polynomial(self):
-        from algebra.ring.polynomial.buchberger import BuchbergerAlgorithm
-
-        ba = BuchbergerAlgorithm(self.ring.ideal.generator)
-        ba.run()
-        return ba.minimal_polynomial(self.element)
+        return self.ring.ideal.algorithm.minimal_polynomial(self.element)
