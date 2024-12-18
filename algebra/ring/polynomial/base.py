@@ -347,8 +347,7 @@ class PolynomialIdeal(Ideal):
     _algorithm = None
 
     def is_contained(self, element):
-        for generator in self.generator:
-            element %= generator
+        element = self.algorithm.get_reduce(element)
         return element.is_zero()
 
     def degree(self):
