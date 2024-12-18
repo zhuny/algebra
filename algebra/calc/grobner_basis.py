@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import Any, Optional, List
 
-from algebra.polynomial.multi_variable import MultiVariableElement, Monomial
+from algebra.polynomial.multi_variable import MultiVariableElement
+from algebra.ring.polynomial import Monomial
 
 
 @dataclass
