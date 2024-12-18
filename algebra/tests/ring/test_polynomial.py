@@ -5,6 +5,9 @@ from algebra.field.finite_prime import FinitePrimeField
 from algebra.field.rational import RationalField
 from algebra.ring.polynomial.base import PolynomialRing, PolynomialIdeal, \
     PolynomialRingElement
+from algebra.ring.polynomial.monomial_ordering import MonomialOrderingBase, \
+    LexicographicMonomialOrdering, GradedLexicographicOrdering, \
+    GradedReverseLexicographicOrdering
 from algebra.ring.quotient import QuotientRing
 
 
@@ -137,3 +140,91 @@ class TestPolynomial(unittest.TestCase):
         for c in coe_list:
             result = result * v + c
         return result
+
+    def test_monomial_ordering(self):
+        with self.subTest("LCO (<> GLCO)"):
+            self._test_one_monomial_ordering(
+                LexicographicMonomialOrdering(),
+                2, True,
+                ["x^2", "xy", "x", "y^2", "y", ""]
+            )
+        with self.subTest("GLCO (<> LCO)"):
+            self._test_one_monomial_ordering(
+                GradedLexicographicOrdering(),
+                2, True,
+                ["x^2", "xy", "y^2", "x", "y", ""]
+            )
+        with self.subTest("GLCO (<>GRLCO)"):
+            self._test_one_monomial_ordering(
+                GradedLexicographicOrdering(),
+                3, False,
+                ["x^2", "xy", "xz", "y^2", "yz", "z^2"]
+            )
+        with self.subTest("GRLCO (<>GLCO)"):
+            self._test_one_monomial_ordering(
+                GradedReverseLexicographicOrdering(),
+                3, False,
+                ["x^2", "xy", "y^2", "xz", "yz", "z^2"]
+            )
+
+    def _test_one_monomial_ordering(self,
+                                    ordering: MonomialOrderingBase,
+                                    number: int, constant: bool,
+                                    answer: list[str]):
+        pr = PolynomialRing(
+            field=RationalField(), number=number,
+            monomial_ordering=ordering
+        )
+        f = pr.one() if constant else pr.zero()
+        f = sum(pr.variables(), start=f)
+        f = f * f
+
+        ordered_monomial = list(f.sorted_monomial())
+
+        self.assertEqual(len(ordered_monomial), len(answer))
+
+        for result, expected in zip(ordered_monomial, answer):
+            self.assertEqual(str(result), expected)
+
+    def test_grobner_base_small(self):
+        pr = PolynomialRing(
+            field=RationalField(),
+            number=2, monomial_ordering=GradedReverseLexicographicOrdering()
+        )
+        x, y = pr.variables()
+
+        g1 = x * x + y * y - 1
+        g2 = x * y - 2
+        quotient = pr / pr.ideal([g1, g2])
+        quotient.element(2 * x ** 3 - x * x * y + y ** 3 + 3 * y)
+
+    def test_grobner_base_medium(self):
+        pr = PolynomialRing(
+            field=RationalField(),
+            number=3, monomial_ordering=GradedReverseLexicographicOrdering()
+        )
+        x, y, z = pr.variables()
+
+        g1 = (x - y) ** 3 - z * z
+        g2 = (z - x) ** 3 - y * y
+        g3 = (y - z) ** 3 - x * x
+        ideal = pr.ideal([g1, g2, g3])
+        check = (x ** 10) % ideal
+
+    def test_radical_number(self):
+        pr = PolynomialRing(
+            field=RationalField(),
+            number=3, monomial_ordering=GradedReverseLexicographicOrdering()
+        )
+        x, y, z = pr.variables()
+
+        g1 = x * x - 2  # sqrt(2)
+        g2 = y * y - 8  # sqrt(8)
+        g3 = z - x + y  # sqrt(8) - sqrt(2) = sqrt(2)
+        ideal = pr.ideal([g1, g2, g3])
+
+        # zeros : +-3sqrt(2), +-sqrt(2)
+        quotient = pr / ideal
+        mp = quotient.element(z).minimal_polynomial()
+        expected = mp.ring.element([36, 0, -20, 0, 1])
+        self.assertEqual(mp, expected)
