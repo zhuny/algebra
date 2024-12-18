@@ -1,53 +1,16 @@
 from dataclasses import dataclass, field
 from fractions import Fraction
-from typing import List, Dict
+from typing import Dict
 
 from algebra.number.types import Number, NumberType
+from algebra.ring.base import RingElement, Ring
+from algebra.ring.polynomial import Monomial
+from algebra.util.decorator import iter_to_str
 from algebra.util.zero_dict import ZeroValueSkip
 
 
-@dataclass(order=True)  # order can be diff by user.
-class Monomial:
-    power: List[int]
-    ring: 'MultiVariableRing'
-
-    def __post_init__(self):
-        for i, p in enumerate(self.power):
-            if p < 0:
-                raise ValueError(f"{i}-th index is negative.")
-
-    def __hash__(self):
-        return hash((tuple(self.power), self.ring))
-
-    def __mul__(self, other):
-        if isinstance(other, Monomial):
-            if self.ring != other.ring:
-                raise ValueError("Operation can be with same ring")
-
-            power = [x + y for x, y in zip(self.power, other.power)]
-            return Monomial(power=power, ring=self.ring)
-
-    def __truediv__(self, other):
-        if not self.is_divisible(other):
-            raise ValueError("Cannot Divisible")
-        if self.ring != other.ring:
-            raise ValueError("Operation can be with same ring")
-
-        power = [x - y for x, y in zip(self.power, other.power)]
-        return Monomial(power=power, ring=self.ring)
-
-    def is_divisible(self, other: 'Monomial'):
-        if self.ring != other.ring:
-            raise ValueError("Operation can be with same ring")
-
-        for x, y in zip(self.power, other.power):
-            if x < y:
-                return False
-        return True
-
-
 @dataclass
-class MultiVariableElement:
+class MultiVariableElement(RingElement):
     ring: 'MultiVariableRing'
     coefficient: Dict[Monomial, Number] = field(default_factory=dict)
 
@@ -63,6 +26,32 @@ class MultiVariableElement:
     def _check(self, other):
         if self.ring != other.ring:
             raise ValueError("Operation can be with same ring")
+
+    @iter_to_str
+    def __str__(self):
+        coefficient_list = sorted(self.coefficient.items(), reverse=True)
+        is_first = True
+        for monomial, coefficient in coefficient_list:
+            # check sign
+            if coefficient > 0:
+                if is_first:
+                    pass
+                else:
+                    yield '+'
+            else:
+                yield '-'
+
+            # check digit
+            abs_coefficient = abs(coefficient)
+            if abs_coefficient == 1:
+                if monomial.is_constant():
+                    yield '1'
+            else:
+                yield str(abs_coefficient)
+
+            yield str(monomial)
+
+            is_first = False
 
     def __eq__(self, other):
         if isinstance(other, NumberType):
@@ -192,10 +181,20 @@ class MultiVariableElement:
 
 
 @dataclass(unsafe_hash=True)
-class MultiVariableRing:
+class MultiVariableRing(Ring):
     # TODO: variable name
     # TODO: setting monomial ordering. Now, use lexical order
     number: int  # the number of variables.
+    naming: 'VariableNameGenerator' = None
+
+    def __post_init__(self):
+        if self.naming is None:
+            if self.number <= 3:
+                self.naming = VariableNameListGenerator('xyz')
+            else:
+                self.naming = VariableNameListGenerator('abc')
+        if not self.naming.check_range(self.number):
+            raise ValueError('Invalid naming range')
 
     def variables(self):
         for i in range(self.number):
