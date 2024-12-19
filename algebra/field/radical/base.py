@@ -1,13 +1,70 @@
 import collections
 import itertools
+import math
 from dataclasses import dataclass
 from fractions import Fraction
 from typing import Any, Union
 
 from algebra.number.base import RingBase, CalculationStep
-from algebra.number.types import NumberType, Number
+from algebra.number.types import Number, NumberType
 from algebra.number.util import factorize
 from algebra.polynomial.polynomial import Polynomial
+
+
+@dataclass
+class Interval:
+    start: NumberType
+    end: NumberType
+
+    def __post_init__(self):
+        if not isinstance(self.start, Fraction):
+            self.start = Fraction(self.start)
+        if not isinstance(self.end, Fraction):
+            self.end = Fraction(self.end)
+
+    def __add__(self, other):
+        return Interval(
+            start=Fraction(self.start + other.start),
+            end=Fraction(self.end + other.end)
+        )
+
+    def __sub__(self, other):
+        return Interval(
+            start=Fraction(self.start - other.start),
+            end=Fraction(self.end - other.end)
+        )
+
+    def __mul__(self, other):
+        if isinstance(other, Interval):
+            valid_values = [
+                self.start * other.start, self.start * other.end,
+                self.end * other.start, self.end * other.end
+            ]
+        else:
+            valid_values = [self.start * other, self.end * other]
+
+        return Interval(
+            start=min(valid_values),
+            end=max(valid_values)
+        )
+
+    def __truediv__(self, other):
+        if other.start <= 0 <= other.end:
+            raise ValueError("Not divisible by zero")
+
+        valid_values = [
+            self.start / other.start, self.start / other.end,
+            self.end / other.start, self.end / other.end
+        ]
+        return Interval(
+            start=min(valid_values),
+            end=max(valid_values)
+        )
+
+    def same_floor(self):
+        start = math.floor(self.start)
+        end = math.floor(self.end)
+        return start == end
 
 
 def remove_zero(dict_value: dict):
@@ -44,11 +101,21 @@ class ElementMerger:
 @dataclass(eq=False)
 class ODRadical(RingBase):
     body: list['ODRadicalElement']
+    _interval: Interval = None
 
     @classmethod
     def from_number(cls, number, root=2, multiply=1):
         child = ODRadicalElement.from_number(number, root, multiply)
         return cls(body=[child])
+
+    def __post_init__(self):
+        self._interval_refresh()
+
+    def _interval_refresh(self):
+        i = Interval(0, 0)
+        for child in self.body:
+            i += child._interval
+        self._interval = i
 
     def __str__(self):
         return ''.join(str(child) for child in self.body)
@@ -98,6 +165,16 @@ class ODRadical(RingBase):
             mul = left - right
             upper *= mul
             lower *= mul
+
+    def __floor__(self):
+        while not self._interval.same_floor():
+            self._interval_update()
+        return self._interval.floor()
+
+    def _interval_update(self):
+        for child in self.body:
+            child._interval_update()
+        self._interval_refresh()
 
     def is_zero(self):
         return len(self.body) == 0
@@ -262,6 +339,7 @@ class ODRadicalElement:
     multiply: NumberType
     power: dict[int: Fraction]
     key_: Any = None
+    _interval: Interval = None
 
     @classmethod
     def from_number(cls, number, root=2, multiply=1):
@@ -282,6 +360,12 @@ class ODRadicalElement:
     @classmethod
     def wrap_number(cls, number):
         return cls(multiply=number, power={})
+
+    def __post_init__(self):
+        end = 1
+        for p in self.power:
+            end *= p
+        self._interval = Interval(1, end) * self.multiply
 
     def pop(self, key):
         power = dict(self.power)
@@ -327,6 +411,16 @@ class ODRadicalElement:
             )
         else:
             raise TypeError("Unknown Type")
+
+    def _interval_update(self):
+        middle = self._interval.middle / self.multiply
+
+
+    def _denominator_lcm(self):
+        result = 1
+        for power in self.power.values():
+            result = math.lcm(result, power.denominator)
+        return result
 
     @property
     def key(self):
