@@ -32,6 +32,9 @@ class RationalFieldElement(FieldElement):
         else:
             return NotImplemented
 
+    def __rmul__(self, other):
+        return self * other
+
     def inv(self):
         return self._wrap(1 / self.value)
 
