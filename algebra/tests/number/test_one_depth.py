@@ -1,6 +1,6 @@
 import unittest
 
-from algebra.number.one_depth import ODRadical
+from algebra.field.radical.base import ODRadical
 
 
 class TestRadicalMultiply(unittest.TestCase):
