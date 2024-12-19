@@ -1,6 +1,7 @@
+import math
 import unittest
 
-from algebra.number.one_depth import ODRadical
+from algebra.field.radical.one.base import ODRadical
 
 
 class TestRadicalMultiply(unittest.TestCase):
@@ -32,3 +33,11 @@ class TestRadicalMultiply(unittest.TestCase):
 
         self.assertTrue(2 in a1.body[0].power)
         self.assertTrue(r == 8)
+
+    @unittest.skip
+    def test_ceil_radical(self):
+        a1 = ODRadical.from_number(2, root=3)
+        a2 = ODRadical.from_number(3, root=4)
+        r = a1 + a2
+
+        print(math.ceil(r))
