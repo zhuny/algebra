@@ -2,6 +2,7 @@ import collections
 import functools
 import itertools
 import math
+import time
 from dataclasses import dataclass
 from fractions import Fraction
 from typing import Any, Union
@@ -15,7 +16,7 @@ from algebra.ring.polynomial.base import PolynomialRingElement, PolynomialRing, 
     PolynomialIdeal
 from algebra.ring.polynomial.monomial_ordering import \
     GradedReverseLexicographicOrdering
-from algebra.util.decorator import iter_to_str
+from algebra.util.decorator import iter_to_str, Timer
 
 
 @dataclass
@@ -158,6 +159,9 @@ class ODRadical:
     def __sub__(self, other):
         return self + (-other)
 
+    def __neg__(self):
+        return self._mul_const(-1)
+
     def __mul__(self, other):
         if isinstance(other, (int, Fraction)):
             return self._mul_const(other)
@@ -179,12 +183,16 @@ class ODRadical:
     def __truediv__(self, other):
         if isinstance(other, RationalFieldElement):
             return self._mul_const(1 / other.value)
+        elif isinstance(other, (int, Fraction)):
+            return self._mul_const(1 / Fraction(other))
         else:
             return NotImplemented
 
     def __pow__(self, power):
         if power == 0:
-            return 1
+            return ODRadical({
+                ODRadicalElement(power={}): 1
+            })  # one
         elif power == 1:
             return self
 
@@ -197,6 +205,9 @@ class ODRadical:
         while not self.interval.same_floor():
             self.interval_update()
         return self.interval.floor()
+
+    def __eq__(self, other):
+        return (self - other).is_zero()
 
     @iter_to_str
     def __str__(self):
@@ -225,6 +236,7 @@ class ODRadical:
 
     def inv(self):
         mp = self.minimal_polynomial
+
         x = mp.ring.element([0, 1])
         inv_p, constant = divmod(mp, x)
 
@@ -233,6 +245,12 @@ class ODRadical:
     @functools.cached_property
     def minimal_polynomial(self) -> PolynomialRingElement:
         return MinimalPolynomialCalculator(self).run()
+
+    def min_rad(self):
+        return min(self.body)
+
+    def is_zero(self):
+        return len(self.body) == 0
 
     def _mul_const(self, other):
         return ODRadical(body={
@@ -417,6 +435,9 @@ class ODRadicalElement:
 
     def __eq__(self, other):
         return self.key == other.key
+
+    def __lt__(self, other):
+        return self.key < other.key
 
     def multiple(self, other: 'ODRadicalElement'):
         power_d = collections.defaultdict(Fraction)
@@ -607,7 +628,7 @@ class BinarySearch:
             return (self.start + self.end) // 2
 
 
-class MinimalPolynomialCalculator:
+class MinimalPolynomialCalculatorSlow:
     def __init__(self, value: ODRadical):
         self.value = value
 
@@ -632,7 +653,8 @@ class MinimalPolynomialCalculator:
 
         quotient = ring / ring.ideal(generators)
         self_ = quotient.element(last_variable)
-        return self_.minimal_polynomial()
+        with Timer("Min Poly"):
+            return self_.minimal_polynomial()
 
     def needed_variables(self):
         answer = 1
@@ -650,3 +672,55 @@ class MinimalPolynomialCalculator:
             g_list.append(x ** e.denominator - p ** e.numerator)
 
         return variable, g_list
+
+
+class MinimalPolynomialCalculator:
+    def __init__(self, value: ODRadical):
+        self.value = value
+        self.value_pow = {1: value}
+
+        self.ring = PolynomialRing(RationalField(), number=1)
+
+        self.left_poly = []
+        self.right_number = []
+
+    def run(self):
+        self._add_row(0)
+        self._add_row(1)
+
+        for i in itertools.count(2):
+            if self._is_rank_over():
+                break
+
+            self._add_row(i)
+
+        return self.left_poly[-1]
+
+    def _show(self):
+        print("Left :")
+        for left in self.left_poly:
+            print(left)
+
+        print("Right :")
+        for right in self.right_number:
+            print(right)
+
+    def _add_row(self, i):
+        left = self.ring.element({i: 1})
+        right = self.value ** i
+
+        for prev_left, prev_right in zip(self.left_poly, self.right_number):
+            min_rad = prev_right.min_rad()
+            prev_num = prev_right.body[min_rad]
+            if min_rad not in right.body:
+                continue
+            current_num = right.body[min_rad]
+
+            left -= prev_left * current_num / prev_num
+            right -= prev_right * current_num / prev_num
+
+        self.left_poly.append(left)
+        self.right_number.append(right)
+
+    def _is_rank_over(self):
+        return self.right_number[-1].is_zero()
