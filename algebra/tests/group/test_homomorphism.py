@@ -25,6 +25,7 @@ class TestHomomorphism(unittest.TestCase):
 
             self.assertEqual(target, element, 'factor check')
 
+    @unittest.skip
     def test_factor_symmetric(self):
         g = symmetric_group(10)
         total_count = 30

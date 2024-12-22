@@ -80,6 +80,9 @@ class PolynomialRing(Ring):
         return PolynomialIdeal(ring=self, generator=element_list)
 
     def _wrap_monomial(self, power: int | list[int]):
+        if isinstance(power, Monomial):
+            return power
+
         if isinstance(power, int):
             power = [power] + [0] * (self.number - 1)
 
@@ -223,10 +226,18 @@ class PolynomialRingElement(RingElement):
         )
 
     def __getitem__(self, item):
+        item = self.ring._wrap_monomial(item)
+
         if item in self.value:
             return self.value[item]
         else:
-            return self.ring.element(0)
+            return self.ring.field.element(0)
+
+    def __call__(self, value_list):
+        answer = 0
+        for monomial, coefficient in self.value.items():
+            answer += monomial(value_list) * coefficient
+        return answer
 
     def is_zero(self):
         return len(self.value) == 0
@@ -312,6 +323,15 @@ class Monomial:
 
         power = [x - y for x, y in zip(self.power, other.power)]
         return Monomial(power=power, ring=self.ring)
+
+    def __call__(self, value_list):
+        if len(self.power) != len(value_list):
+            raise ValueError("Dimension not matched")
+
+        result = 1
+        for p, v in zip(self.power, value_list):
+            result *= v ** p
+        return result
 
     def is_constant(self):
         for power in self.power:
