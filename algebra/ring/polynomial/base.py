@@ -4,6 +4,7 @@ import itertools
 import re
 from dataclasses import dataclass
 from fractions import Fraction
+from functools import singledispatchmethod
 from typing import List
 
 from algebra.field.base import Field, FieldElement
@@ -92,7 +93,7 @@ class PolynomialRing(Ring):
         return Monomial(ring=self, power=power)
 
 
-@dataclass
+@dataclass(eq=False)
 class PolynomialRingElement(RingElement):
     ring: PolynomialRing
     value: dict['Monomial', FieldElement]
@@ -179,7 +180,15 @@ class PolynomialRingElement(RingElement):
     def __rmul__(self, other):
         return self * other
 
+    @singledispatchmethod
     def __truediv__(self, other):
+        if not isinstance(other, PolynomialRingElement):
+            return NotImplemented
+
+        return divmod(self, other)[0]
+
+    @__truediv__.register
+    def _(self, other: int | Fraction | FieldElement):
         if isinstance(other, (int, Fraction)):
             other = self.ring.field.element(other)
 
@@ -239,6 +248,12 @@ class PolynomialRingElement(RingElement):
             answer += monomial(value_list) * coefficient
         return answer
 
+    def __eq__(self, other):
+        return (self - other).is_zero()
+
+    def __ne__(self, other):
+        return not (self == other)
+
     def is_zero(self):
         return len(self.value) == 0
 
@@ -281,6 +296,30 @@ class PolynomialRingElement(RingElement):
                 (e2_mono / e3) * self / self_c -
                 (self_mono / e3) * e2 / e2_c
         )
+
+    def monic(self):
+        return self / self.lead_coefficient()
+
+    def factorize(self):
+        # from algebra.ring.polynomial.factorize.rational import \
+        #     FactorizePolynomialRational
+        # return FactorizePolynomialRational(self).run()
+        from algebra.ring.polynomial.factorize.finite import \
+            FactorizePolynomialFinite
+        return FactorizePolynomialFinite(self).run()
+
+    def gcd(self, other):
+        left, right = self, other
+        while not right.is_zero():
+            left, right = right, left % right
+        return left.monic()
+
+    def diff(self, index):
+        value = {}
+        for monomial, multiplier in self.value.items():
+            const, mono = monomial.diff(index)
+            value[mono] = const * multiplier
+        return PolynomialRingElement(value=value, ring=self.ring)
 
 
 @dataclass
@@ -359,6 +398,13 @@ class Monomial:
             power=[max(x, y) for x, y in zip(self.power, other.power)],
             ring=self.ring
         )
+
+    def diff(self, index: int):
+        power = list(self.power)
+        const = self.ring.field.element(power[index])
+        if power[index] > 0:
+            power[index] -= 1
+        return const, Monomial(power=power, ring=self.ring)
 
 
 @dataclass

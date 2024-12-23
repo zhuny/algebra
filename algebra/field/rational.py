@@ -18,7 +18,16 @@ class RationalFieldElement(FieldElement):
         return str(self.value)
 
     def __add__(self, other):
-        return self._wrap(self.value + other.value)
+        if isinstance(other, (int, Fraction)):
+            return self._wrap(self.value + other)
+        elif isinstance(other, RationalFieldElement):
+            self._check_type(other)
+            return self._wrap(self.value + other.value)
+        else:
+            return NotImplemented
+
+    def __radd__(self, other):
+        return self + other
 
     def __neg__(self):
         return self._wrap(-self.value)
