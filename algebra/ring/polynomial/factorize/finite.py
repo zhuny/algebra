@@ -1,3 +1,4 @@
+import itertools
 from dataclasses import dataclass
 
 from algebra.ring.polynomial.base import PolynomialRingElement
@@ -10,6 +11,7 @@ class FactorizePolynomialFinite:
     @staticmethod
     def get_pipeline():
         yield SquareFreeFactorization()
+        yield DistinctDegreeFactorization()
 
     def run(self):
         stream = [PolynomialData(polynomial=self.polynomial)]
@@ -18,7 +20,7 @@ class FactorizePolynomialFinite:
             stream = pipe.run(stream)
 
         for s in stream:
-            print(s.polynomial)
+            print(s.polynomial, s.power, s.degree)
             input()
 
 
@@ -50,6 +52,41 @@ class SquareFreeFactorization(Pipeline):
 
         while w != 1:
             y = w.gcd(c)
-            yield PolynomialData(polynomial=w / y, power=i)
+            yield PolynomialData(polynomial=(w / y).monic(), power=i)
             w, c = y, c / y
             i += 1
+
+        if c != 1:
+            print('SFF :', c)
+            assert False
+
+
+class DistinctDegreeFactorization(Pipeline):
+    def run_one(self, data: PolynomialData):
+        poly = data.polynomial.monic()
+        if poly == 1:
+            return
+
+        q = poly.ring.field.size()
+
+        for i in itertools.count(1):
+            if poly.degree() < 2 * i:
+                break
+
+            total_mult = poly.ring.element({
+                1: -1,
+                (q ** i): 1
+            })
+            g = poly.gcd(total_mult)
+            if g != 1:
+                yield PolynomialData(
+                    polynomial=g,
+                    power=data.power, degree=i
+                )
+                poly /= g
+
+        if poly != 1:
+            yield PolynomialData(
+                polynomial=poly,
+                power=data.power, degree=poly.degree()
+            )

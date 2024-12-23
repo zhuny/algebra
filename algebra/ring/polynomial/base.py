@@ -321,6 +321,9 @@ class PolynomialRingElement(RingElement):
             value[mono] = const * multiplier
         return PolynomialRingElement(value=value, ring=self.ring)
 
+    def degree(self):
+        return self.lead_monomial().degree()
+
 
 @dataclass
 class Monomial:
@@ -371,6 +374,9 @@ class Monomial:
         for p, v in zip(self.power, value_list):
             result *= v ** p
         return result
+
+    def degree(self):
+        return sum(self.power)
 
     def is_constant(self):
         for power in self.power:

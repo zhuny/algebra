@@ -21,6 +21,9 @@ class FinitePrimeField(Field):
 
         raise ValueError("Invalid element")
 
+    def size(self):
+        return self.char
+
 
 @dataclass
 class FinitePrimeFieldElement(FieldElement):
