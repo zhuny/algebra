@@ -1,7 +1,15 @@
 import itertools
+import random
 from dataclasses import dataclass
 
+from algebra.exception.me import IncorrectError
 from algebra.ring.polynomial.base import PolynomialRingElement
+
+
+"""
+Implementation Reference
+https://en.wikipedia.org/wiki/Factorization_of_polynomials_over_finite_fields
+"""
 
 
 class FactorizePolynomialFinite:
@@ -12,6 +20,7 @@ class FactorizePolynomialFinite:
     def get_pipeline():
         yield SquareFreeFactorization()
         yield DistinctDegreeFactorization()
+        yield CantorZassenhausAlgorithm()
 
     def run(self):
         stream = [PolynomialData(polynomial=self.polynomial)]
@@ -19,9 +28,18 @@ class FactorizePolynomialFinite:
         for pipe in self.get_pipeline():
             stream = pipe.run(stream)
 
+        result = []
+        current = 1
+
         for s in stream:
-            print(s.polynomial, s.power, s.degree)
-            input()
+            for i in range(s.power):
+                current *= s.polynomial
+            result.append((s.polynomial, s.power))
+
+        if self.polynomial != current:
+            raise IncorrectError(self.polynomial, current)
+
+        return result
 
 
 @dataclass
@@ -90,3 +108,43 @@ class DistinctDegreeFactorization(Pipeline):
                 polynomial=poly,
                 power=data.power, degree=poly.degree()
             )
+
+
+class CantorZassenhausAlgorithm(Pipeline):
+    def run_one(self, data: PolynomialData):
+        factors = [data.polynomial]
+        factor_size = data.polynomial.degree() // data.degree
+        field_size = data.polynomial.ring.field.size()
+
+        while len(factors) < factor_size:
+            h = self.get_random_poly(
+                data.polynomial.ring,
+                data.polynomial.degree()
+            )
+            h = pow(h, (field_size ** data.degree - 1) // 2, data.polynomial)
+            h = (h - 1) % data.polynomial
+
+            factors = list(self.split_factor(factors, h))
+
+        for factor in factors:
+            yield PolynomialData(polynomial=factor, power=data.power)
+
+    @staticmethod
+    def get_random_poly(ring, max_degree):
+        random_degree = random.randint(3, max_degree + 1)
+        size = ring.field.size()
+        return ring.element([
+            random.randint(0, size-1)
+            for i in range(random_degree)
+        ])
+
+    @staticmethod
+    def split_factor(factors, choice):
+        for factor in factors:
+            left = factor.gcd(choice)
+            if left != 1 and left != factor:
+                yield left
+                yield factor / left
+            else:
+                yield factor
+

@@ -200,6 +200,26 @@ class PolynomialRingElement(RingElement):
             value={k: v / other for k, v in self.value.items()}
         )
 
+    def __pow__(self, power: int, modulo=None) -> 'PolynomialRingElement':
+        if not (isinstance(power, int) and power > 0):
+            return NotImplemented
+
+        pow_result = 1
+        current = self
+        while power > 0:
+            if power % 2 == 1:
+                pow_result *= current
+                if modulo:
+                    pow_result %= modulo
+
+            current *= current
+            if modulo:
+                current %= modulo
+
+            power //= 2
+
+        return current
+
     def __mod__(self, other):
         if not isinstance(other, PolynomialRingElement):
             return NotImplemented
