@@ -14,7 +14,7 @@ https://en.wikipedia.org/wiki/Factorization_of_polynomials_over_finite_fields
 
 class FactorizePolynomialFinite:
     def __init__(self, polynomial):
-        self.polynomial = polynomial
+        self.polynomial = polynomial.monic()
 
     @staticmethod
     def get_pipeline():
@@ -37,6 +37,11 @@ class FactorizePolynomialFinite:
             result.append((s.polynomial, s.power))
 
         if self.polynomial != current:
+            print("Factor :")
+            for polynomial, power in result:
+                print(polynomial, power)
+            print("Expected :", self.polynomial)
+            print("Calc :", current)
             raise IncorrectError(self.polynomial, current)
 
         return result
