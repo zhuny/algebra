@@ -177,4 +177,3 @@ class CantorZassenhausAlgorithm(Pipeline):
                 yield factor / left
             else:
                 yield factor
-

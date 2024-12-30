@@ -218,7 +218,7 @@ class PolynomialRingElement(RingElement):
 
             power //= 2
 
-        return current
+        return pow_result
 
     def __mod__(self, other):
         if not isinstance(other, PolynomialRingElement):
