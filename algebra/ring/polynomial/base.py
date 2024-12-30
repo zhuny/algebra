@@ -335,10 +335,10 @@ class PolynomialRingElement(RingElement):
         return left.monic()
 
     def diff(self, index):
-        value = {}
+        value = collections.defaultdict(int)
         for monomial, multiplier in self.value.items():
             const, mono = monomial.diff(index)
-            value[mono] = const * multiplier
+            value[mono] += const * multiplier
         return PolynomialRingElement(value=value, ring=self.ring)
 
     def degree(self):
@@ -430,7 +430,19 @@ class Monomial:
         const = self.ring.field.element(power[index])
         if power[index] > 0:
             power[index] -= 1
+        else:
+            power = [0] * len(self.power)
         return const, Monomial(power=power, ring=self.ring)
+
+    def root(self, degree):
+        for p in self.power:
+            if p % degree != 0:
+                raise ValueError("Root not Valid")
+
+        return Monomial(
+            power=[p // degree for p in self.power],
+            ring=self.ring
+        )
 
 
 @dataclass

@@ -39,6 +39,8 @@ class FinitePrimeFieldElement(FieldElement):
 
         return self._wrap_result(self.value + self._wrap_value(other))
 
+    __radd__ = __add__
+
     def __neg__(self):
         return self._wrap_result(-self.value)
 

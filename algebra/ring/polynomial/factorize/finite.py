@@ -54,7 +54,15 @@ class PolynomialData:
 class Pipeline:
     def run(self, stream):
         for d in stream:
-            yield from self.run_one(d)
+            stack = [self.run_one(d)]
+            while stack:
+                top = stack.pop()
+                for element in top:
+                    if isinstance(element, PolynomialData):
+                        yield element
+                    else:
+                        stack.append(top)
+                        stack.append(element)
 
     def run_one(self, data: PolynomialData):
         raise NotImplementedError(self)
@@ -64,19 +72,41 @@ class SquareFreeFactorization(Pipeline):
     def run_one(self, data: PolynomialData):
         poly = data.polynomial
 
-        c = poly.gcd(poly.diff(0).monic())
+        d = poly.diff(0)
+        if d.is_zero():
+            yield self.run_with_p(data)
+            return
+
+        c = poly.gcd(d.monic())
         w = poly / c
         i = 1
 
         while w != 1:
             y = w.gcd(c)
-            yield PolynomialData(polynomial=(w / y).monic(), power=i)
+            yield PolynomialData(
+                polynomial=(w / y).monic(),
+                power=i*data.power
+            )
             w, c = y, c / y
             i += 1
 
         if c != 1:
-            print('SFF :', c)
-            assert False
+            yield self.run_with_p(
+                PolynomialData(polynomial=c, power=data.power)
+            )
+
+    def run_with_p(self, data: PolynomialData):
+        degree = data.polynomial.ring.field.char
+        polynomial = data.polynomial.ring.element({
+            k.root(degree): v
+            for k, v in data.polynomial.value.items()
+        })
+        return self.run_one(
+            PolynomialData(
+                polynomial=polynomial,
+                power=data.power * degree
+            )
+        )
 
 
 class DistinctDegreeFactorization(Pipeline):

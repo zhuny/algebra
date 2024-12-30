@@ -36,16 +36,20 @@ def build(pr) -> PolynomialRingElement:
     return element.monic()
 
 
+def factorize(polynomial):
+    with ErrorDebug(polynomial):
+        print(polynomial, '=')
+        for f, p in polynomial.factorize():
+            print(f, p)
+    print()
+
+
 def main():
     pr = PolynomialRing(field=FinitePrimeField(17), number=1)
 
-    for i in range(1000):
-        e = build(pr)
-        with ErrorDebug(e):
-            print(e, '=')
-            for f, p in e.factorize():
-                print(f, p)
-        print()
+    e = pr.element({34: 1, 17: 2, 0: 1})
+    factorize(e)
+    factorize(e * build(pr))
 
 
 if __name__ == '__main__':
