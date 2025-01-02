@@ -1,4 +1,5 @@
 import collections
+import copy
 import dataclasses
 import itertools
 import re
@@ -8,6 +9,7 @@ from functools import singledispatchmethod
 from typing import List
 
 from algebra.field.base import Field, FieldElement
+from algebra.matrix.matrix import Matrix
 from algebra.ring.base import Ring, RingElement
 from algebra.ring.polynomial.monomial_ordering import MonomialOrderingBase, \
     LexicographicMonomialOrdering
@@ -321,12 +323,20 @@ class PolynomialRingElement(RingElement):
         return self / self.lead_coefficient()
 
     def factorize(self):
-        # from algebra.ring.polynomial.factorize.rational import \
-        #     FactorizePolynomialRational
-        # return FactorizePolynomialRational(self).run()
-        from algebra.ring.polynomial.factorize.finite import \
-            FactorizePolynomialFinite
-        return FactorizePolynomialFinite(self).run()
+        algorithm = None
+        char = self.ring.field.get_char()
+        if char > 0:
+            from algebra.ring.polynomial.factorize.finite import \
+                FactorizePolynomialFinite
+            algorithm = FactorizePolynomialFinite
+        elif char == 0:
+            from algebra.ring.polynomial.factorize.rational import \
+                FactorizePolynomialRational
+            algorithm = FactorizePolynomialRational
+        else:
+            raise ValueError("Interesting field...")
+
+        return algorithm(self).run()
 
     def gcd(self, other):
         left, right = self, other
@@ -343,6 +353,37 @@ class PolynomialRingElement(RingElement):
 
     def degree(self):
         return self.lead_monomial().degree()
+
+    def sylvester_matrix(self, other, index=0):
+        assert index == 0
+        degree1 = self.lead_monomial().power[index]
+        degree2 = other.lead_monomial().power[index]
+        m = Matrix(degree1 + degree2, degree1 + degree2)
+        for i in range(degree1+1):
+            for j in range(degree2):
+                m[j, i+j] = self[i]
+        for i in range(degree1):
+            for j in range(degree2+1):
+                m[degree2+i, i+j] = other[j]
+
+        return m
+
+    def discriminant(self, index=0):
+        # multi-variable에서 disc를 계산할 인터페이스를 고민해 보자
+        assert self.ring.number == 1
+
+        return self.sylvester_matrix(self.diff(index)).determinant()
+
+    def convert(self, ring: 'PolynomialRing'):
+        d = {}
+
+        for m, v in self.value.items():
+            m_new = copy.copy(m)
+            m_new.ring = ring
+            v_new = v.convert(ring.field)
+            d[m_new] = v_new
+
+        return PolynomialRingElement(ring=ring, value=d)
 
 
 @dataclass

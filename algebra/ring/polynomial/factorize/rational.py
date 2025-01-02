@@ -1,58 +1,34 @@
-import itertools
-from operator import itemgetter
-
-from algebra.number.util import divisor_function, divisor_list
-from algebra.ring.polynomial.base import PolynomialRingElement
-
-
-def divisor_list_wrap(n):
-    if n == 0:
-        return [0]
-    else:
-        factor_list = list(divisor_list(abs(n)))
-        factor_list.extend([-d for d in factor_list])
-        return factor_list
+from algebra.field.finite_prime import FinitePrimeField
+from algebra.number.util import prime_iter
+from algebra.ring.polynomial.base import PolynomialRingElement, PolynomialRing
 
 
 class FactorizePolynomialRational:
-    def __init__(self, polynomial: PolynomialRingElement):
-        self.polynomial = polynomial
+    def __init__(self, polynomial):
+        self.polynomial: PolynomialRingElement = polynomial
 
     def run(self):
-        if self.polynomial.ring.number != 1:
-            return []
+        prime = self._get_valid_prime()
 
-        degree = sum(self.polynomial.lead_monomial().power)
-        if degree < 2:
-            return [self]
+        ring = PolynomialRing(FinitePrimeField(prime))
 
-        many = degree // 2
+        polynomial = self.polynomial.convert(ring)
+        for f, e in polynomial.factorize():
+            f_new = f.convert(self.polynomial.ring)
 
-        value = [
-            (
-                i,
-                (v := int(self.polynomial([i]))),
-                divisor_function(abs(v)) * 2 if v != 0 else 1
-            )
-            for i in range(-100, 100)
-        ]
-        value.sort(key=itemgetter(2, 1, 0))
-        picked = value[:many]
-        picked_factor = [divisor_list_wrap(v[1]) for v in picked]
-        checker = value[many]
+            if self.polynomial % f_new == 0:
+                yield f_new, e
+            else:
+                raise ValueError("????")
 
-        for each_value in itertools.product(*picked_factor):
-            solved: PolynomialRingElement = self.solve_value({
-                x[0]: z
-                for x, z in zip(picked, each_value)
-            })
-            if solved.is_constant():
-                continue
-            if not self.is_valid_value(checker[1], solved(checker[0])):
-                continue
+    def _get_valid_prime(self):
+        disc = self.polynomial.discriminant(0)
+        max_value = max([
+            abs(v.value)
+            for v in self.polynomial.value.values()
+        ])
+        max_value = max(max_value * 2, 10)
 
-            q, r = divmod(self.polynomial, solved)
-            if r == 0:
-                return solved.factorize() + q.factorize()
-
-        return [self]
+        for prime in prime_iter():
+            if prime > max_value and disc % prime != 0:
+                return prime

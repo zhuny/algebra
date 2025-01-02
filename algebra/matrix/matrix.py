@@ -1,3 +1,4 @@
+import collections
 from fractions import Fraction
 
 
@@ -6,6 +7,36 @@ class Matrix:
         self.body = {}
         self.row_size = row
         self.col_size = col
+
+    def __str__(self):
+        col_str_max = collections.defaultdict(list)
+        matrix_str = {}
+
+        for row in range(self.row_size):
+            for col in range(self.col_size):
+                s = str(self[row, col])
+                col_str_max[col].append(s)
+                matrix_str[row, col] = s
+
+        stream = []
+        col_padding = {
+            k: max(map(len, v))
+            for k, v in col_str_max.items()
+        }
+        for row in range(self.row_size):
+            for col in range(self.col_size):
+                s = matrix_str[row, col]
+                stream.append(s)
+                stream.append(' ' * (col_padding[col] + 1 - len(s)))
+            stream.append('\n')
+
+        return ''.join(stream)
+
+    def copy(self):
+        m = Matrix(self.row_size, self.col_size)
+        for k, v in self.body.items():
+            m[k] = v
+        return m
 
     def append_row(self):
         self.row_size += 1
@@ -97,3 +128,25 @@ class Matrix:
             stream.append("}")
         stream.append("}")
         return "".join(stream)
+
+    def determinant(self):
+        clone = self.copy()
+        answer = 1
+        for i in range(self.col_size):
+            if clone[i, i] == 0:
+                for j in range(i, self.col_size):
+                    if clone[i, j] != 0:
+                        clone._swap_row(i, j)
+                        break
+
+            value = clone[i, i]
+            if value == 0:
+                return value  # return zero
+
+            answer *= value
+
+            clone._div_row(i, value)
+            for j in range(i+1, self.col_size):
+                clone._add_row(i, j, -clone[j, i])
+
+        return answer

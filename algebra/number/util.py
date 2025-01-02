@@ -1,4 +1,5 @@
 import collections
+import itertools
 import math
 from typing import Dict, List
 
@@ -72,3 +73,29 @@ def divisor_list(number) -> List[int]:
 
     last.reverse()
     yield from last
+
+
+def prime_iter():
+    return _Prime.get_list()
+
+
+class _Prime:
+    _p_list = [2, 3, 5, 7]
+
+    @classmethod
+    def get_list(cls):
+        yield from cls._p_list
+
+        for i in itertools.count(cls._p_list[-1] + 2, 2):
+            if not cls._is_divisible(i):
+                yield i
+                cls._p_list.append(i)
+
+    @classmethod
+    def _is_divisible(cls, p):
+        for i in cls._p_list:
+            if i * i > p:
+                break
+            if p % i == 0:
+                return True
+        return False

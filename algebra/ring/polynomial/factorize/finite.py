@@ -1,10 +1,9 @@
 import itertools
 import random
-from dataclasses import dataclass
 
 from algebra.exception.me import IncorrectError
-from algebra.ring.polynomial.base import PolynomialRingElement
-
+from algebra.ring.polynomial.factorize.base import AlgorithmPipeline, \
+    PolynomialData
 
 """
 Implementation Reference
@@ -12,10 +11,7 @@ https://en.wikipedia.org/wiki/Factorization_of_polynomials_over_finite_fields
 """
 
 
-class FactorizePolynomialFinite:
-    def __init__(self, polynomial):
-        self.polynomial = polynomial.monic()
-
+class FactorizePolynomialFinite(AlgorithmPipeline):
     @staticmethod
     def get_pipeline():
         yield SquareFreeFactorization()
@@ -23,10 +19,7 @@ class FactorizePolynomialFinite:
         yield CantorZassenhausAlgorithm()
 
     def run(self):
-        stream = [PolynomialData(polynomial=self.polynomial)]
-
-        for pipe in self.get_pipeline():
-            stream = pipe.run(stream)
+        stream = super().run()
 
         result = []
         current = 1
@@ -45,15 +38,6 @@ class FactorizePolynomialFinite:
             raise IncorrectError(self.polynomial, current)
 
         return result
-
-
-@dataclass
-class PolynomialData:
-    polynomial: PolynomialRingElement
-    power: int = 1
-
-    # context
-    degree: int = 0
 
 
 class Pipeline:
