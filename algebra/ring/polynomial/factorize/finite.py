@@ -3,7 +3,7 @@ import random
 
 from algebra.exception.me import IncorrectError
 from algebra.ring.polynomial.factorize.base import AlgorithmPipeline, \
-    PolynomialData
+    PolynomialData, Pipeline
 
 """
 Implementation Reference
@@ -12,22 +12,18 @@ https://en.wikipedia.org/wiki/Factorization_of_polynomials_over_finite_fields
 
 
 class FactorizePolynomialFinite(AlgorithmPipeline):
-    @staticmethod
-    def get_pipeline():
+    def get_pipeline(self):
         yield SquareFreeFactorization()
         yield DistinctDegreeFactorization()
         yield CantorZassenhausAlgorithm()
 
     def run(self):
-        stream = super().run()
-
-        result = []
+        result = list(super().run())
         current = 1
 
-        for s in stream:
-            for i in range(s.power):
-                current *= s.polynomial
-            result.append((s.polynomial, s.power))
+        for polynomial, power in result:
+            for i in range(power):
+                current *= polynomial
 
         if self.polynomial != current:
             print("Factor :")
@@ -37,24 +33,7 @@ class FactorizePolynomialFinite(AlgorithmPipeline):
             print("Calc :", current)
             raise IncorrectError(self.polynomial, current)
 
-        return result
-
-
-class Pipeline:
-    def run(self, stream):
-        for d in stream:
-            stack = [self.run_one(d)]
-            while stack:
-                top = stack.pop()
-                for element in top:
-                    if isinstance(element, PolynomialData):
-                        yield element
-                    else:
-                        stack.append(top)
-                        stack.append(element)
-
-    def run_one(self, data: PolynomialData):
-        raise NotImplementedError(self)
+        yield from result
 
 
 class SquareFreeFactorization(Pipeline):

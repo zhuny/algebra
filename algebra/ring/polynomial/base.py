@@ -279,6 +279,9 @@ class PolynomialRingElement(RingElement):
     def is_zero(self):
         return len(self.value) == 0
 
+    def is_one(self):
+        return (self - 1).is_zero()
+
     def lead_monomial(self):
         return self._degree
 
