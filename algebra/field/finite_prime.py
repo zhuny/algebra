@@ -21,6 +21,13 @@ class FinitePrimeField(Field):
 
         raise ValueError("Invalid element")
 
+    def size(self):
+        # extended field의 경우 power가 곱해진 값일 것이다.
+        return self.char
+
+    def get_char(self):
+        return self.char
+
 
 @dataclass
 class FinitePrimeFieldElement(FieldElement):
@@ -35,6 +42,8 @@ class FinitePrimeFieldElement(FieldElement):
             return NotImplemented
 
         return self._wrap_result(self.value + self._wrap_value(other))
+
+    __radd__ = __add__
 
     def __neg__(self):
         return self._wrap_result(-self.value)
@@ -79,6 +88,9 @@ class FinitePrimeFieldElement(FieldElement):
 
     def is_one(self):
         return self.value == 1
+
+    def convert(self, another):
+        return another.element(self.value)
 
     @staticmethod
     def _is_valid_value(other):

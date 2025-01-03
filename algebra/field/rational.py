@@ -9,6 +9,10 @@ class RationalField(Field):
     def element(self, value) -> 'FieldElement':
         return RationalFieldElement(field=self, value=Fraction(value))
 
+    def get_char(self):
+        # 무한대의 경우 항상 0을 반환한다.
+        return 0
+
 
 @dataclass(eq=False)
 class RationalFieldElement(FieldElement):
@@ -18,7 +22,16 @@ class RationalFieldElement(FieldElement):
         return str(self.value)
 
     def __add__(self, other):
-        return self._wrap(self.value + other.value)
+        if isinstance(other, (int, Fraction)):
+            return self._wrap(self.value + other)
+        elif isinstance(other, RationalFieldElement):
+            self._check_type(other)
+            return self._wrap(self.value + other.value)
+        else:
+            return NotImplemented
+
+    def __radd__(self, other):
+        return self + other
 
     def __neg__(self):
         return self._wrap(-self.value)
@@ -42,11 +55,17 @@ class RationalFieldElement(FieldElement):
         left, right = self._wrap_compare(other)
         return left == right
 
+    def __mod__(self, other):
+        return self.value % other
+
     def is_zero(self):
         return self.value == 0
 
     def is_one(self):
         return self.value == 1
+
+    def convert(self, field):
+        return field.element(int(self.value))
 
     def _wrap(self, number):
         return RationalFieldElement(field=self.field, value=Fraction(number))

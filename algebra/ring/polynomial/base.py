@@ -1,12 +1,15 @@
 import collections
+import copy
 import dataclasses
 import itertools
 import re
 from dataclasses import dataclass
 from fractions import Fraction
+from functools import singledispatchmethod
 from typing import List
 
 from algebra.field.base import Field, FieldElement
+from algebra.matrix.matrix import Matrix
 from algebra.ring.base import Ring, RingElement
 from algebra.ring.polynomial.monomial_ordering import MonomialOrderingBase, \
     LexicographicMonomialOrdering
@@ -92,7 +95,7 @@ class PolynomialRing(Ring):
         return Monomial(ring=self, power=power)
 
 
-@dataclass
+@dataclass(eq=False)
 class PolynomialRingElement(RingElement):
     ring: PolynomialRing
     value: dict['Monomial', FieldElement]
@@ -179,7 +182,15 @@ class PolynomialRingElement(RingElement):
     def __rmul__(self, other):
         return self * other
 
+    @singledispatchmethod
     def __truediv__(self, other):
+        if not isinstance(other, PolynomialRingElement):
+            return NotImplemented
+
+        return divmod(self, other)[0]
+
+    @__truediv__.register
+    def _(self, other: int | Fraction | FieldElement):
         if isinstance(other, (int, Fraction)):
             other = self.ring.field.element(other)
 
@@ -190,6 +201,26 @@ class PolynomialRingElement(RingElement):
             ring=self.ring,
             value={k: v / other for k, v in self.value.items()}
         )
+
+    def __pow__(self, power: int, modulo=None) -> 'PolynomialRingElement':
+        if not (isinstance(power, int) and power > 0):
+            return NotImplemented
+
+        pow_result = 1
+        current = self
+        while power > 0:
+            if power % 2 == 1:
+                pow_result *= current
+                if modulo:
+                    pow_result %= modulo
+
+            current *= current
+            if modulo:
+                current %= modulo
+
+            power //= 2
+
+        return pow_result
 
     def __mod__(self, other):
         if not isinstance(other, PolynomialRingElement):
@@ -239,8 +270,17 @@ class PolynomialRingElement(RingElement):
             answer += monomial(value_list) * coefficient
         return answer
 
+    def __eq__(self, other):
+        return (self - other).is_zero()
+
+    def __ne__(self, other):
+        return not (self == other)
+
     def is_zero(self):
         return len(self.value) == 0
+
+    def is_one(self):
+        return (self - 1).is_zero()
 
     def lead_monomial(self):
         return self._degree
@@ -281,6 +321,72 @@ class PolynomialRingElement(RingElement):
                 (e2_mono / e3) * self / self_c -
                 (self_mono / e3) * e2 / e2_c
         )
+
+    def monic(self):
+        return self / self.lead_coefficient()
+
+    def factorize(self):
+        algorithm = None
+        char = self.ring.field.get_char()
+        if char > 0:
+            from algebra.ring.polynomial.factorize.finite import \
+                FactorizePolynomialFinite
+            algorithm = FactorizePolynomialFinite
+        elif char == 0:
+            from algebra.ring.polynomial.factorize.rational import \
+                FactorizePolynomialRational
+            algorithm = FactorizePolynomialRational
+        else:
+            raise ValueError("Interesting field...")
+
+        return algorithm(self).run()
+
+    def gcd(self, other):
+        left, right = self, other
+        while not right.is_zero():
+            left, right = right, left % right
+        return left.monic()
+
+    def diff(self, index):
+        value = collections.defaultdict(int)
+        for monomial, multiplier in self.value.items():
+            const, mono = monomial.diff(index)
+            value[mono] += const * multiplier
+        return PolynomialRingElement(value=value, ring=self.ring)
+
+    def degree(self):
+        return self.lead_monomial().degree()
+
+    def sylvester_matrix(self, other, index=0):
+        assert index == 0
+        degree1 = self.lead_monomial().power[index]
+        degree2 = other.lead_monomial().power[index]
+        m = Matrix(degree1 + degree2, degree1 + degree2)
+        for i in range(degree1+1):
+            for j in range(degree2):
+                m[j, i+j] = self[i]
+        for i in range(degree1):
+            for j in range(degree2+1):
+                m[degree2+i, i+j] = other[j]
+
+        return m
+
+    def discriminant(self, index=0):
+        # multi-variable에서 disc를 계산할 인터페이스를 고민해 보자
+        assert self.ring.number == 1
+
+        return self.sylvester_matrix(self.diff(index)).determinant()
+
+    def convert(self, ring: 'PolynomialRing'):
+        d = {}
+
+        for m, v in self.value.items():
+            m_new = copy.copy(m)
+            m_new.ring = ring
+            v_new = v.convert(ring.field)
+            d[m_new] = v_new
+
+        return PolynomialRingElement(ring=ring, value=d)
 
 
 @dataclass
@@ -333,6 +439,9 @@ class Monomial:
             result *= v ** p
         return result
 
+    def degree(self):
+        return sum(self.power)
+
     def is_constant(self):
         for power in self.power:
             if power > 0:
@@ -357,6 +466,25 @@ class Monomial:
     def lcm(self, other: 'Monomial') -> 'Monomial':
         return Monomial(
             power=[max(x, y) for x, y in zip(self.power, other.power)],
+            ring=self.ring
+        )
+
+    def diff(self, index: int):
+        power = list(self.power)
+        const = self.ring.field.element(power[index])
+        if power[index] > 0:
+            power[index] -= 1
+        else:
+            power = [0] * len(self.power)
+        return const, Monomial(power=power, ring=self.ring)
+
+    def root(self, degree):
+        for p in self.power:
+            if p % degree != 0:
+                raise ValueError("Root not Valid")
+
+        return Monomial(
+            power=[p // degree for p in self.power],
             ring=self.ring
         )
 

@@ -12,6 +12,9 @@ class Field:
     def one(self):
         return self.element(1)
 
+    def get_char(self):
+        raise NotImplementedError(self)
+
 
 @dataclass(eq=False)
 class FieldElement:
@@ -35,6 +38,9 @@ class FieldElement:
     def __truediv__(self, other):
         return self * other.inv()
 
+    def __rtruediv__(self, other):
+        return other * self.inv()
+
     def __eq__(self, other):
         return (self - other).is_zero()
 
@@ -46,3 +52,6 @@ class FieldElement:
 
     def is_one(self):
         raise NotImplementedError(self)
+
+    def convert(self, another):
+        raise NotImplementedError(self, another)
