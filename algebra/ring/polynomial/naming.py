@@ -26,3 +26,23 @@ class VariableNameIndexGenerator(VariableNameGenerator):
 
     def check_range(self, length) -> bool:
         return True
+
+
+class VariableCombineGenerator(VariableNameGenerator):
+    def __init__(self, info_list):
+        start = 0
+        self.info_list = []
+        for limit, gen in info_list:
+            self.info_list.append((start, gen))
+            start += limit
+        self.info_list.reverse()
+
+        self.limit = start
+
+    def get(self, index: int) -> str:
+        for start, gen in self.info_list:
+            if start <= index:
+                return gen.get(index - start)
+
+    def check_range(self, length: int) -> bool:
+        return length <= self.limit

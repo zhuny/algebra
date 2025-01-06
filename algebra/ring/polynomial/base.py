@@ -1,6 +1,7 @@
 import collections
 import copy
 import dataclasses
+import functools
 import itertools
 import re
 from dataclasses import dataclass
@@ -9,6 +10,7 @@ from functools import singledispatchmethod
 from typing import List
 
 from algebra.field.base import Field, FieldElement
+from algebra.field.rational import RationalFieldElement
 from algebra.matrix.matrix import Matrix
 from algebra.ring.base import Ring, RingElement
 from algebra.ring.polynomial.monomial_ordering import MonomialOrderingBase, \
@@ -137,7 +139,11 @@ class PolynomialRingElement(RingElement):
             is_first = False
 
     def __add__(self, other):
-        if not isinstance(other, (int, Fraction, PolynomialRingElement)):
+        if isinstance(other, FieldElement):
+            if other.field != self.ring.field:
+                return ValueError("Field not matched")
+
+        elif not isinstance(other, (int, Fraction, PolynomialRingElement)):
             return NotImplemented
 
         value_map = collections.defaultdict(self.ring.field.zero)
@@ -148,11 +154,17 @@ class PolynomialRingElement(RingElement):
 
         return PolynomialRingElement(ring=self.ring, value=value_map)
 
+    def __radd__(self, other):
+        return self + other
+
     def _wrap_iter(self, other):
         if isinstance(other, (int, Fraction)):
             yield self.constant_monomial(), self.ring.field.element(other)
         elif isinstance(other, PolynomialRingElement):
             yield from other.value.items()
+        elif isinstance(other, FieldElement):
+            if self.ring.field == other.field:
+                yield self.constant_monomial(), other
 
     def __neg__(self):
         return PolynomialRingElement(
@@ -387,6 +399,21 @@ class PolynomialRingElement(RingElement):
             d[m_new] = v_new
 
         return PolynomialRingElement(ring=ring, value=d)
+
+    def galois_group(self):
+        from algebra.ring.polynomial.galois import GaloisGroupConstructor
+        return GaloisGroupConstructor(self).run()
+
+    def projection(self, index, power_v):
+        power = [0] * self.ring.number
+        power[index] = power_v
+
+        mon = Monomial(power=power, ring=self.ring)
+        d = {}
+        for m, v in self.value.items():
+            if m.power[index] == power_v:
+                d[m / mon] = v
+        return PolynomialRingElement(ring=self.ring, value=d)
 
 
 @dataclass
