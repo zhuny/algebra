@@ -171,6 +171,10 @@ class PolynomialRingElement(RingElement):
 
             is_first = False
 
+        # 아무것도 없는 경우
+        if is_first:
+            yield '0'
+
     def __add__(self, other):
         if isinstance(other, FieldElement):
             if other.field != self.ring.field:

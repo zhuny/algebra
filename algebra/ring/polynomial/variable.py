@@ -77,7 +77,7 @@ class CombineVariableSystem(VariableSystemBase):
         # 아마 BST를 하면 더 좋겠지만 일단 넘어가기로 한다.
         for system in self.system_list:
             size = system.get_size()
-            if 0 <= size < index:
+            if 0 <= index < size:
                 return system.get_name(index)
             index -= size
 

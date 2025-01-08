@@ -1,4 +1,4 @@
-from algebra.group.abstract.base import GroupRep
+from algebra.group.abstract.set_action import MonomialActionGroupRep
 from algebra.ring.polynomial.base import PolynomialRing
 from algebra.ring.polynomial.naming import (VariableNameIndexGenerator, VariableNameListGenerator)
 from algebra.ring.polynomial.variable import CombineVariableSystem
@@ -22,7 +22,7 @@ class GaloisGroupConstructor:
         ideal = self._build_ideal(pr)
 
         x = pr.variable.x
-        v_group = GroupRep(x).as_group()
+        v_group = MonomialActionGroupRep(x).as_group()
         total = self._build_resolvent(
             pr, v_group,
             x[0] * x[2] + x[1] * x[3]
@@ -30,11 +30,11 @@ class GaloisGroupConstructor:
 
         print(total)
 
-        print(total % ideal)
+        print('Result =', total % ideal)
 
     def _build_ideal(self, pr):
-        v_list = list(pr.variables())
-        xx = v_list.pop(0)
+        v_list = pr.variable.x
+        xx = pr.variable.X
 
         total = pr.element([1])
         for v in v_list:
@@ -42,10 +42,19 @@ class GaloisGroupConstructor:
 
         generator_list = []
         for i in range(self.polynomial.degree()):
-            xx_coeff = total.projection(0, i)
+            total, xx_coeff = divmod(total, xx)
             generator_list.append(xx_coeff - self.polynomial[i])
 
         return pr.ideal(generator_list)
 
-    def _term(self, x0, x1, x2, x3):
-        return x0 * x1 + x2 * x3
+    def _build_resolvent(self, pr, v_group, x):
+        answer = pr.element([1])
+        orbit = []
+
+        for g in v_group.element_list():
+            gx = g.act_polynomial(x)
+            if gx not in orbit:
+                answer *= pr.variable.X - gx
+                orbit.append(gx)
+
+        return answer
