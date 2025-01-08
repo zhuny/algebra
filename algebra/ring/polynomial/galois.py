@@ -1,10 +1,7 @@
-import itertools
-
-from algebra.field.rational import RationalField
 from algebra.group.abstract.base import GroupRep
 from algebra.ring.polynomial.base import PolynomialRing
-from algebra.ring.polynomial.naming import VariableCombineGenerator, \
-    VariableNameIndexGenerator, VariableNameListGenerator
+from algebra.ring.polynomial.naming import (VariableNameIndexGenerator, VariableNameListGenerator)
+from algebra.ring.polynomial.variable import CombineVariableSystem
 
 
 class GaloisGroupConstructor:
@@ -13,19 +10,19 @@ class GaloisGroupConstructor:
 
     def run(self):
         degree = self.polynomial.degree()
-        naming = VariableCombineGenerator([
-            VariableNameListGenerator('X'),
-            VariableNameIndexGenerator('x', degree)
+        v_system = CombineVariableSystem([
+            VariableNameIndexGenerator('x', degree),
+            VariableNameListGenerator('X')
         ])
 
         pr = PolynomialRing(
             self.polynomial.ring.field,
-            number=naming.limit, naming=naming
+            variable_system=v_system
         )
         ideal = self._build_ideal(pr)
 
-        x = pr.variable['x']
-        v_group = GroupRep(pr.variable['x']).as_group()
+        x = pr.variable.x
+        v_group = GroupRep(x).as_group()
         total = self._build_resolvent(
             pr, v_group,
             x[0] * x[2] + x[1] * x[3]
@@ -34,8 +31,6 @@ class GaloisGroupConstructor:
         print(total)
 
         print(total % ideal)
-
-        assert False
 
     def _build_ideal(self, pr):
         v_list = list(pr.variables())

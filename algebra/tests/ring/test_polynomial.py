@@ -8,19 +8,20 @@ from algebra.ring.polynomial.base import PolynomialRing, PolynomialIdeal, \
 from algebra.ring.polynomial.monomial_ordering import MonomialOrderingBase, \
     LexicographicMonomialOrdering, GradedLexicographicOrdering, \
     GradedReverseLexicographicOrdering
+from algebra.ring.polynomial.variable import VariableSystem
 from algebra.ring.quotient import QuotientRing
 
 
 class TestPolynomial(unittest.TestCase):
     def test_definition(self):
-        pr = PolynomialRing(field=RationalField())
+        pr = PolynomialRing(field=RationalField(), number=1)
         f = pr.element([1, 0, 1])
         f2 = f * f
 
         self.assertEqual(f2.lead_monomial().power[0], 4)
 
     def test_ideal(self):
-        pr = PolynomialRing(field=RationalField())
+        pr = PolynomialRing(field=RationalField(), number=1)
         f = pr.element([1, 0, 1])
 
         ideal: PolynomialIdeal = pr.ideal([f])
@@ -32,7 +33,9 @@ class TestPolynomial(unittest.TestCase):
         self.assertFalse(ideal.is_equivalent(f, f2))
 
     def test_str(self):
-        pr = PolynomialRing(field=RationalField(), number=3)
+        pr = PolynomialRing(
+            field=RationalField(),
+            variable_system=VariableSystem(naming='xyz'))
         x, y, z = pr.variables()
 
         self.assertEqual(str(x), 'x')
@@ -46,7 +49,7 @@ class TestPolynomial(unittest.TestCase):
         self.assertEqual(str(f2), 'x+y+z')
 
     def test_quotient(self):
-        pr = PolynomialRing(field=RationalField())
+        pr = PolynomialRing(field=RationalField(), number=1)
         f = pr.element([1, 0, 1])
         ideal: PolynomialIdeal = pr.ideal([f])
         modulo: QuotientRing = pr / ideal
@@ -171,9 +174,12 @@ class TestPolynomial(unittest.TestCase):
                                     ordering: MonomialOrderingBase,
                                     number: int, constant: bool,
                                     answer: list[str]):
+        variables = 'xyz'
         pr = PolynomialRing(
-            field=RationalField(), number=number,
-            monomial_ordering=ordering
+            field=RationalField(),
+            variable_system=VariableSystem(
+                naming=variables[:number], ordering=ordering
+            )
         )
         f = pr.one() if constant else pr.zero()
         f = sum(pr.variables(), start=f)
@@ -189,7 +195,7 @@ class TestPolynomial(unittest.TestCase):
     def test_grobner_base_small(self):
         pr = PolynomialRing(
             field=RationalField(),
-            number=2, monomial_ordering=GradedReverseLexicographicOrdering()
+            number=2, variable_system=GradedReverseLexicographicOrdering()
         )
         x, y = pr.variables()
 
@@ -201,7 +207,7 @@ class TestPolynomial(unittest.TestCase):
     def test_grobner_base_medium(self):
         pr = PolynomialRing(
             field=RationalField(),
-            number=3, monomial_ordering=GradedReverseLexicographicOrdering()
+            number=3, variable_system=GradedReverseLexicographicOrdering()
         )
         x, y, z = pr.variables()
 
@@ -214,7 +220,7 @@ class TestPolynomial(unittest.TestCase):
     def test_radical_number(self):
         pr = PolynomialRing(
             field=RationalField(),
-            number=3, monomial_ordering=GradedReverseLexicographicOrdering()
+            number=3, variable_system=GradedReverseLexicographicOrdering()
         )
         x, y, z = pr.variables()
 
@@ -228,3 +234,29 @@ class TestPolynomial(unittest.TestCase):
         mp = quotient.element(z).minimal_polynomial()
         expected = mp.ring.element([36, 0, -20, 0, 1])
         self.assertEqual(mp, expected)
+
+    def test_discriminant(self):
+        pr = PolynomialRing(field=RationalField(), number=1)
+
+        f1 = pr.element([-1, -2, 1, 1])
+        self.assertEqual(f1.discriminant(0), 49)
+
+        f2 = pr.element({0: -2, 3: 1})
+        self.assertEqual(f2.discriminant(0), -108)
+
+        if True:
+            return
+
+        # massive calculation
+        f3 = pr.element({99: 1, 11: 1, 0: 12})
+        self.assertEqual(
+            f3.discriminant(0),
+            int(
+                "-"
+                "21264069267243975862417203340924668454099822266732272084763933"
+                "01113983760862780495436167041177432088009762326184456604277361"
+                "35775289062317200523319479344839407497337627483275712151243145"
+                "18630717371581165931390682995091462788698494666134983897512064"
+                "83465368487830606817364911723485452912977510400000000000"
+            )
+        )
