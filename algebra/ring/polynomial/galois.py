@@ -26,11 +26,11 @@ class GaloisGroupConstructor:
         total = self._build_resolvent(
             pr, v_group,
             x[0] * x[2] + x[1] * x[3]
-        )
+        ) % ideal
 
-        print(total)
+        dist = total.discriminant2(pr.variable.X)
 
-        print('Result =', total % ideal)
+        print(total, dist)
 
     def _build_ideal(self, pr):
         v_list = pr.variable.x

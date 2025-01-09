@@ -31,7 +31,10 @@ class VariableSystem(VariableSystemBase):
         if naming is None:
             return VariableNameListGenerator('x')
         elif isinstance(naming, int):
-            return VariableNameIndexGenerator('x', naming)
+            if naming == 1:
+                return VariableNameListGenerator('x')
+            else:
+                return VariableNameIndexGenerator('x', naming)
         elif isinstance(naming, str):
             return VariableNameListGenerator(naming)
         elif isinstance(naming, VariableNameGenerator):

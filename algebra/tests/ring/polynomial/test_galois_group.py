@@ -5,13 +5,14 @@ from algebra.ring.polynomial.base import PolynomialRing
 
 
 class TestGaloisTheory(unittest.TestCase):
+    def test_multi_discriminant(self):
+        pr = PolynomialRing(field=RationalField(), number=2)
+        x = pr.variable.x[0]
+        f = x * x * x + x * x - 2 * x - 1
+        self.assertEqual(f.discriminant2(x), 49)
+
     def test_simple_galois(self):
-        pr = PolynomialRing(field=RationalField(), number=1)
-
-        f = pr.element([1, 0, -10, 0, 1])
-
-        # C2 X C2
-        print(f.galois_group())
+        self._check_degree_4([1, 0, -10, 0, 1], 4, 'C2 X C2')
 
     def test_degree_4_ex_24(self):
         self._check_degree_4(

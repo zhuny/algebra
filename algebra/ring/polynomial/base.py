@@ -396,6 +396,7 @@ class PolynomialRingElement(RingElement):
         return left.monic()
 
     def diff(self, index):
+        index = self._wrap_index(index)
         value = collections.defaultdict(int)
         for monomial, multiplier in self.value.items():
             const, mono = monomial.diff(index)
@@ -435,6 +436,56 @@ class PolynomialRingElement(RingElement):
 
         return det * sign / lc
 
+    def discriminant2(self, monomial):
+        if isinstance(monomial, PolynomialRingElement):
+            monomial = monomial.lead_monomial()
+
+        if not isinstance(monomial, Monomial):
+            raise TypeError("Monomial")
+
+        d = self.max_degree(monomial)
+        if (d * (d - 1)) % 4 == 0:
+            s = 1
+        else:
+            s = -1
+
+        f = self
+        g = f.diff(monomial)
+        u = v = 1
+
+        while g.max_degree(monomial) > 0:
+            delta = f.max_degree(monomial) - g.max_degree(monomial)
+            g_lead = g.max_degree_coefficient(monomial)
+
+            r = ((g_lead ** (delta + 1)) * f) % g
+
+            f, g = g, r / (u * v ** delta)
+
+            if g.max_degree(monomial) == 0:
+                u = g.max_degree_coefficient(monomial)
+                delta = f.max_degree(monomial)
+            else:
+                u = f.max_degree_coefficient(monomial)
+
+            v *= (u / v) ** delta
+
+        return s * v
+
+    def max_degree_coefficient(self, monomial):
+        return self.projection(monomial, self.max_degree(monomial))
+
+    def max_degree(self, monomial):
+        index = monomial.index()
+
+        mono_list = [
+            mono.power[index]
+            for mono in self.value
+        ]
+        if mono_list:
+            return max(mono_list)
+        else:
+            return 0
+
     def convert(self, ring: 'PolynomialRing'):
         d = {}
 
@@ -451,6 +502,8 @@ class PolynomialRingElement(RingElement):
         return GaloisGroupConstructor(self).run()
 
     def projection(self, index, power_v):
+        index = self._wrap_index(index)
+
         power = [0] * self.ring.number
         power[index] = power_v
 
@@ -464,6 +517,14 @@ class PolynomialRingElement(RingElement):
     @property
     def monomial_key(self):
         return self.ring.variable_system.get_key
+
+    def _wrap_index(self, monomial):
+        if isinstance(monomial, Monomial):
+            return monomial.index()
+        elif isinstance(monomial, int):
+            return monomial
+        else:
+            raise TypeError("Unknown index")
 
 
 @dataclass
@@ -518,6 +579,12 @@ class Monomial:
 
     def degree(self):
         return sum(self.power)
+
+    def index(self):
+        if self.degree() != 1:
+            raise ValueError("Degree")
+
+        return self.power.index(1)
 
     def is_constant(self):
         for power in self.power:
