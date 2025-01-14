@@ -5,6 +5,7 @@ from algebra.group.abstract.permutation import PermutationGroupRep
 
 class TestHomomorphism(unittest.TestCase):
     def test_abelian_pair_1(self):
+        self._abelian_check([2, 3], [6], True)
         self._abelian_check([2, 3, 7], [42], True)
         self._abelian_check([2, 4, 7], [56], False)
         self._abelian_check([2, 4, 3, 9], [2, 12, 9], True)
@@ -30,3 +31,14 @@ class TestHomomorphism(unittest.TestCase):
             generator.append(element_)
 
         return g.group_(generator, name=str(tuple(ab)).replace(' ', ''))
+
+    def test_abelian_pair_2(self):
+        g1 = self._construct_abelian([2, 4])
+
+        pgr = PermutationGroupRep(10)
+        g2 = pgr.group_([
+            [[0, 1]],
+            [[2, 3, 4, 5], [6, 7, 8, 9]]
+        ])
+
+        self.assertTrue(g1.is_isomorphism(g2))

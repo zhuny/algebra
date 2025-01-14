@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from queue import Queue
 from typing import List, TypeVar, Generic, Set, Dict, Optional, Iterator, Union
 
+from algebra.number.util import factorize
+
 T = TypeVar("T")
 
 
@@ -253,7 +255,34 @@ class Group(Generic[T]):
         return True
 
     def is_isomorphism(self, others: 'Group'):
-        raise NotImplementedError
+        if self.is_abelian():
+            if others.is_abelian():
+                return self.get_abelian_key() == others.get_abelian_key()
+            else:
+                return False
+        else:
+            if others.is_abelian():
+                return False
+
+        assert False
+
+    def get_abelian_key(self) -> list[int]:
+        if not self.is_abelian():
+            raise ValueError('Abelian group must be given')
+
+        chain = self.stabilizer_chain()
+
+        result = []
+
+        for stabilizer in chain.travel():
+            order = len(stabilizer.transversal)
+            if order == 0:
+                break
+            for p, e in factorize(order).items():
+                result.append((p, e))
+
+        result.sort()
+        return [p ** e for p, e in result]
 
     def centralizer(self, element: 'GroupElement'):
         pass
