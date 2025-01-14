@@ -38,7 +38,7 @@ def symmetric_group(n: int):
     return rep.group_([
         [list(range(n))],
         [[0, 1]]
-    ])
+    ], name=f'S({n})')
 
 
 def alternative_group(n: int):
@@ -63,7 +63,7 @@ def dihedral_group(n: int):
     return rep.group_([
         [list(range(n)), list(range(n, 2 * n))[::-1]],
         [[i, n + i] for i in range(n)]
-    ])
+    ], name=f'D({n*2})')
 
 
 def quaternion_group():

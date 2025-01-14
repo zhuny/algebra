@@ -101,6 +101,12 @@ class Group(Generic[T]):
     def order(self):
         return self.stabilizer_chain().order
 
+    def order_histogram(self):
+        order_count = collections.defaultdict(int)
+        for element in self.element_list():
+            order_count[element.order()] += 1
+        return dict(order_count)
+
     def element_list(self) -> Iterator['GroupElement']:
         return StabilizerTraveler(self).visit()
 
@@ -266,6 +272,9 @@ class Group(Generic[T]):
 
         # order 확인
         if self.order() != others.order():
+            return False
+
+        if self.order_histogram() != others.order_histogram():
             return False
 
         assert False

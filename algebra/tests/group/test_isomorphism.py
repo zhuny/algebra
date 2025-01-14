@@ -62,5 +62,8 @@ class TestHomomorphism(unittest.TestCase):
         g1 = dihedral_group(12)
         g2 = symmetric_group(4)
 
+        print(g1, g1.order_histogram())
+        print(g2, g2.order_histogram())
+
         # order는 같음
         self.assertFalse(g1.is_isomorphism(g2))
