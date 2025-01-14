@@ -12,7 +12,7 @@ class TestGaloisTheory(unittest.TestCase):
         self.assertEqual(f.discriminant2(x), 49)
 
     def test_simple_galois(self):
-        self._check_degree_4([1, 0, -10, 0, 1], 4, 'C2 X C2')
+        self._check_degree_4([1, 0, -10, 0, 1], 4, 'K4')
 
     def test_degree_4_ex_24(self):
         self._check_degree_4(
@@ -44,4 +44,4 @@ class TestGaloisTheory(unittest.TestCase):
         f1 = pr.element(element)
         gg1 = f1.galois_group()
 
-        self.assertEqual(gg1.order(), order, f'{name} is expected.')
+        self.assertEqual(gg1, name, f'{name} is expected.')

@@ -2,6 +2,7 @@ import collections
 import copy
 import dataclasses
 import itertools
+import math
 import re
 import warnings
 from dataclasses import dataclass
@@ -11,11 +12,12 @@ from typing import List
 
 from algebra.field.base import Field, FieldElement
 from algebra.matrix.matrix import Matrix
+from algebra.number.util import divisor_list
 from algebra.ring.base import Ring, RingElement
 from algebra.ring.polynomial.monomial_ordering import MonomialOrderingBase, \
     GradedReverseLexicographicOrdering
 from algebra.ring.polynomial.naming import VariableNameGenerator, \
-    VariableNameIndexGenerator
+    VariableNameIndexGenerator, VariableNameListGenerator
 from algebra.ring.polynomial.variable import VariableSystemBase, VariableSystem, \
     VariableContainer
 from algebra.ring.quotient import Ideal, QuotientRing, QuotientRingElement
@@ -203,6 +205,9 @@ class PolynomialRingElement(RingElement):
             if self.ring.field == other.field:
                 yield self.constant_monomial(), other
 
+    def __rsub__(self, other):
+        return other + (-self)
+
     def __neg__(self):
         return PolynomialRingElement(
             ring=self.ring,
@@ -373,7 +378,19 @@ class PolynomialRingElement(RingElement):
     def monic(self):
         return self / self.lead_coefficient()
 
+    def to_integer(self):
+        assert self.ring.field.get_char() == 0
+
+        answer = 1
+        for c in self.value.values():
+            v: Fraction = c.value
+            answer = math.lcm(answer, v.denominator)
+        return self * answer
+
     def factorize(self):
+        if self.ring.number != 1:
+            raise ValueError("Number should be one")
+
         algorithm = None
         char = self.ring.field.get_char()
         if char > 0:
@@ -514,6 +531,23 @@ class PolynomialRingElement(RingElement):
                 d[m / mon] = v
         return PolynomialRingElement(ring=self.ring, value=d)
 
+    def is_irreducible(self):
+        assert self.ring.field.get_char() == 0
+        assert self.ring.number == 1
+
+        from algebra.ring.polynomial.factorize.general import \
+            IrreduciblePolynomialAlgorithm
+        return IrreduciblePolynomialAlgorithm(self).run()
+
+    def projection_ring(self, index):
+        index = self._wrap_index(index)
+        coefficient = collections.defaultdict(int)
+        for monomial, value in self.value.items():
+            coefficient[monomial.power[index]] += value
+
+        pr = PolynomialRing(field=self.ring.field, number=1)
+        return pr.element(coefficient)
+
     @property
     def monomial_key(self):
         return self.ring.variable_system.get_key
@@ -523,8 +557,10 @@ class PolynomialRingElement(RingElement):
             return monomial.index()
         elif isinstance(monomial, int):
             return monomial
+        elif isinstance(monomial, PolynomialRingElement):
+            return monomial.lead_monomial().index()
         else:
-            raise TypeError("Unknown index")
+            raise TypeError(f"Unknown Type : {type(monomial)}")
 
 
 @dataclass
@@ -650,6 +686,18 @@ class PolynomialIdeal(Ideal):
 
     def __rmod__(self, other):
         return self.algorithm.get_reduce(other, monic=False)
+
+    def __truediv__(self, other):
+        if not isinstance(other, PolynomialRingElement):
+            return NotImplemented
+
+        generator = [other]
+        if self._algorithm is None:
+            generator.extend(self.generator)
+        else:
+            generator.extend(self._algorithm.get_basis())
+
+        return PolynomialIdeal(ring=self.ring, generator=generator)
 
     @property
     def algorithm(self):

@@ -26,7 +26,7 @@ class VariableNameListGenerator(VariableNameGenerator):
 
 
 class VariableNameIndexGenerator(VariableNameGenerator):
-    def __init__(self, name, size = 3):
+    def __init__(self, name, size=3):
         self.name = name
         self.size = size
 
