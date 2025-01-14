@@ -10,16 +10,6 @@ from algebra.ring.polynomial.naming import (
 from algebra.ring.polynomial.variable import CombineVariableSystem
 
 
-def show(f):
-    @functools.wraps(f)
-    def wrapped(self, *args, **kwargs):
-        print(f.__name__, 'start')
-        result = f(self, *args, **kwargs)
-        print(f.__name__, result)
-        return result
-    return wrapped
-
-
 class GaloisGroupConstructor:
     def __init__(self, polynomial):
         self.polynomial = polynomial
@@ -41,7 +31,6 @@ class GaloisGroupConstructor:
         else:
             return 'D8'
 
-    @show
     def is_alternative_subset(self):
         """
         Polynomial의 discriminant가 square면 A4의 subset이다.
@@ -50,13 +39,11 @@ class GaloisGroupConstructor:
         disc = self.polynomial.discriminant()
         return disc.is_square()
 
-    @show
     def is_dihedral_subset(self):
         return self.is_galois_subset(self.dihedral_invariant())
 
-    @show
     def is_cyclic_subset(self):
-        return self.is_galois_subset(self.cyclic_invariant())
+        return self.is_galois_subset_by_norm(self.cyclic_invariant())
 
     def dihedral_invariant(self):
         self._build_polynomial_ring()
@@ -80,7 +67,7 @@ class GaloisGroupConstructor:
         all_mult = self.ring.element([1])
 
         for g in self.mono_group.element_list():
-            gx = g.act_polynomial(invariant_polynomial)
+            gx = g.act_polynomial(invariant_polynomial) % self.ideal
             if gx not in orbit:
                 orbit.append(gx)
 
@@ -97,11 +84,17 @@ class GaloisGroupConstructor:
             f: PolynomialRingElement
             if f.degree() == 1:
                 self.ideal /= invariant_polynomial - f[0]
-                print(invariant_polynomial - f[0])
-                input()
                 return True
 
         return False
+
+    def is_galois_subset_by_norm(self, invariant_polynomial):
+        for g in self.mono_group.element_list():
+            gx = g.act_polynomial(invariant_polynomial) % self.ideal
+            if gx.is_constant():
+                return True
+
+        assert False
 
     def _build_ideal(self, pr):
         degree_dict = {0: pr.element([1])}

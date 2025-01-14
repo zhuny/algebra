@@ -8,6 +8,10 @@ from algebra.ring.polynomial.factorize.base import (
 
 class FactorizePolynomialRational(AlgorithmPipeline):
     def get_pipeline(self):
+        from algebra.ring.polynomial.factorize.finite import \
+            SquareFreeFactorization
+
+        yield SquareFreeFactorization()
         yield ConvertToFiniteFactorization()
 
 

@@ -531,14 +531,6 @@ class PolynomialRingElement(RingElement):
                 d[m / mon] = v
         return PolynomialRingElement(ring=self.ring, value=d)
 
-    def is_irreducible(self):
-        assert self.ring.field.get_char() == 0
-        assert self.ring.number == 1
-
-        from algebra.ring.polynomial.factorize.general import \
-            IrreduciblePolynomialAlgorithm
-        return IrreduciblePolynomialAlgorithm(self).run()
-
     def projection_ring(self, index):
         index = self._wrap_index(index)
         coefficient = collections.defaultdict(int)
@@ -547,6 +539,9 @@ class PolynomialRingElement(RingElement):
 
         pr = PolynomialRing(field=self.ring.field, number=1)
         return pr.element(coefficient)
+
+    def is_constant(self):
+        return self.degree() == 0
 
     @property
     def monomial_key(self):

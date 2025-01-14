@@ -11,6 +11,16 @@ class TestGaloisTheory(unittest.TestCase):
         f = x * x * x + x * x - 2 * x - 1
         self.assertEqual(f.discriminant2(x), 49)
 
+    def test_finite_square(self):
+        pr = PolynomialRing(field=RationalField(), number=1)
+        x = pr.variable.x
+        xx = x * x + 1
+        f = xx * xx
+
+        for p, e in f.factorize():
+            self.assertEqual(p, xx)
+            self.assertEqual(e, 2)
+
     def test_simple_galois(self):
         self._check_degree_4([1, 0, -10, 0, 1], 4, 'K4')
 
