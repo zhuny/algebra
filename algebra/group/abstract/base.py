@@ -264,6 +264,10 @@ class Group(Generic[T]):
             if others.is_abelian():
                 return False
 
+        # order 확인
+        if self.order() != others.order():
+            return False
+
         assert False
 
     def get_abelian_key(self) -> list[int]:

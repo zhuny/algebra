@@ -1,6 +1,7 @@
 import unittest
 
 from algebra.group.abstract.permutation import PermutationGroupRep
+from algebra.group.abstract.shortcut import dihedral_group, symmetric_group
 
 
 class TestHomomorphism(unittest.TestCase):
@@ -42,3 +43,24 @@ class TestHomomorphism(unittest.TestCase):
         ])
 
         self.assertTrue(g1.is_isomorphism(g2))
+
+    def test_abelian_diff_check(self):
+        g1 = self._construct_abelian([2, 4])
+        g2 = dihedral_group(4)
+
+        self.assertFalse(g1.is_isomorphism(g2))
+        self.assertFalse(g2.is_isomorphism(g1))
+
+    def test_non_abelian_pair_1(self):
+        g1 = dihedral_group(4)
+        g2 = symmetric_group(3)
+
+        # order가 맞지 않음
+        self.assertFalse(g1.is_isomorphism(g2))
+
+    def test_non_abelian_pair_2(self):
+        g1 = dihedral_group(12)
+        g2 = symmetric_group(4)
+
+        # order는 같음
+        self.assertFalse(g1.is_isomorphism(g2))
