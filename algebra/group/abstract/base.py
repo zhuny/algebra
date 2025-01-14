@@ -22,7 +22,7 @@ class GroupRep:
     def element(self, *args):
         raise NotImplementedError
 
-    def group(self, *elements):
+    def group(self, *elements, name=''):
         for element in elements:
             if not isinstance(element, GroupElement):
                 raise TypeError("GroupElement should be given")
@@ -30,9 +30,9 @@ class GroupRep:
             if element.group != self:
                 raise ValueError("Element should be belong to this group")
 
-        return Group(represent=self, generator=list(elements))
+        return Group(represent=self, generator=list(elements), name=name)
 
-    def group_(self, elements):
+    def group_(self, elements, *, name=''):
         """
         self.group_([
             [[0, 1, 2, 3]],
@@ -49,7 +49,7 @@ class GroupRep:
                 for chain in element
             ]
             generator_list.append(self.element(*rep_elem))
-        return self.group(*generator_list)
+        return self.group(*generator_list, name=name)
 
 
 class StabilizerTraveler:
@@ -80,7 +80,13 @@ class StabilizerTraveler:
 class Group(Generic[T]):
     represent: GroupRep
     generator: List['GroupElement']
+    name: Optional[str] = ''
     _stabilizer_chain: Optional['StabilizerChain'] = None
+
+    def __str__(self):
+        if self.name:
+            return self.name
+        return repr(self)
 
     def show(self):
         print("Generator")
@@ -245,6 +251,9 @@ class Group(Generic[T]):
                     # Not normal
                     return False
         return True
+
+    def is_isomorphism(self, others: 'Group'):
+        raise NotImplementedError
 
     def centralizer(self, element: 'GroupElement'):
         pass
