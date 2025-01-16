@@ -127,7 +127,15 @@ class PermutationGroupElement(GroupElement[PermutationObject]):
             order = lcm(order, len(seq))
         return order
 
-    def orbit(self):
+    def orbit(self, o: PermutationObject) -> list[PermutationObject]:
+        o_list = [o]
+        o_c = self.act(o)
+        while o_c != o:
+            o_list.append(o_c)
+            o_c = self.act(o_c)
+        return o_list
+
+    def orbit_list(self):
         return len(list(self._to_seq()))
 
     @property

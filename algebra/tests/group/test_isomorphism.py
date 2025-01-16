@@ -45,6 +45,25 @@ class TestHomomorphism(unittest.TestCase):
 
         self.assertTrue(g1.is_isomorphism(g2))
 
+    def test_abelian_pair_3(self):
+        rep = PermutationGroupRep(8)
+
+        g1 = rep.group_([
+            [[0, 1], [2, 3]],
+            [[0, 2], [1, 3]]
+        ])
+        g2 = rep.group_([
+            [[4, 5, 6, 7]]
+        ])
+
+        self.assertEqual(g1.order(), 4)
+        self.assertEqual(g2.order(), 4)
+        self.assertTrue(g1.is_abelian())
+        self.assertTrue(g2.is_abelian())
+        self.assertEqual(g1.get_abelian_key(), [2, 2])
+        self.assertEqual(g2.get_abelian_key(), [4])
+        self.assertFalse(g1.is_isomorphism(g2))
+
     def test_abelian_diff_check(self):
         g1 = self._construct_abelian([2, 4])
         g2 = dihedral_group(4)

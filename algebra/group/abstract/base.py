@@ -84,6 +84,37 @@ class StabilizerTraveler:
                     ))
 
 
+class StabilizerOrderTraveler:
+    def __init__(self, group):
+        self.group: Group = group
+
+    def visit(self):
+        result = []
+
+        for stabilizer in self.group.stabilizer_chain().travel():
+            order = len(stabilizer.transversal)
+            if order == 0:
+                break
+
+            orbit_set = {stabilizer.point}
+            for g in stabilizer.transversal.values():
+                if self._is_run_needed(orbit_set, g.element):
+                    before = len(orbit_set)
+                    for o in list(orbit_set):
+                        orbit_set.update(g.element.orbit(o))
+
+                    result.extend(
+                        factorize(len(orbit_set) // before).items()
+                    )
+
+        result.sort()
+        return [p ** e for p, e in result]
+
+    def _is_run_needed(self, orbit_set, g):
+        for o in orbit_set:
+            return g.act(o) not in orbit_set
+
+
 @dataclass
 class Group(Generic[T]):
     represent: GroupRep
@@ -341,19 +372,7 @@ class Group(Generic[T]):
         if not self.is_abelian():
             raise ValueError('Abelian group must be given')
 
-        chain = self.stabilizer_chain()
-
-        result = []
-
-        for stabilizer in chain.travel():
-            order = len(stabilizer.transversal)
-            if order == 0:
-                break
-            for p, e in factorize(order).items():
-                result.append((p, e))
-
-        result.sort()
-        return [p ** e for p, e in result]
+        return StabilizerOrderTraveler(self).visit()
 
     def centralizer(self, element: 'GroupElement'):
         pass
