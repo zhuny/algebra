@@ -24,3 +24,27 @@ class TestRationalFactorize(unittest.TestCase):
             answer *= p
 
         self.assertTrue(f == answer)
+
+    def test_free_square(self):
+        pr = PolynomialRing(field=RationalField())
+
+        f5 = pr.element([2, 1]) ** 5
+
+        for p, q in f5.factorize():
+            self.assertTrue(p == pr.element([2, 1]))
+            self.assertEqual(q, 5)
+
+    def test_monic_check(self):
+        pr = PolynomialRing(field=RationalField())
+
+        f1 = pr.element([2, 1]) ** 4
+        f2 = pr.element([3, 1]) ** 3
+        f3 = f1 * f2
+
+        for p, q in f3.factorize():
+            if p == pr.element([2, 1]):
+                self.assertEqual(q, 4)
+            elif p == pr.element([3, 1]):
+                self.assertEqual(q, 3)
+            else:
+                self.assertTrue(0)

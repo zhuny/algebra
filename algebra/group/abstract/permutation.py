@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Dict, Type
 
 from algebra.group.abstract.base import GroupRep, GroupElement
 from algebra.number.util import lcm
@@ -20,7 +20,7 @@ class PermutationObject:
         return self.value < other.value
 
 
-@dataclass
+@dataclass(unsafe_hash=False)
 class PermutationGroupRep(GroupRep):
     degree: int
 
@@ -29,14 +29,15 @@ class PermutationGroupRep(GroupRep):
 
     @property
     def identity(self):
-        return PermutationGroupElement(group=self)
+        return self.cls_element(group=self)
+
+    @property
+    def cls_element(self) -> Type:
+        return PermutationGroupElement
 
     def object_list(self):
         for i in range(self.degree):
-            yield PermutationObject(
-                permutation=self,
-                value=i
-            )
+            yield PermutationObject(permutation=self, value=i)
 
     def check_object(self, o: PermutationObject):
         if o.permutation != self:
@@ -61,9 +62,12 @@ class PermutationGroupRep(GroupRep):
                     raise ValueError("Should be same")
                 mapping.update(seq)
 
-            i += PermutationGroupElement(group=self, perm_map=mapping)
+            i += self.cls_element(group=self, perm_map=mapping)
 
         return i
+
+    def as_group(self):
+        return self.group_([[[0, 1]], [list(range(self.degree))]])
 
 
 @dataclass
@@ -81,10 +85,10 @@ class PermutationGroupElement(GroupElement[PermutationObject]):
             e2 = other.act(self.act(e1))
             if e1 != e2:
                 d[e1] = e2
-        return PermutationGroupElement(group=self.group, perm_map=d)
+        return self.cls_element(group=self.group, perm_map=d)
 
     def __neg__(self):
-        return PermutationGroupElement(
+        return self.cls_element(
             group=self.group,
             perm_map={v: k for k, v in self.perm_map.items()}
         )
@@ -122,3 +126,7 @@ class PermutationGroupElement(GroupElement[PermutationObject]):
         for seq in self._to_seq():
             order = lcm(order, len(seq))
         return order
+
+    @property
+    def cls_element(self) -> Type:
+        return type(self)

@@ -11,16 +11,16 @@ T = TypeVar("T")
 class GroupRep:
     @property
     def identity(self):
-        raise NotImplementedError
+        raise NotImplementedError(self)
 
     def object_list(self):
-        raise NotImplementedError
+        raise NotImplementedError(self)
 
     def check_object(self, o):
-        raise NotImplementedError
+        raise NotImplementedError(self)
 
     def element(self, *args):
-        raise NotImplementedError
+        raise NotImplementedError(self)
 
     def group(self, *elements):
         for element in elements:
@@ -50,6 +50,9 @@ class GroupRep:
             ]
             generator_list.append(self.element(*rep_elem))
         return self.group(*generator_list)
+
+    def as_group(self):
+        raise NotImplementedError(self)
 
 
 class StabilizerTraveler:
