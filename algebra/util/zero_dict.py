@@ -1,13 +1,11 @@
 import collections
 from fractions import Fraction
+from typing import Any
 
 
-class ZeroValueSkip(collections.defaultdict):
-    def __init__(self, *args, **kwargs):
-        super().__init__(Fraction, *args, **kwargs)
-
-    def __setitem__(self, key, value):
-        if value == 0:
-            self.pop(key, value)
-        else:
-            return super().__setitem__(key, value)
+def remove_zero_dict(dict_object: dict[Any, Any]) -> dict[Any, Any]:
+    return {
+        key: value
+        for key, value in dict_object.items()
+        if value != 0
+    }

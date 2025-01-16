@@ -2,7 +2,9 @@ import collections
 import copy
 import dataclasses
 import itertools
+import math
 import re
+import warnings
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import singledispatchmethod
@@ -10,23 +12,68 @@ from typing import List
 
 from algebra.field.base import Field, FieldElement
 from algebra.matrix.matrix import Matrix
+from algebra.number.util import divisor_list
 from algebra.ring.base import Ring, RingElement
 from algebra.ring.polynomial.monomial_ordering import MonomialOrderingBase, \
-    LexicographicMonomialOrdering
+    GradedReverseLexicographicOrdering
 from algebra.ring.polynomial.naming import VariableNameGenerator, \
-    VariableNameListGenerator, VariableNameIndexGenerator
+    VariableNameIndexGenerator, VariableNameListGenerator
+from algebra.ring.polynomial.variable import VariableSystemBase, VariableSystem, \
+    VariableContainer
 from algebra.ring.quotient import Ideal, QuotientRing, QuotientRingElement
 from algebra.util.decorator import iter_to_str
+from algebra.util.zero_dict import remove_zero_dict
 
 
 @dataclass(unsafe_hash=False)
 class PolynomialRing(Ring):
     field: Field
-    number: int = 1
-    naming: 'VariableNameGenerator' = None
-    monomial_ordering: MonomialOrderingBase = dataclasses.field(
-        default_factory=LexicographicMonomialOrdering
-    )
+    number: int = 0
+    variable_system: (
+            VariableSystemBase | VariableNameGenerator
+    ) = None
+    variable: VariableContainer = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        # number와 variable_system 값 구죽하기 시작
+        number = self.number
+        variable_system = None
+        variable_name = None
+        monomial_order = None
+
+        if self.variable_system is not None:
+            if isinstance(self.variable_system, VariableSystemBase):
+                variable_system = self.variable_system
+                monomial_order = variable_name = variable_system
+            elif isinstance(self.variable_system, VariableNameGenerator):
+                variable_name = self.variable_system
+            elif isinstance(self.variable_system, MonomialOrderingBase):
+                monomial_order = self.variable_system
+
+        if variable_name is None:
+            if number == 0:
+                raise ValueError("Number or variable name must be specified")
+            variable_name = number  # VariableSystem에서 wrapping 해줌
+
+        if variable_system is None:
+            # combine 등의 고급 기능을 쓰려면 이렇게 값이 비우지 않았을 것이다.
+            variable_system = VariableSystem(
+                naming=variable_name,
+                ordering=monomial_order  # none 일 경우 자동 지정
+            )
+
+        if number == 0:
+            number = variable_system.get_size()
+        elif self.number != variable_system.get_size():
+            raise ValueError("Number and variable system must be equal size")
+
+        self.number = number
+        self.variable_system = variable_system
+
+        # variable construction
+        container = VariableContainer()
+        self.variable_system.register_variable(container, self._variable_list())
+        self.variable = container
 
     def __hash__(self) -> int:
         return id(self)
@@ -34,16 +81,6 @@ class PolynomialRing(Ring):
     def __truediv__(self, ideal: 'PolynomialIdeal') -> 'PolynomialQuotientRing':
         super().__truediv__(ideal)  # 타입 확인 용
         return PolynomialQuotientRing(parent=self, ideal=ideal)
-
-    def __post_init__(self):
-        # Define and check naming
-        if self.naming is None:
-            if self.number <= 3:
-                self.naming = VariableNameListGenerator('xyz')
-            else:
-                self.naming = VariableNameIndexGenerator('x')
-        if not self.naming.check_range(self.number):
-            raise ValueError('Invalid naming range')
 
     def element(self, coefficient_value):
         coefficient_map = {}
@@ -67,6 +104,10 @@ class PolynomialRing(Ring):
         return self.element(1)
 
     def variables(self):
+        warnings.warn("Use ring.variable")
+        return self.variable
+
+    def _variable_list(self):
         for i in range(self.number):
             power = [0] * self.number
             power[i] = 1
@@ -103,15 +144,11 @@ class PolynomialRingElement(RingElement):
 
     def __post_init__(self):
         # drop zero element
-        self.value = {
-            index: coefficient
-            for index, coefficient in self.value.items()
-            if not coefficient.is_zero()
-        }
+        self.value = remove_zero_dict(self.value)
 
         # degree setting
         if self.value:
-            self._degree = max(self.value, key=self.ring.monomial_ordering.key)
+            self._degree = max(self.value, key=self.monomial_key)
         else:
             self._degree = self.constant_monomial()
 
@@ -136,8 +173,16 @@ class PolynomialRingElement(RingElement):
 
             is_first = False
 
+        # 아무것도 없는 경우
+        if is_first:
+            yield '0'
+
     def __add__(self, other):
-        if not isinstance(other, (int, Fraction, PolynomialRingElement)):
+        if isinstance(other, FieldElement):
+            if other.field != self.ring.field:
+                return ValueError("Field not matched")
+
+        elif not isinstance(other, (int, Fraction, PolynomialRingElement)):
             return NotImplemented
 
         value_map = collections.defaultdict(self.ring.field.zero)
@@ -148,11 +193,20 @@ class PolynomialRingElement(RingElement):
 
         return PolynomialRingElement(ring=self.ring, value=value_map)
 
+    def __radd__(self, other):
+        return self + other
+
     def _wrap_iter(self, other):
         if isinstance(other, (int, Fraction)):
             yield self.constant_monomial(), self.ring.field.element(other)
         elif isinstance(other, PolynomialRingElement):
             yield from other.value.items()
+        elif isinstance(other, FieldElement):
+            if self.ring.field == other.field:
+                yield self.constant_monomial(), other
+
+    def __rsub__(self, other):
+        return other + (-self)
 
     def __neg__(self):
         return PolynomialRingElement(
@@ -298,8 +352,7 @@ class PolynomialRingElement(RingElement):
     def sorted_monomial(self):
         return sorted(
             self.value.keys(),
-            key=self.ring.monomial_ordering.key,
-            reverse=True
+            reverse=True, key=self.monomial_key
         )
 
     def constant_monomial(self):
@@ -325,7 +378,19 @@ class PolynomialRingElement(RingElement):
     def monic(self):
         return self / self.lead_coefficient()
 
+    def to_integer(self):
+        assert self.ring.field.get_char() == 0
+
+        answer = 1
+        for c in self.value.values():
+            v: Fraction = c.value
+            answer = math.lcm(answer, v.denominator)
+        return self * answer
+
     def factorize(self):
+        if self.ring.number != 1:
+            raise ValueError("Number should be one")
+
         algorithm = None
         char = self.ring.field.get_char()
         if char > 0:
@@ -348,6 +413,7 @@ class PolynomialRingElement(RingElement):
         return left.monic()
 
     def diff(self, index):
+        index = self._wrap_index(index)
         value = collections.defaultdict(int)
         for monomial, multiplier in self.value.items():
             const, mono = monomial.diff(index)
@@ -375,7 +441,67 @@ class PolynomialRingElement(RingElement):
         # multi-variable에서 disc를 계산할 인터페이스를 고민해 보자
         assert self.ring.number == 1
 
-        return self.sylvester_matrix(self.diff(index)).determinant()
+        det = self.sylvester_matrix(self.diff(index)).determinant()
+
+        lc = self.lead_coefficient()
+        degree = self.degree()
+
+        if (degree * (degree - 1)) % 4 == 0:
+            sign = 1
+        else:
+            sign = -1
+
+        return det * sign / lc
+
+    def discriminant2(self, monomial):
+        if isinstance(monomial, PolynomialRingElement):
+            monomial = monomial.lead_monomial()
+
+        if not isinstance(monomial, Monomial):
+            raise TypeError("Monomial")
+
+        d = self.max_degree(monomial)
+        if (d * (d - 1)) % 4 == 0:
+            s = 1
+        else:
+            s = -1
+
+        f = self
+        g = f.diff(monomial)
+        u = v = 1
+
+        while g.max_degree(monomial) > 0:
+            delta = f.max_degree(monomial) - g.max_degree(monomial)
+            g_lead = g.max_degree_coefficient(monomial)
+
+            r = ((g_lead ** (delta + 1)) * f) % g
+
+            f, g = g, r / (u * v ** delta)
+
+            if g.max_degree(monomial) == 0:
+                u = g.max_degree_coefficient(monomial)
+                delta = f.max_degree(monomial)
+            else:
+                u = f.max_degree_coefficient(monomial)
+
+            v *= (u / v) ** delta
+
+        return s * v
+
+    def max_degree_coefficient(self, monomial):
+        return self.projection(monomial, self.max_degree(monomial))
+
+    def max_degree(self, monomial):
+        index = monomial.index()
+
+        mono_list = [
+            mono.power[index]
+            for mono in self.value
+        ]
+        if mono_list:
+            return max(mono_list)
+        else:
+            return 0
 
     def convert(self, ring: 'PolynomialRing'):
         d = {}
@@ -388,6 +514,49 @@ class PolynomialRingElement(RingElement):
 
         return PolynomialRingElement(ring=ring, value=d)
 
+    def galois_group(self):
+        from algebra.ring.polynomial.galois import GaloisGroupConstructor
+        return GaloisGroupConstructor(self).run()
+
+    def projection(self, index, power_v):
+        index = self._wrap_index(index)
+
+        power = [0] * self.ring.number
+        power[index] = power_v
+
+        mon = Monomial(power=power, ring=self.ring)
+        d = {}
+        for m, v in self.value.items():
+            if m.power[index] == power_v:
+                d[m / mon] = v
+        return PolynomialRingElement(ring=self.ring, value=d)
+
+    def projection_ring(self, index):
+        index = self._wrap_index(index)
+        coefficient = collections.defaultdict(int)
+        for monomial, value in self.value.items():
+            coefficient[monomial.power[index]] += value
+
+        pr = PolynomialRing(field=self.ring.field, number=1)
+        return pr.element(coefficient)
+
+    def is_constant(self):
+        return self.degree() == 0
+
+    @property
+    def monomial_key(self):
+        return self.ring.variable_system.get_key
+
+    def _wrap_index(self, monomial):
+        if isinstance(monomial, Monomial):
+            return monomial.index()
+        elif isinstance(monomial, int):
+            return monomial
+        elif isinstance(monomial, PolynomialRingElement):
+            return monomial.lead_monomial().index()
+        else:
+            raise TypeError(f"Unknown Type : {type(monomial)}")
+
 
 @dataclass
 class Monomial:
@@ -399,17 +568,17 @@ class Monomial:
             if p < 0:
                 raise ValueError(f"{i}-th index is negative.")
 
+    def __hash__(self):
+        return hash((tuple(self.power), self.ring))
+
     @iter_to_str
     def __str__(self):
         for index, power in enumerate(self.power):
             if power == 0:
                 continue
-            yield self.ring.naming.get(index)
+            yield self.ring.variable_system.get_name(index)
             if power > 1:
                 yield f'^{power}'
-
-    def __hash__(self):
-        return hash((tuple(self.power), self.ring))
 
     def __mul__(self, other):
         if isinstance(other, Monomial):
@@ -441,6 +610,12 @@ class Monomial:
 
     def degree(self):
         return sum(self.power)
+
+    def index(self):
+        if self.degree() != 1:
+            raise ValueError("Degree")
+
+        return self.power.index(1)
 
     def is_constant(self):
         for power in self.power:
@@ -506,6 +681,18 @@ class PolynomialIdeal(Ideal):
 
     def __rmod__(self, other):
         return self.algorithm.get_reduce(other, monic=False)
+
+    def __truediv__(self, other):
+        if not isinstance(other, PolynomialRingElement):
+            return NotImplemented
+
+        generator = [other]
+        if self._algorithm is None:
+            generator.extend(self.generator)
+        else:
+            generator.extend(self._algorithm.get_basis())
+
+        return PolynomialIdeal(ring=self.ring, generator=generator)
 
     @property
     def algorithm(self):

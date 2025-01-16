@@ -2,11 +2,14 @@ from dataclasses import dataclass
 from fractions import Fraction
 
 from algebra.field.base import Field, FieldElement
+from algebra.number.util import is_square, is_square_free
 
 
 @dataclass
 class RationalField(Field):
     def element(self, value) -> 'FieldElement':
+        if isinstance(value, RationalFieldElement):
+            return value
         return RationalFieldElement(field=self, value=Fraction(value))
 
     def get_char(self):
@@ -78,6 +81,14 @@ class RationalFieldElement(FieldElement):
     def __gt__(self, other):
         left, right = self._wrap_compare(other)
         return left > right
+
+    def is_square(self):
+        v = self.value
+        return is_square(v.numerator * v.denominator)
+
+    def is_square_free(self):
+        v = self.value
+        return is_square_free(v.numerator * v.denominator)
 
     def _wrap_compare(self, other):
         other_value = other

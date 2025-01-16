@@ -99,3 +99,19 @@ class _Prime:
             if p % i == 0:
                 return True
         return False
+
+
+def is_square(number):
+    # More efficient algorithm is needed
+    for p, e in factorize(number).items():
+        if e % 2 == 1:
+            return False
+    return True
+
+
+def is_square_free(number):
+    # More efficient algorithm is needed
+    for p, e in factorize(number).items():
+        if e > 1:
+            return False
+    return True
