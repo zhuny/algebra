@@ -1,4 +1,5 @@
 import collections
+import sys
 
 from algebra.group.abstract.permutation import PermutationGroupRep
 from algebra.group.abstract.shortcut import symmetric_group
@@ -11,10 +12,13 @@ class Node:
         self.lower = set()
 
     def is_upper(self, other: 'Node'):
-        raise NotImplementedError(self)
+        return self.compare(other.value, self.value)
 
     def is_lower(self, other: 'Node'):
-        raise NotImplementedError(self)
+        return self.compare(self.value, other.value)
+
+    def compare(self, left, right):
+        assert False, "Not Implementation Error"
 
     def link(self, other: 'Node'):
         self.upper.add(other)
@@ -23,6 +27,9 @@ class Node:
     def unlink(self, other: 'Node'):
         self.upper.discard(other)
         other.lower.discard(self)
+
+    def string(self):
+        return self.value
 
 
 class TopNode(Node):
@@ -80,7 +87,7 @@ class PosetOrder:
     def show(self):
         for element in self.travel():
             for upper in element.upper:
-                print(element.value, '->', upper.value)
+                print(element.string(), '->', upper.string())
         print(self.size, 'elements')
 
     def travel(self):
@@ -149,26 +156,51 @@ class IntegerNode(Node):
 
 
 class GroupNode(Node):
-    def is_upper(self, other: 'GroupNode'):
-        return self.compare(self.value, other.value)
-
-    def is_lower(self, other: 'GroupNode'):
-        return self.compare(other.value, self.value)
-
-    @staticmethod
-    def compare(left, right):
-        return right.is_subgroup(left)
+    def compare(self, left, right):
+        return left.is_subgroup(right)
 
 
-def get_isomorphism(group_list, new_group):
-    for group in group_list:
-        if group[0].is_isomorphism(new_group):
-            return group
+class GroupSetNode(Node):
+    def compare(self, left, right):
+        for lg in left:
+            for rg in right:
+                if lg.is_subgroup(rg):
+                    return True
+        return False
+
+    def string(self):
+        for g in self.value:
+            return f"{g}, {g.order()}"
+
+
+class GroupingGroup:
+    def __init__(self, check_name):
+        self.check_name = check_name
+        self.group_by = []
+
+    def append(self, g):
+        for item in self.group_by:
+            if getattr(item[0], self.check_name)(g):
+                item[1].append(g)
+                return
+
+        self.group_by.append((g, [g]))
+
+    def show(self):
+        print(self.check_name)
+        for g, g_list in self.group_by:
+            print(g, g.order(), len(g_list))
+        print(len(self.group_by), 'elements')
+        print()
+
+    def get_grouping(self):
+        for g, count in self.group_by:
+            yield count
 
 
 def main():
     po = PosetOrder(GroupNode)
-    s_n = symmetric_group(4)
+    s_n = symmetric_group(int(sys.argv[1]))
 
     po.insert(s_n.represent.group())
 
@@ -177,19 +209,23 @@ def main():
             po.insert(group.append(element))
 
         print(i, element)
+    print()
 
-    up_iso = []
+    grouping_dict = {
+        'iso': GroupingGroup('is_isomorphism'),
+        'con': GroupingGroup('is_conjugate')
+    }
     for group in po.element_list():
-        if group.is_transitive():
-            auto = get_isomorphism(up_iso, group)
-            if auto is None:
-                up_iso.append([group, 1])
-            else:
-                auto[1] += 1
+        for grouping in grouping_dict.values():
+            grouping.append(group)
 
-    print(len(up_iso))
-    for group, count in up_iso:
-        print(group, group.order())
+    for grouping in grouping_dict.values():
+        grouping.show()
+
+    po2 = PosetOrder(GroupSetNode)
+    for group_set in grouping_dict['iso'].get_grouping():
+        po2.insert(group_set)
+    po2.show()
 
 
 if __name__ == '__main__':

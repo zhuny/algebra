@@ -117,10 +117,12 @@ class StabilizerOrderTraveler:
 
 @dataclass
 class Group(Generic[T]):
-    represent: GroupRep
+    represent: GroupRep = field(repr=False)
     generator: List['GroupElement']
     name: Optional[str] = ''
-    _stabilizer_chain: Optional['StabilizerChain'] = None
+    _stabilizer_chain: Optional['StabilizerChain'] = field(
+        repr=False, default=None
+    )
 
     def __str__(self):
         if self.name:
@@ -184,6 +186,43 @@ class Group(Generic[T]):
                 if gc not in done:
                     queue.add(gc)
         return done
+
+    def orbit_list(self):
+        o_done = set()
+        o_list = []
+
+        for o in self.represent.object_list():
+            if o in o_done:
+                continue
+
+            orbit = self.orbit(o)
+            if len(orbit) > 1:
+                o_list.append(orbit)
+            o_done.update(orbit)
+
+        return o_list
+
+    def is_transitive(self):
+        return len(self.orbit_list()) == 1
+
+    def is_conjugate(self, other: 'Group') -> bool:
+        if self.represent != other.represent:
+            return False
+
+        if not self.is_isomorphism(other):
+            return False
+
+        for g in self.represent.as_group().element_list():
+            conjugate_check = True
+            for x in self.generator:
+                if not other.element_test(g + x + (-g)):
+                    conjugate_check = False
+                    break
+
+            if conjugate_check:
+                return True
+
+        return False
 
     def stabilizer(self, o: T) -> 'Group':
         self.represent.check_object(o)
@@ -585,6 +624,9 @@ class StabilizerChain(Generic[T]):
         if not self.element_test(alpha.element):
             # Extend existing stabilizer chain
             if self.is_trivial():  # we are on the bottom of the chain
+                self.group.generator.append(alpha.element)
+                self.generator_factor[alpha.element] = alpha
+
                 # pick random object from base point
                 beta = self.point = next_object.get_next(alpha.element)
                 self.stabilizer = StabilizerChain(  # Add a new layer
@@ -592,8 +634,6 @@ class StabilizerChain(Generic[T]):
                     depth=self.depth + 1,
                     is_factor=self.is_factor
                 )
-                self.group.generator.append(alpha.element)
-                self.generator_factor[alpha.element] = alpha
                 self.transversal[beta] = ElementInfo(
                     self.group.represent.identity,
                     [] if self.is_factor else None
