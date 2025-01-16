@@ -1,4 +1,5 @@
 import collections
+import itertools
 import random
 from dataclasses import dataclass, field
 from queue import Queue
@@ -40,7 +41,9 @@ class GroupRep:
             [[0, 1, 2, 3]],
             [[0, 2], [1, 3]]
         ])
-        :param elements:
+        :param
+            elements: Generator of Group
+            name: Name For Group
         :return:
         """
         ol = list(self.object_list())
@@ -95,16 +98,25 @@ class Group(Generic[T]):
         for g in self.generator:
             print('-', g)
 
+    def append(self, element):
+        return self.represent.group(element, *self.generator)
+
     def copy(self):
         return self.represent.group(*self.generator)
 
     def order(self):
         return self.stabilizer_chain().order
 
-    def order_histogram(self):
+    def order_statistics(self):
         order_count = collections.defaultdict(int)
         for element in self.element_list():
             order_count[element.order()] += 1
+        return dict(order_count)
+
+    def order_statistics_element(self):
+        order_count = collections.defaultdict(list)
+        for element in self.element_list():
+            order_count[element.order()].append(element)
         return dict(order_count)
 
     def element_list(self) -> Iterator['GroupElement']:
@@ -261,8 +273,10 @@ class Group(Generic[T]):
         return True
 
     def is_isomorphism(self, others: 'Group'):
+        # abelian 인지 확인한다.
         if self.is_abelian():
             if others.is_abelian():
+                # abelian인 경우 abelian key를 계산해서 비교ㄴㄴㄴ
                 return self.get_abelian_key() == others.get_abelian_key()
             else:
                 return False
@@ -274,10 +288,36 @@ class Group(Generic[T]):
         if self.order() != others.order():
             return False
 
-        if self.order_histogram() != others.order_histogram():
+        # order statistics 확인
+        if self.order_statistics() != others.order_statistics():
             return False
 
-        assert False
+        # 일일이 확인 |g| = |f(g)|임을 이용
+        others_statistics = others.order_statistics_element()
+        candidate_list = []
+        for gen in self.generator:
+            candidate = others_statistics[gen.order()]
+            candidate_list.append(candidate)
+
+        from algebra.group.homomorphism import GroupHomomorphism
+
+        order = self.order()
+
+        for valid_image in itertools.product(*candidate_list):
+            hom = GroupHomomorphism(
+                self, others, dict(zip(self.generator, valid_image)),
+                raise_exception=False
+            )
+            if not hom.is_valid_structure():
+                continue
+            if hom.image().order() != order:
+                continue
+
+            return True
+
+        print("Order Statistic은 같은데 Isomorphism하지 않은 반례")
+        print(self, others)
+        return False
 
     def get_abelian_key(self) -> list[int]:
         if not self.is_abelian():

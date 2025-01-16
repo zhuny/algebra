@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, InitVar
 from typing import Dict, List
 
 from algebra.group.abstract.base import Group, GroupElement, GroupRep
@@ -18,8 +18,10 @@ class GroupDirectProductRep(PermutationGroupRep):
         object_list = list(self._sub_object_list())
         super().__init__(len(object_list))
 
-        self.object_map_right = dict(zip(object_list, self.object_list()))
-        self.object_map_left = dict(zip(self.object_list(), object_list))
+        this_object_list = list(self.object_list())
+
+        self.object_map_right = dict(zip(object_list, this_object_list))
+        self.object_map_left = dict(zip(this_object_list, object_list))
 
     def right_element_map(self, item: List[GroupElement]):
         if len(item) != len(self.subgroup_list):
@@ -31,11 +33,11 @@ class GroupDirectProductRep(PermutationGroupRep):
 
         mapping = {}
         map_right = self.object_map_right
-        for i in item:
-            for o1 in i.group.object_list():
-                o2 = i.act(o1)
+        for i, g in enumerate(item):
+            for o1 in g.group.object_list():
+                o2 = g.act(o1)
                 if o1 != o2:
-                    mapping[map_right[o1]] = map_right[o2]
+                    mapping[map_right[i, o1]] = map_right[i, o2]
 
         return self.element(mapping)
 
@@ -59,8 +61,9 @@ class GroupDirectProductRep(PermutationGroupRep):
         return item
 
     def _sub_object_list(self):
-        for subgroup in self.subgroup_list:
-            yield from subgroup.object_list()
+        for i, subgroup in enumerate(self.subgroup_list):
+            for o in subgroup.object_list():
+                yield i, o
 
 
 @dataclass
@@ -68,8 +71,9 @@ class GroupHomomorphism:
     domain: Group
     codomain: Group
     mapping: Dict[GroupElement, GroupElement]
+    raise_exception: InitVar[bool] = True
 
-    def __post_init__(self):
+    def __post_init__(self, raise_exception):
         # domain의 generator가 모두 맞게 있는지 확인한다.
         domain_gen_set = set(self.domain.generator)
         mapping_set = set(self.mapping)
@@ -82,9 +86,13 @@ class GroupHomomorphism:
                 raise ValueError('Target Value')
 
         # mapping 값이 제대로 됐는지 확인
+        if raise_exception:
+            if not self.is_valid_structure():
+                raise ValueError('Mapping not Hom')
+
+    def is_valid_structure(self):
         product_order = self.as_direct_product().order()
-        if product_order != self.domain.order():
-            raise ValueError('Mapping not Hom')
+        return product_order == self.domain.order()
 
     def value(self, element):
         if not self.domain.element_test(element):

@@ -78,3 +78,9 @@ class TestHomomorphism(unittest.TestCase):
         g2 = dihedral_group(6)
 
         self.assertFalse(g1.is_isomorphism(g2))
+
+    def test_non_abelian_pair_5(self):
+        g1 = dihedral_group(6)
+        g2 = dihedral_group(6)
+
+        self.assertTrue(g1.is_isomorphism(g2))
