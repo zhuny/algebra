@@ -77,7 +77,7 @@ class StabilizerTraveler:
                 for t in chain.transversal.values():
                     stack.append((
                         chain.stabilizer,
-                        element + t.element
+                        t.element + element
                     ))
 
 
@@ -91,7 +91,11 @@ class Group(Generic[T]):
     def __str__(self):
         if self.name:
             return self.name
-        return repr(self)
+        return ''.join([
+            '{',
+            ','.join(map(str, self.generator)),
+            '}'
+        ])
 
     def show(self):
         print("Generator")
@@ -127,6 +131,12 @@ class Group(Generic[T]):
             for g2 in self.generator:
                 if g1 + g2 != g2 + g1:
                     return False
+        return True
+
+    def is_subgroup(self, other: 'Group'):
+        for g in self.generator:
+            if not other.element_test(g):
+                return False
         return True
 
     def orbit(self, o: T) -> Set[T]:
@@ -271,6 +281,11 @@ class Group(Generic[T]):
                     # Not normal
                     return False
         return True
+
+    def is_transitive(self):
+        obj_list = list(self.represent.object_list())
+        orbit = self.orbit(obj_list[0])
+        return len(obj_list) == len(orbit)
 
     def is_isomorphism(self, others: 'Group'):
         # abelian 인지 확인한다.
@@ -634,6 +649,9 @@ class GroupElement(Generic[T]):
 
     def __sub__(self, other: 'GroupElement') -> 'GroupElement':
         return self + (-other)
+
+    def __eq__(self, other: 'GroupElement') -> bool:
+        return (self - other).is_identity()
 
     def is_identity(self) -> bool:
         raise NotImplementedError

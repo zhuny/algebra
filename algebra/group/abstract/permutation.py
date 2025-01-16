@@ -122,3 +122,6 @@ class PermutationGroupElement(GroupElement[PermutationObject]):
         for seq in self._to_seq():
             order = lcm(order, len(seq))
         return order
+
+    def orbit(self):
+        return len(list(self._to_seq()))
