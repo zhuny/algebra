@@ -93,7 +93,7 @@ class PermutationGroupElement(GroupElement[PermutationObject]):
             perm_map={v: k for k, v in self.perm_map.items()}
         )
 
-    def _to_seq(self):
+    def to_seq(self):
         done = set()
         for k, v in sorted(self.perm_map.items()):
             if k in done:
@@ -110,7 +110,7 @@ class PermutationGroupElement(GroupElement[PermutationObject]):
             yield one
 
     def __str__(self):
-        return str(list(self._to_seq()))
+        return str(list(self.to_seq()))
 
     def __hash__(self):
         return hash((self.group, str(self)))
@@ -123,7 +123,7 @@ class PermutationGroupElement(GroupElement[PermutationObject]):
 
     def order(self) -> int:
         order = 1
-        for seq in self._to_seq():
+        for seq in self.to_seq():
             order = lcm(order, len(seq))
         return order
 
@@ -136,7 +136,7 @@ class PermutationGroupElement(GroupElement[PermutationObject]):
         return o_list
 
     def orbit_list(self):
-        return len(list(self._to_seq()))
+        return len(list(self.to_seq()))
 
     @property
     def cls_element(self) -> Type:

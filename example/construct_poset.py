@@ -1,5 +1,9 @@
+import argparse
 import collections
+import json
+import secrets
 import sys
+from pathlib import Path
 
 from algebra.group.abstract.permutation import PermutationGroupRep
 from algebra.group.abstract.shortcut import symmetric_group
@@ -30,6 +34,26 @@ class Node:
 
     def string(self):
         return self.value
+
+    def dump(self):
+        return {
+            'type': type(self).__name__,
+            'value': self.to_json()
+        }
+
+    @classmethod
+    def load(cls, info, context):
+        if info['type'] != cls.__name__:
+            return
+
+        return cls(value=cls.from_json(info['value'], context))
+
+    def to_json(self):
+        return self.value
+
+    @classmethod
+    def from_json(cls, value, context):
+        return value
 
 
 class TopNode(Node):
@@ -84,6 +108,18 @@ class PosetOrder:
         for upper in upper_list:
             element_node.link(upper)
 
+    def has(self, element):
+        element_node = self.node_cls(element)
+        lower_list = self._get_lower(element_node)
+        upper_list = self._get_upper(element_node)
+
+        if len(lower_list) == 1 and len(upper_list) == 1:
+            if lower_list == upper_list:
+                # 이미 있는 경우
+                return True
+
+        return False
+
     def show(self):
         for element in self.travel():
             for upper in element.upper:
@@ -109,6 +145,54 @@ class PosetOrder:
             if element == self.bottom:
                 continue
             yield element.value
+
+    def dump(self, filename):
+        node_to_id = {}
+        id_to_node = {}
+        for element in self.travel():
+            token = secrets.token_hex(8)
+            node_to_id[element] = token
+            id_to_node[token] = element.dump()
+
+        relation = [
+            [node_to_id[element], node_to_id[upper]]
+            for element in self.travel()
+            for upper in element.upper
+        ]
+
+        info = {
+            'node_list': [
+                {'key': key, 'value': value}
+                for key, value in id_to_node.items()
+            ],
+            'relation': relation
+        }
+
+        with open(filename, 'w') as f:
+            f.write(json.dumps(info))
+
+    def load(self, filename, context):
+        with open(filename, 'r') as f:
+            info = json.loads(f.read())
+
+        id_to_node = {}
+        for element in info['node_list']:
+            element_value = element['value']
+            if element_value['type'] == 'TopNode':
+                node = self.top
+            elif element_value['type'] == 'BottomNode':
+                node = self.bottom
+            else:
+                node = self.node_cls.load(element_value, context)
+            id_to_node[element['key']] = node
+
+        self.bottom.unlink(self.top)
+        self.size = len(id_to_node) - 2
+
+        for lower, upper in info['relation']:
+            lower_node = id_to_node[lower]
+            upper_node = id_to_node[upper]
+            lower_node.link(upper_node)
 
     def _get_lower(self, element):
         stack = {self.bottom}
@@ -159,6 +243,18 @@ class GroupNode(Node):
     def compare(self, left, right):
         return left.is_subgroup(right)
 
+    def to_json(self):
+        return [
+            list(g.to_seq())
+            for g in self.value.generator
+        ]
+
+    @classmethod
+    def from_json(cls, value, context):
+        from algebra.group.abstract.base import Group
+        group: Group = context['group']
+        return group.represent.group_(value)
+
 
 class GroupSetNode(Node):
     def compare(self, left, right):
@@ -207,17 +303,47 @@ class GroupingGroup:
             yield count
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('degree', type=int)
+    parser.add_argument('-c', default=None, help='Cache file', dest='cache')
+
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
+
     po = PosetOrder(GroupNode)
-    s_n = symmetric_group(int(sys.argv[1]))
+    s_n = symmetric_group(args.degree)
+
+    context = {'group': s_n}
+
+    if args.cache:
+        if Path(args.cache).exists():
+            po.load(args.cache, context)
+            po.show()
 
     po.insert(s_n.represent.group())
+    count = 0
 
-    for i, element in enumerate(s_n.element_list()):
+    for element in s_n.element_list():
+        if po.has(s_n.represent.group(element)):
+            print(element, 'skipped')
+            continue
+
+        count += 1
+        print(count, element)
+
         for group in po.element_list():
             po.insert(group.append(element))
 
-        print(i, element)
+        if count % 10 == 0:
+            po.dump(args.cache)
+            print('saved')
+
+    po.dump(args.cache)
     print()
 
     grouping_dict = {

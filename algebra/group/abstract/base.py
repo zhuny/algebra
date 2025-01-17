@@ -355,11 +355,6 @@ class Group(Generic[T]):
                     return False
         return True
 
-    def is_transitive(self):
-        obj_list = list(self.represent.object_list())
-        orbit = self.orbit(obj_list[0])
-        return len(obj_list) == len(orbit)
-
     def is_isomorphism(self, others: 'Group'):
         # abelian 인지 확인한다.
         if self.is_abelian():
