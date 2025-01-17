@@ -174,11 +174,16 @@ class GroupSetNode(Node):
 
 
 class GroupingGroup:
-    def __init__(self, check_name):
+    def __init__(self, check_name, condition=None):
         self.check_name = check_name
         self.group_by = []
+        self.condition = condition
 
     def append(self, g):
+        if self.condition is not None:
+            if not getattr(g, self.condition)():
+                return
+
         for item in self.group_by:
             if getattr(item[0], self.check_name)(g):
                 item[1].append(g)
@@ -187,10 +192,14 @@ class GroupingGroup:
         self.group_by.append((g, [g]))
 
     def show(self):
-        print(self.check_name)
+        if self.condition is None:
+            print(self.check_name)
+        else:
+            print(self.check_name, 'with', self.condition)
+
         for g, g_list in self.group_by:
             print(g, g.order(), len(g_list))
-        print(len(self.group_by), 'elements')
+        print(len(self.group_by), 'grouping')
         print()
 
     def get_grouping(self):
@@ -213,7 +222,8 @@ def main():
 
     grouping_dict = {
         'iso': GroupingGroup('is_isomorphism'),
-        'con': GroupingGroup('is_conjugate')
+        'con': GroupingGroup('is_conjugate'),
+        'galois': GroupingGroup('is_isomorphism', condition='is_transitive')
     }
     for group in po.element_list():
         for grouping in grouping_dict.values():
@@ -223,7 +233,7 @@ def main():
         grouping.show()
 
     po2 = PosetOrder(GroupSetNode)
-    for group_set in grouping_dict['iso'].get_grouping():
+    for group_set in grouping_dict['galois'].get_grouping():
         po2.insert(group_set)
     po2.show()
 
