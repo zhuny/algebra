@@ -7,8 +7,10 @@ from dataclasses import dataclass
 class PolyCyclicGroup:
     degree: int
     number: int
-    power_relation: dict = dataclasses.field(default_factory=dict)
-    commute_relation: dict = dataclasses.field(default_factory=dict)
+    power_relation: dict[int, list[int]] = dataclasses.field(default_factory=dict)
+    commute_relation: dict[tuple[int, int], list[int]] = dataclasses.field(
+        default_factory=dict
+    )
 
     def add_number(self):
         n = self.number
@@ -36,14 +38,76 @@ class PolyCyclicGroup:
                     self.commute_relation.get(p, []) + [new_p]
                 )
 
+        for i, rel in result.power_relation.items():
+            print(i, rel)
+        for (j, i), rel in result.commute_relation.items():
+            print(j, i, rel)
+
         # optimize
-        for new_i in range(self.number, result.number):
-            e = result.generator(new_i)
-            ep = e * (self.degree - 1)
-            left = (e + ep) + e
-            right = e + (ep + e)
-            print(left, right)
-            input()
+        for i in range(result.number):
+            e = result.generator(i)
+            e_p = e * (result.degree - 1)
+
+            left = (e + e_p) + e
+            right = e + (e_p + e)
+
+            if left != right:
+                print(i)
+                print(left)
+                print(right)
+                print(left - right)
+                input()
+
+        for i in range(result.number):
+            for j in range(i+1, result.number):
+                for k in range(j+1, result.number):
+                    ei = result.generator(i)
+                    ej = result.generator(j)
+                    ek = result.generator(k)
+
+                    left = (ek + ej) + ei
+                    right = ek + (ej + ei)
+
+                    if left != right:
+                        print(i, j, k)
+                        print(left)
+                        print(right)
+                        print(left - right)
+                        input()
+
+        for i in range(result.number):
+            for j in range(i+1, result.number):
+                ei = result.generator(i)
+                ej = result.generator(j)
+
+                ej_p = ej * (result.degree - 1)
+
+                left = (ej_p + ej) + ei
+                right = ej_p + (ej + ei)
+
+                if left != right:
+                    print(i, j)
+                    print(left)
+                    print(right)
+                    print(left - right)
+                    input()
+
+        for i in range(result.number):
+            for j in range(i+1, result.number):
+                ei = result.generator(i)
+                ej = result.generator(j)
+
+                ei_p = ei * (result.degree - 1)
+
+                left = (ej + ei) + ei_p
+                right = ej + (ei + ei_p)
+
+                if left != right:
+                    print(i, j)
+                    print(left)
+                    print(right)
+                    print(left - right)
+                    input()
 
 
 @dataclass(unsafe_hash=False, eq=False)
@@ -57,11 +121,9 @@ class PolyCyclicElement:
     def __eq__(self, other):
         return self.power == other.power
 
-    def __add__(self, other: 'PolyCyclicElement'):
-        # print(self.power, other.power)
-
-        stack = self._build_stack()
-        right_stack = other._build_stack()
+    def _normalize_sequence(self, sequence):
+        stack = []
+        right_stack = list(sequence)
         right_stack.reverse()
 
         while right_stack:
@@ -84,7 +146,11 @@ class PolyCyclicElement:
                 q, r = divmod(left.power + right.power, self.group.degree)
                 if left.index in self.group.power_relation:
                     for _ in range(q):
-                        right_stack.extend(self.group.power_relation[left.index])
+                        right_stack.extend(
+                            self._to_index(
+                                self.group.power_relation[left.index]
+                            )
+                        )
                 right_stack.append(PolyCyclicIndex(left.index, r))
             else:
                 pair = left.index, right.index
@@ -93,7 +159,11 @@ class PolyCyclicElement:
                 else:
                     right_stack.append(PolyCyclicIndex(right.index, right.power - 1))
                     for _ in range(left.power):
-                        right_stack.extend(self.group.commute_relation[pair])
+                        right_stack.extend(
+                            self._to_index(
+                                self.group.commute_relation[pair]
+                            )
+                        )
                         right_stack.append(PolyCyclicIndex(left.index, 1))
                     right_stack.append(PolyCyclicIndex(right.index, 1))
 
@@ -104,6 +174,25 @@ class PolyCyclicElement:
         for left in stack:
             p[left.index] = left.power
         return PolyCyclicElement(group=self.group, power=p)
+
+    def __add__(self, other: 'PolyCyclicElement'):
+        return self._normalize_sequence(
+            itertools.chain(
+                self._build_stack(),
+                other._build_stack()
+            )
+        )
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __neg__(self):
+        stack = self._build_stack()
+        stack.reverse()
+        return self._normalize_sequence([
+            PolyCyclicIndex(index.index, -index.power)
+            for index in stack
+        ])
 
     def __mul__(self, other):
         current = self
@@ -121,6 +210,12 @@ class PolyCyclicElement:
                 power_list.append(PolyCyclicIndex(i, p))
         return power_list
 
+    def _to_index(self, int_list):
+        return [
+            PolyCyclicIndex(index=index, power=1)
+            for index in int_list[::-1]
+        ]
+
     def _show(self, stack, right_stack):
         # print(stack)
         # print(right_stack)
@@ -135,16 +230,7 @@ class PolyCyclicIndex:
 
 
 def main():
-    # g = PGroup(degree=2, number=5)
-    # g.power_relation[0] = 3
-    # g.power_relation[1] = 2
-    # g.power_relation[2] = 4
-    # g.power_relation[3] = 4
-    # g.commute_relation[1, 0] = 2
-    # g.commute_relation[2, 0] = 4
-    #
-    # g.build_weight()
-
+    # D8
     g = PolyCyclicGroup(2, 3)
     g.commute_relation[1, 0] = [2]
     g.power_relation[1] = [2]
