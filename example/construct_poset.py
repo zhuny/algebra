@@ -339,7 +339,7 @@ def main():
         for group in po.element_list():
             po.insert(group.append(element))
 
-        if count % 10 == 0:
+        if count % 10 == 0 and args.cache is not None:
             po.dump(args.cache)
             print('saved')
 
