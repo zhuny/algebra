@@ -17,10 +17,19 @@ class PolyCyclicGroup:
         self.number += 1
         return n
 
+    def identity(self):
+        return PolyCyclicElement(self, [0] * self.number)
+
     def generator(self, index):
         power = [0] * self.number
         power[index] = 1
         return PolyCyclicElement(self, power)
+
+    def generator_list(self, count=1):
+        gen_list = [self.generator(i) for i in range(count)]
+        if count == 1:
+            return gen_list
+        return itertools.combinations(gen_list, count)
 
     def p_covering_group(self):
         # gen
@@ -38,76 +47,87 @@ class PolyCyclicGroup:
                     self.commute_relation.get(p, []) + [new_p]
                 )
 
-        for i, rel in result.power_relation.items():
-            print(i, rel)
-        for (j, i), rel in result.commute_relation.items():
-            print(j, i, rel)
+        result._optimize()
+        result._show('Normalized')
+        return result
 
+    def _optimize(self):
+        while self._optimize_once():
+            pass
+
+    def _optimize_once(self):
         # optimize
-        for i in range(result.number):
-            e = result.generator(i)
-            e_p = e * (result.degree - 1)
-
-            left = (e + e_p) + e
-            right = e + (e_p + e)
-
+        for left, right in self._optimize_check():
             if left != right:
-                print(i)
-                print(left)
-                print(right)
-                print(left - right)
-                input()
+                diff = left - right
+                if diff.is_zero():
+                    diff = - left + right
+                diff_index = diff.max_index()
+                left = diff - self.generator(diff_index)
+                self._remove_gen(diff_index, left)
+                return True
 
-        for i in range(result.number):
-            for j in range(i+1, result.number):
-                for k in range(j+1, result.number):
-                    ei = result.generator(i)
-                    ej = result.generator(j)
-                    ek = result.generator(k)
+        return False
 
-                    left = (ek + ej) + ei
-                    right = ek + (ej + ei)
+    def _optimize_check(self):
+        for ei in self.generator_list():
+            ei_p = ei * (self.degree - 1)
 
-                    if left != right:
-                        print(i, j, k)
-                        print(left)
-                        print(right)
-                        print(left - right)
-                        input()
+            yield (ei + ei_p) + ei, ei + (ei_p + ei)
 
-        for i in range(result.number):
-            for j in range(i+1, result.number):
-                ei = result.generator(i)
-                ej = result.generator(j)
+        for ei, ej in self.generator_list(2):
+            ei_p = ei * (self.degree - 1)
+            ej_p = ej * (self.degree - 1)
 
-                ej_p = ej * (result.degree - 1)
+            yield (ej_p + ej) + ei, ej_p + (ej + ei)
+            yield (ej + ei) + ei_p, ej + (ei + ei_p)
 
-                left = (ej_p + ej) + ei
-                right = ej_p + (ej + ei)
+        for ei, ej, ek in self.generator_list(3):
+            yield (ek + ej) + ei, ek + (ej + ei)
 
-                if left != right:
-                    print(i, j)
-                    print(left)
-                    print(right)
-                    print(left - right)
-                    input()
+    def _remove_gen(self, diff_index, index_rel):
+        new_power_relation = self._convert_relation(self.power_relation, diff_index, index_rel)
+        new_commute_relation = self._convert_relation(self.commute_relation, diff_index, index_rel)
+        self._update_dict(self.power_relation, new_power_relation)
+        self._update_dict(self.commute_relation, new_commute_relation)
 
-        for i in range(result.number):
-            for j in range(i+1, result.number):
-                ei = result.generator(i)
-                ej = result.generator(j)
+        self.number -= 1
 
-                ei_p = ei * (result.degree - 1)
+    def _convert_relation(self, relation, diff_index, index_rel):
+        return {
+            key: self._convert_index(rel, diff_index, index_rel)
+            for key, rel in relation.items()
+        }
 
-                left = (ej + ei) + ei_p
-                right = ej + (ei + ei_p)
+    def _convert_index(self, rel, diff_index, index_rel):
+        if diff_index in rel:
+            new_rel = self.identity()
+            for index in rel:
+                if index == diff_index:
+                    new_rel += index_rel
+                else:
+                    new_rel += self.generator(index)
+            rel = new_rel.to_index_list()
 
-                if left != right:
-                    print(i, j)
-                    print(left)
-                    print(right)
-                    print(left - right)
-                    input()
+        return [
+            i if i < diff_index else i - 1
+            for i in rel
+        ]
+
+    def _update_dict(self, relation, new_relation):
+        relation.clear()
+        for k, v in new_relation.items():
+            if v:
+                relation[k] = v
+
+    def _show(self, msg=None):
+        if msg:
+            print(msg)
+        for i, rel in self.power_relation.items():
+            print(i, rel)
+        for (j, i), rel in self.commute_relation.items():
+            print(j, i, rel)
+        print()
 
 
 @dataclass(unsafe_hash=False, eq=False)
@@ -121,6 +141,9 @@ class PolyCyclicElement:
     def __eq__(self, other):
         return self.power == other.power
 
+    def __lt__(self, other):
+        return self.power < other.power
+
     def _normalize_sequence(self, sequence):
         stack = []
         right_stack = list(sequence)
@@ -129,16 +152,29 @@ class PolyCyclicElement:
         while right_stack:
             self._show(stack, right_stack)
 
-            if right_stack[-1].power == 0:
-                right_stack.pop()
+            right = right_stack.pop()
+
+            if right.power == 0:
+                continue
+
+            if right.power < 0:
+                if right.index in self.group.power_relation:
+                    right_stack.extend(
+                        self._to_index(self.group.power_relation[right.index])
+                    )
+                right_stack.append(
+                    PolyCyclicIndex(
+                        right.index,
+                        right.power + self.group.degree
+                    )
+                )
                 continue
 
             if len(stack) == 0:
-                stack.append(right_stack.pop())
+                stack.append(right)
                 continue
 
             left = stack.pop()
-            right = right_stack.pop()
 
             if left.index < right.index:
                 stack.extend([left, right])
@@ -203,10 +239,30 @@ class PolyCyclicElement:
     def __str__(self):
         return str(self.power)
 
+    def max_index(self):
+        index = None
+        for i, p in enumerate(self.power):
+            if p > 0:
+                index = i
+        return index
+
+    def to_index_list(self):
+        result = []
+        for i, p in enumerate(self.power):
+            for _ in range(p):
+                result.append(i)
+        return result
+
+    def is_zero(self):
+        for p in self.power:
+            if p != 0:
+                return False
+        return True
+
     def _build_stack(self):
         power_list = []
         for i, p in enumerate(self.power):
-            if p > 0:
+            if p != 0:
                 power_list.append(PolyCyclicIndex(i, p))
         return power_list
 
