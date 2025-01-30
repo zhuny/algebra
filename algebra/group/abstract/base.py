@@ -3,7 +3,8 @@ import itertools
 import random
 from dataclasses import dataclass, field
 from queue import Queue
-from typing import List, TypeVar, Generic, Set, Dict, Optional, Iterator, Union
+from typing import List, TypeVar, Generic, Set, Dict, Optional, Iterator, Union, \
+    Type
 
 from algebra.number.util import factorize
 
@@ -16,6 +17,10 @@ class GroupRep:
     def identity(self):
         raise NotImplementedError(self)
 
+    @property
+    def group_cls(self) -> Type:
+        return Group
+
     def object_list(self):
         raise NotImplementedError(self)
 
@@ -26,6 +31,10 @@ class GroupRep:
         raise NotImplementedError(self)
 
     def group(self, *elements, name=''):
+        # *elements는 최대한 사용 안하는 쪽으로
+        if len(elements) == 1 and isinstance(elements[0], list):
+            elements = elements[0]
+
         for element in elements:
             if not isinstance(element, GroupElement):
                 raise TypeError("GroupElement should be given")
@@ -33,7 +42,11 @@ class GroupRep:
             if element.group != self:
                 raise ValueError("Element should be belong to this group")
 
-        return Group(represent=self, generator=list(elements), name=name)
+        return self.group_cls(
+            represent=self,
+            generator=list(elements),
+            name=name
+        )
 
     def group_(self, elements, *, name=''):
         """
@@ -431,6 +444,9 @@ class Group(Generic[T]):
 
     def isomorphism_groups(self, others: 'Group'):
         pass
+
+    def automorphism_group(self):
+        raise NotImplementedError(self)
 
     def g_quotients(self, others: 'Group'):
         pass

@@ -2,89 +2,78 @@ import dataclasses
 import itertools
 from dataclasses import dataclass
 
-from algebra.group.abstract.polycyclic.base import PolyCyclicGroupRep
+from algebra.group.abstract.base import GroupElement, GroupRep, Group
 
 
 @dataclass
-class PolyCyclicGroup:
+class PolyCyclicGroupRep(GroupRep):
     degree: int
     number: int
-    power_relation: dict[int, list[int]] = dataclasses.field(default_factory=dict)
+    power_relation: dict[int, list[int]] = dataclasses.field(
+        default_factory=dict
+    )
     commute_relation: dict[tuple[int, int], list[int]] = dataclasses.field(
         default_factory=dict
     )
 
-    def identity(self):
-        return PolyCyclicElement(self, [0] * self.number)
+    @property
+    def group_cls(self):
+        return PolyCyclicGroup
+
+    def element(self, power):
+        return PolyCyclicGroupElement(self, power)
+
+    def from_index(self, index):
+        power = [0] * self.number
+        power[index] = 1
+        return self.element(power)
+
+    def as_group(self):
+        return self.group(self.generator_list())
+
+    def add_number(self):
+        n = self.number
+        self.number += 1
+        return n
 
     def generator_list(self, count=1):
-        gen_list = [self.generator(i) for i in range(count)]
+        gen_list = [self.from_index(i) for i in range(self.number)]
         if count == 1:
             return gen_list
         return itertools.combinations(gen_list, count)
 
-    def _optimize_check(self):
-        for ei in self.generator_list():
-            ei_p = ei * (self.degree - 1)
 
-            yield (ei + ei_p) + ei, ei + (ei_p + ei)
+@dataclass
+class PolyCyclicGroup(Group):
+    def p_covering_group(self):
+        from algebra.group.abstract.polycyclic.p_convering import \
+            PCoveringGroupAlgorithm
 
-        for ei, ej in self.generator_list(2):
-            ei_p = ei * (self.degree - 1)
-            ej_p = ej * (self.degree - 1)
+        return PCoveringGroupAlgorithm(self).run()
 
-            yield (ej_p + ej) + ei, ej_p + (ej + ei)
-            yield (ej + ei) + ei_p, ej + (ei + ei_p)
-
-        for ei, ej, ek in self.generator_list(3):
-            yield (ek + ej) + ei, ek + (ej + ei)
-
-    def _remove_gen(self, diff_index, index_rel):
-        new_power_relation = self._convert_relation(self.power_relation, diff_index, index_rel)
-        new_commute_relation = self._convert_relation(self.commute_relation, diff_index, index_rel)
-        self._update_dict(self.power_relation, new_power_relation)
-        self._update_dict(self.commute_relation, new_commute_relation)
-
-        self.number -= 1
-
-    def _convert_relation(self, relation, diff_index, index_rel):
-        return {
-            key: self._convert_index(rel, diff_index, index_rel)
-            for key, rel in relation.items()
-        }
-
-    def _convert_index(self, rel, diff_index, index_rel):
-        if diff_index in rel:
-            new_rel = self.identity()
-            for index in rel:
-                if index == diff_index:
-                    new_rel += index_rel
-                else:
-                    new_rel += self.generator(index)
-            rel = new_rel.to_index_list()
-
-        return [
-            i if i < diff_index else i - 1
-            for i in rel
-        ]
-
-    def _update_dict(self, relation, new_relation):
-        relation.clear()
-        for k, v in new_relation.items():
-            if v:
-                relation[k] = v
+    def show(self, msg=None):
+        rep: PolyCyclicGroupRep = self.represent
+        if msg:
+            print(msg)
+        print(f'PCG({rep.degree}, {rep.number}) with..')
+        for i, rel in rep.power_relation.items():
+            print(i, rel)
+        for (j, i), rel in rep.commute_relation.items():
+            print(j, i, rel)
+        print()
 
 
-@dataclass(unsafe_hash=False, eq=False)
-class PolyCyclicElement:
-    group: PolyCyclicGroup
+
+@dataclass
+class PolyCyclicGroupElement(GroupElement):
+    group: PolyCyclicGroupRep
     power: list[int]
 
     def __hash__(self):
         return hash((id(self.group), tuple(self.power)))
 
     def __eq__(self, other):
-        return self.power == other.power
+        return self.group is other.group and self.power == other.power
 
     def __lt__(self, other):
         return self.power < other.power
@@ -154,7 +143,7 @@ class PolyCyclicElement:
         p = [0] * self.group.number
         for left in stack:
             p[left.index] = left.power
-        return PolyCyclicElement(group=self.group, power=p)
+        return PolyCyclicGroupElement(group=self.group, power=p)
 
     def __add__(self, other: 'PolyCyclicElement'):
         return self._normalize_sequence(
@@ -228,18 +217,3 @@ class PolyCyclicElement:
 class PolyCyclicIndex:
     index: int
     power: int
-
-
-def main():
-    # C2 X C2
-    g = PolyCyclicGroupRep(2, 2).as_group()
-
-    pcg = g.p_covering_group()
-    pcg.show('Normalized')
-
-    ag = g.automorphism_group()
-    ag.show('Automorphism')
-
-
-if __name__ == '__main__':
-    main()
