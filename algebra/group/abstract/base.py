@@ -1,8 +1,12 @@
 import collections
+import itertools
 import random
 from dataclasses import dataclass, field
 from queue import Queue
 from typing import List, TypeVar, Generic, Set, Dict, Optional, Iterator, Union
+
+from algebra.number.util import factorize
+from algebra.util.my_hash import int_sequence_hash
 
 T = TypeVar("T")
 
@@ -22,7 +26,7 @@ class GroupRep:
     def element(self, *args):
         raise NotImplementedError(self)
 
-    def group(self, *elements):
+    def group(self, *elements, name=''):
         for element in elements:
             if not isinstance(element, GroupElement):
                 raise TypeError("GroupElement should be given")
@@ -30,15 +34,17 @@ class GroupRep:
             if element.group != self:
                 raise ValueError("Element should be belong to this group")
 
-        return Group(represent=self, generator=list(elements))
+        return Group(represent=self, generator=list(elements), name=name)
 
-    def group_(self, elements):
+    def group_(self, elements, *, name=''):
         """
         self.group_([
             [[0, 1, 2, 3]],
             [[0, 2], [1, 3]]
         ])
-        :param elements:
+        :param
+            elements: Generator of Group
+            name: Name For Group
         :return:
         """
         ol = list(self.object_list())
@@ -49,7 +55,7 @@ class GroupRep:
                 for chain in element
             ]
             generator_list.append(self.element(*rep_elem))
-        return self.group(*generator_list)
+        return self.group(*generator_list, name=name)
 
     def as_group(self):
         raise NotImplementedError(self)
@@ -75,26 +81,100 @@ class StabilizerTraveler:
                 for t in chain.transversal.values():
                     stack.append((
                         chain.stabilizer,
-                        element + t.element
+                        t.element + element
                     ))
+
+
+class StabilizerOrderTraveler:
+    def __init__(self, group):
+        self.group: Group = group
+
+    def visit(self):
+        result: list[tuple[int, int]] = []
+        current_group = self.group.represent.group()
+
+        for stabilizer in self.group.stabilizer_chain().travel():
+            order = len(stabilizer.transversal)
+            if order == 0:
+                break
+
+            orbit_set = {stabilizer.point}
+            for g in stabilizer.transversal.values():
+                if self._is_run_needed(orbit_set, g.element):
+                    for o in list(orbit_set):
+                        orbit_set.update(g.element.orbit(o))
+
+                    before_order = current_group.order()
+                    current_group = current_group.append(g.element)
+                    after_order = current_group.order()
+
+                    result.extend(
+                        factorize(after_order // before_order).items()
+                    )
+
+        result.sort()
+        return [p ** e for p, e in result]
+
+    def _is_run_needed(self, orbit_set, g):
+        for o in orbit_set:
+            return g.act(o) not in orbit_set
 
 
 @dataclass
 class Group(Generic[T]):
-    represent: GroupRep
+    represent: GroupRep = field(repr=False)
     generator: List['GroupElement']
-    _stabilizer_chain: Optional['StabilizerChain'] = None
+    name: Optional[str] = ''
+    _stabilizer_chain: Optional['StabilizerChain'] = field(
+        repr=False, default=None
+    )
+
+    def __str__(self):
+        if self.name:
+            return self.name
+        return ''.join([
+            '{',
+            ','.join(map(str, self.generator)),
+            '}'
+        ])
 
     def show(self):
         print("Generator")
         for g in self.generator:
             print('-', g)
 
+    def group_id(self):
+        # unique value up to isomorphism
+        if self.is_abelian():
+            key_list = [1]
+            key_list.extend(self.get_abelian_key())
+        else:
+            key_list = [0]
+            for item in sorted(self.order_statistics().items()):
+                key_list.extend(item)
+
+        return int_sequence_hash('Group', key_list)
+
+    def append(self, element):
+        return self.represent.group(element, *self.generator)
+
     def copy(self):
         return self.represent.group(*self.generator)
 
     def order(self):
         return self.stabilizer_chain().order
+
+    def order_statistics(self):
+        order_count = collections.defaultdict(int)
+        for element in self.element_list():
+            order_count[element.order()] += 1
+        return dict(order_count)
+
+    def order_statistics_element(self):
+        order_count = collections.defaultdict(list)
+        for element in self.element_list():
+            order_count[element.order()].append(element)
+        return dict(order_count)
 
     def element_list(self) -> Iterator['GroupElement']:
         return StabilizerTraveler(self).visit()
@@ -104,6 +184,12 @@ class Group(Generic[T]):
             for g2 in self.generator:
                 if g1 + g2 != g2 + g1:
                     return False
+        return True
+
+    def is_subgroup(self, other: 'Group'):
+        for g in self.generator:
+            if not other.element_test(g):
+                return False
         return True
 
     def orbit(self, o: T) -> Set[T]:
@@ -117,6 +203,64 @@ class Group(Generic[T]):
                 if gc not in done:
                     queue.add(gc)
         return done
+
+    def orbit_list(self):
+        o_done = set()
+        o_list = []
+
+        for o in self.represent.object_list():
+            if o in o_done:
+                continue
+
+            orbit = self.orbit(o)
+            if len(orbit) > 1:
+                o_list.append(orbit)
+            o_done.update(orbit)
+
+        return o_list
+
+    def is_transitive(self):
+        object_list = list(self.represent.object_list())
+        for o in object_list:
+            return len(self.orbit(o)) == len(object_list)
+
+    def is_conjugate(self, other: 'Group') -> bool:
+        if self.represent != other.represent:
+            return False
+
+        if not self.is_isomorphism(other):
+            return False
+
+        for g in self.represent.as_group().element_list():
+            conjugate = self.conjugate(g)
+            if conjugate.is_equal(other):
+                return True
+
+        return False
+
+    def conjugate(self, other: 'GroupElement') -> 'Group':
+        return Group(
+            represent=self.represent,
+            generator=[
+                other + g - other
+                for g in self.generator
+            ]
+        )
+
+    def is_equal(self, other: 'Group') -> bool:
+        if self.represent != other.represent:
+            return False
+
+        return (
+            self.is_contained(other) and
+            other.is_contained(self)
+        )
+
+    def is_contained(self, other: 'Group') -> bool:
+        for g in other.generator:
+            if not self.element_test(g):
+                return False
+        return True
 
     def stabilizer(self, o: T) -> 'Group':
         self.represent.check_object(o)
@@ -248,6 +392,59 @@ class Group(Generic[T]):
                     # Not normal
                     return False
         return True
+
+    def is_isomorphism(self, others: 'Group'):
+        # abelian 인지 확인한다.
+        if self.is_abelian():
+            if others.is_abelian():
+                # abelian인 경우 abelian key를 계산해서 비교ㄴㄴㄴ
+                return self.get_abelian_key() == others.get_abelian_key()
+            else:
+                return False
+        else:
+            if others.is_abelian():
+                return False
+
+        # order 확인
+        if self.order() != others.order():
+            return False
+
+        # order statistics 확인
+        if self.order_statistics() != others.order_statistics():
+            return False
+
+        # 일일이 확인 |G| = |f(G)| = |H|임을 이용
+        others_statistics = others.order_statistics_element()
+        candidate_list = []
+        for gen in self.generator:
+            candidate = others_statistics[gen.order()]
+            candidate_list.append(candidate)
+
+        from algebra.group.homomorphism import GroupHomomorphism
+
+        order = self.order()
+
+        for valid_image in itertools.product(*candidate_list):
+            hom = GroupHomomorphism(
+                self, others, dict(zip(self.generator, valid_image)),
+                raise_exception=False
+            )
+            if not hom.is_valid_structure():
+                continue
+            if hom.image().order() != order:
+                continue
+
+            return True
+
+        print("Order Statistic은 같은데 Isomorphism하지 않은 반례")
+        print(self, others)
+        return False
+
+    def get_abelian_key(self) -> list[int]:
+        if not self.is_abelian():
+            raise ValueError('Abelian group must be given')
+
+        return StabilizerOrderTraveler(self).visit()
 
     def centralizer(self, element: 'GroupElement'):
         pass
@@ -460,6 +657,9 @@ class StabilizerChain(Generic[T]):
         if not self.element_test(alpha.element):
             # Extend existing stabilizer chain
             if self.is_trivial():  # we are on the bottom of the chain
+                self.group.generator.append(alpha.element)
+                self.generator_factor[alpha.element] = alpha
+
                 # pick random object from base point
                 beta = self.point = next_object.get_next(alpha.element)
                 self.stabilizer = StabilizerChain(  # Add a new layer
@@ -467,8 +667,6 @@ class StabilizerChain(Generic[T]):
                     depth=self.depth + 1,
                     is_factor=self.is_factor
                 )
-                self.group.generator.append(alpha.element)
-                self.generator_factor[alpha.element] = alpha
                 self.transversal[beta] = ElementInfo(
                     self.group.represent.identity,
                     [] if self.is_factor else None
@@ -546,6 +744,9 @@ class GroupElement(Generic[T]):
 
     def __sub__(self, other: 'GroupElement') -> 'GroupElement':
         return self + (-other)
+
+    def __eq__(self, other: 'GroupElement') -> bool:
+        return (self - other).is_identity()
 
     def is_identity(self) -> bool:
         raise NotImplementedError
