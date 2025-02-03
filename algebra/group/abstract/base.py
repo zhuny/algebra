@@ -6,6 +6,7 @@ from queue import Queue
 from typing import List, TypeVar, Generic, Set, Dict, Optional, Iterator, Union
 
 from algebra.number.util import factorize
+from algebra.util.my_hash import int_sequence_hash
 
 T = TypeVar("T")
 
@@ -141,6 +142,18 @@ class Group(Generic[T]):
         print("Generator")
         for g in self.generator:
             print('-', g)
+
+    def group_id(self):
+        # unique value up to isomorphism
+        if self.is_abelian():
+            key_list = [1]
+            key_list.extend(self.get_abelian_key())
+        else:
+            key_list = [0]
+            for item in sorted(self.order_statistics().items()):
+                key_list.extend(item)
+
+        return int_sequence_hash('Group', key_list)
 
     def append(self, element):
         return self.represent.group(element, *self.generator)

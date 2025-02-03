@@ -326,6 +326,20 @@ def main():
             po.load(args.cache, context)
             po.show()
 
+    # build_subgroup(po, s_n, args)
+    show_subgroup_key(po, s_n, args)
+
+
+def show_subgroup_key(po, s_n, args):
+    key_set = set()
+    for group in po.element_list():
+        print(group, group.group_id())
+        key_set.add(group.group_id())
+
+    print(len(key_set))
+
+
+def build_subgroup(po, s_n, args):
     po.insert(s_n.represent.group())
     count = 0
 
