@@ -89,7 +89,8 @@ class StabilizerOrderTraveler:
         self.group: Group = group
 
     def visit(self):
-        result = []
+        result: list[tuple[int, int]] = []
+        current_group = self.group.represent.group()
 
         for stabilizer in self.group.stabilizer_chain().travel():
             order = len(stabilizer.transversal)
@@ -99,12 +100,15 @@ class StabilizerOrderTraveler:
             orbit_set = {stabilizer.point}
             for g in stabilizer.transversal.values():
                 if self._is_run_needed(orbit_set, g.element):
-                    before = len(orbit_set)
                     for o in list(orbit_set):
                         orbit_set.update(g.element.orbit(o))
 
+                    before_order = current_group.order()
+                    current_group = current_group.append(g.element)
+                    after_order = current_group.order()
+
                     result.extend(
-                        factorize(len(orbit_set) // before).items()
+                        factorize(after_order // before_order).items()
                     )
 
         result.sort()
@@ -203,7 +207,9 @@ class Group(Generic[T]):
         return o_list
 
     def is_transitive(self):
-        return len(self.orbit_list()) == 1
+        object_list = list(self.represent.object_list())
+        for o in object_list:
+            return len(self.orbit(o)) == len(object_list)
 
     def is_conjugate(self, other: 'Group') -> bool:
         if self.represent != other.represent:
@@ -213,16 +219,35 @@ class Group(Generic[T]):
             return False
 
         for g in self.represent.as_group().element_list():
-            conjugate_check = True
-            for x in self.generator:
-                if not other.element_test(g + x + (-g)):
-                    conjugate_check = False
-                    break
-
-            if conjugate_check:
+            conjugate = self.conjugate(g)
+            if conjugate.is_equal(other):
                 return True
 
         return False
+
+    def conjugate(self, other: 'GroupElement') -> 'Group':
+        return Group(
+            represent=self.represent,
+            generator=[
+                other + g - other
+                for g in self.generator
+            ]
+        )
+
+    def is_equal(self, other: 'Group') -> bool:
+        if self.represent != other.represent:
+            return False
+
+        return (
+            self.is_contained(other) and
+            other.is_contained(self)
+        )
+
+    def is_contained(self, other: 'Group') -> bool:
+        for g in other.generator:
+            if not self.element_test(g):
+                return False
+        return True
 
     def stabilizer(self, o: T) -> 'Group':
         self.represent.check_object(o)
@@ -375,7 +400,7 @@ class Group(Generic[T]):
         if self.order_statistics() != others.order_statistics():
             return False
 
-        # 일일이 확인 |g| = |f(g)|임을 이용
+        # 일일이 확인 |G| = |f(G)| = |H|임을 이용
         others_statistics = others.order_statistics_element()
         candidate_list = []
         for gen in self.generator:

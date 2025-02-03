@@ -281,11 +281,11 @@ class GroupingGroup:
                 return
 
         for item in self.group_by:
-            if getattr(item[0], self.check_name)(g):
-                item[1].append(g)
+            if getattr(item[2], self.check_name)(g):
+                item[3].append(g)
                 return
 
-        self.group_by.append((g, [g]))
+        self.group_by.append((g.order(), len(self.group_by), g, [g]))
 
     def show(self):
         if self.condition is None:
@@ -293,14 +293,15 @@ class GroupingGroup:
         else:
             print(self.check_name, 'with', self.condition)
 
-        for g, g_list in self.group_by:
-            print(g, g.order(), len(g_list))
+        self.group_by.sort()
+        for o, _, g, g_list in self.group_by:
+            print(g, o, len(g_list))
         print(len(self.group_by), 'grouping')
         print()
 
     def get_grouping(self):
-        for g, count in self.group_by:
-            yield count
+        for _, _, _, grouping in self.group_by:
+            yield grouping
 
 
 def parse_args():
@@ -343,13 +344,14 @@ def main():
             po.dump(args.cache)
             print('saved')
 
+    print(po.size)
     po.dump(args.cache)
     print()
 
     grouping_dict = {
         'iso': GroupingGroup('is_isomorphism'),
         'con': GroupingGroup('is_conjugate'),
-        'galois': GroupingGroup('is_isomorphism', condition='is_transitive')
+        'galois': GroupingGroup('is_conjugate', condition='is_transitive')
     }
     for group in po.element_list():
         for grouping in grouping_dict.values():
