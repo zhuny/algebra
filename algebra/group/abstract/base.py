@@ -459,6 +459,9 @@ class Group(Generic[T]):
 
         return StabilizerOrderTraveler(self).visit()
 
+    def subgroup_list(self):
+        raise NotImplementedError(self)
+
     def centralizer(self, element: 'GroupElement'):
         pass
 

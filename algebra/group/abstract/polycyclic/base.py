@@ -60,7 +60,9 @@ class PolyCyclicGroup(Group):
             current = self.lower_exponent_p_central(current)
             yield current
 
-    def lower_exponent_p_central(self, other: 'PolyCyclicGroup'):
+    def lower_exponent_p_central(self, other: 'PolyCyclicGroup' = None):
+        if other is None:
+            other = self
         result = PolyCyclicGroup(represent=self.represent, generator=[])
 
         for g1 in self.generator:
@@ -95,9 +97,6 @@ class PolyCyclicGroup(Group):
     def order(self):
         return pow(self.represent.degree, len(self.generator))
 
-    def p_multiplicator(self):
-        return self.lower_exponent_p_central(self)
-
     def show(self, msg=None):
         rep: PolyCyclicGroupRep = self.represent
         if msg:
@@ -124,6 +123,9 @@ class PolyCyclicGroup(Group):
             else:
                 self.generator.append(element)
                 break
+
+    def subgroup_list(self):
+        pass
 
 
 @dataclass
