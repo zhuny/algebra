@@ -109,6 +109,15 @@ class GroupHomomorphism:
             value += mapping[f]
         return value
 
+    def value_group(self, group: Group):
+        return Group(
+            represent=self.codomain.represent,
+            generator=[
+                self.value(g)
+                for g in group.generator
+            ]
+        )
+
     def kernel(self) -> 'Group':
         direct = self.as_direct_product()
         stabilizer = direct.stabilizer_many([

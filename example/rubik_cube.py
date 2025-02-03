@@ -149,5 +149,14 @@ def construct():
     print(group.order())
 
 
+def main():
+    from fractions import Fraction as F
+    apple = F(154476802108746166441951315019919837485664325669565431700026634898253202035277999)
+    banana = F(36875131794129999827197811565225474825492979968971970996283137471637224634055579)
+    pineapple = F(4373612677928697257861252602371390152816537558161613618621437993378423467772036)
+    result = apple / (banana + pineapple) + banana / (pineapple + apple) + pineapple / (apple + banana)
+    print(result)
+
+
 if __name__ == '__main__':
     construct()

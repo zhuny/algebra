@@ -2,6 +2,7 @@ import dataclasses
 import itertools
 from dataclasses import dataclass
 
+from algebra.group.abstract.automorphism import AutomorphismGroupRep
 from algebra.group.abstract.base import GroupElement, GroupRep, Group
 
 
@@ -51,6 +52,52 @@ class PolyCyclicGroup(Group):
 
         return PCoveringGroupAlgorithm(self).run()
 
+    def lower_exponent_p_central_series(self):
+        current = self
+        yield current
+
+        while not current.is_trivial():
+            current = self.lower_exponent_p_central(current)
+            yield current
+
+    def lower_exponent_p_central(self, other: 'PolyCyclicGroup'):
+        result = PolyCyclicGroup(represent=self.represent, generator=[])
+
+        for g1 in self.generator:
+            for h in other.generator:
+                for g2 in other.generator:
+                    result._append(
+                        g1 + h - g1 - h +
+                        g2 * self.represent.degree
+                    )
+
+        return result
+
+    def automorphism_group(self):
+        exponent_series = list(self.lower_exponent_p_central_series())
+
+        exponent_series.pop(0)  # == self
+        frattini = exponent_series.pop(0)
+
+        free_number = len(self.generator) - len(frattini.generator)
+        auto_group_rep = AutomorphismGroupRep(structure=self)
+        auto_group_gen = []
+
+        for g1, g2 in itertools.combinations(self.generator[:free_number], 2):
+            auto_group_gen.append({g1: g1 + g2, g2: g2})
+            auto_group_gen.append({g1: g2, g2: g1})
+
+        if len(exponent_series) > 1:
+            assert False
+
+        return auto_group_rep.group(auto_group_gen)
+
+    def order(self):
+        return pow(self.represent.degree, len(self.generator))
+
+    def p_multiplicator(self):
+        return self.lower_exponent_p_central(self)
+
     def show(self, msg=None):
         rep: PolyCyclicGroupRep = self.represent
         if msg:
@@ -62,6 +109,21 @@ class PolyCyclicGroup(Group):
             print(j, i, rel)
         print()
 
+    def _append(self, element: 'PolyCyclicGroupElement'):
+        element = element.normalize()
+        index_map = {
+            g.min_index(): g
+            for g in self.generator
+        }
+
+        while not element.is_identity():
+            min_index = element.min_index()
+            if min_index in index_map:
+                element -= index_map[min_index]
+                element = element.normalize()
+            else:
+                self.generator.append(element)
+                break
 
 
 @dataclass
@@ -176,9 +238,14 @@ class PolyCyclicGroupElement(GroupElement):
     def max_index(self):
         index = None
         for i, p in enumerate(self.power):
-            if p > 0:
+            if p != 0:
                 index = i
         return index
+
+    def min_index(self):
+        for i, p in enumerate(self.power):
+            if p != 0:
+                return i
 
     def to_index_list(self):
         result = []
@@ -187,11 +254,20 @@ class PolyCyclicGroupElement(GroupElement):
                 result.append(i)
         return result
 
-    def is_zero(self):
+    def is_identity(self) -> bool:
         for p in self.power:
             if p != 0:
                 return False
         return True
+
+    def normalize(self):
+        for i, p in enumerate(self.power):
+            if p != 0:
+                e = pow(abs(p), self.group.degree - 2, self.group.degree)
+                if p < 0:
+                    e = -e
+                return self * e
+        return self
 
     def _build_stack(self):
         power_list = []

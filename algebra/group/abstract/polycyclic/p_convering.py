@@ -27,7 +27,6 @@ class PCoveringGroupAlgorithm:
                 )
 
         self.optimize(result)
-
         return result.as_group()
 
     def optimize(self, rep: PolyCyclicGroupRep):
