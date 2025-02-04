@@ -14,7 +14,7 @@ def _check_positive_integer(n: Any):
 def cyclic_group(n: int):
     assert n < 20
 
-    rep = PermutationGroupRep(n)
+    rep = PermutationGroupRep(degree=n)
 
     if n == 1:
         return rep.group()
@@ -27,7 +27,7 @@ def cyclic_group(n: int):
 def symmetric_group(n: int):
     _check_positive_integer(n)
 
-    rep = PermutationGroupRep(n)
+    rep = PermutationGroupRep(degree=n)
 
     if n == 1:
         return rep.group()
@@ -44,7 +44,7 @@ def symmetric_group(n: int):
 def alternative_group(n: int):
     _check_positive_integer(n)
 
-    rep = PermutationGroupRep(n)
+    rep = PermutationGroupRep(degree=n)
 
     if n < 3:
         return rep.group()
@@ -58,7 +58,7 @@ def alternative_group(n: int):
 def dihedral_group(n: int):
     _check_positive_integer(n)
 
-    rep = PermutationGroupRep(n * 2)
+    rep = PermutationGroupRep(degree=n * 2)
 
     return rep.group_([
         [list(range(n)), list(range(n, 2 * n))[::-1]],
@@ -67,7 +67,7 @@ def dihedral_group(n: int):
 
 
 def quaternion_group():
-    return PermutationGroupRep(8).group_([
+    return PermutationGroupRep(degree=8).group_([
         [[0, 2, 1, 3], [4, 7, 5, 6]],  # i
         [[0, 4, 1, 5], [2, 6, 3, 7]]  # j
     ], name='Q')

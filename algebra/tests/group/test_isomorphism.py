@@ -23,7 +23,7 @@ class TestHomomorphism(unittest.TestCase):
         )
 
     def _construct_abelian(self, ab):
-        g = PermutationGroupRep(sum(ab))
+        g = PermutationGroupRep(degree=sum(ab))
         generator = []
 
         offset = 0
@@ -37,7 +37,7 @@ class TestHomomorphism(unittest.TestCase):
     def test_abelian_pair_2(self):
         g1 = self._construct_abelian([2, 4])
 
-        pgr = PermutationGroupRep(10)
+        pgr = PermutationGroupRep(degree=10)
         g2 = pgr.group_([
             [[0, 1]],
             [[2, 3, 4, 5], [6, 7, 8, 9]]
@@ -46,7 +46,7 @@ class TestHomomorphism(unittest.TestCase):
         self.assertTrue(g1.is_isomorphism(g2))
 
     def test_abelian_pair_3(self):
-        rep = PermutationGroupRep(8)
+        rep = PermutationGroupRep(degree=8)
 
         g1 = rep.group_([
             [[0, 1], [2, 3]],

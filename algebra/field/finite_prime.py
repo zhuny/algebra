@@ -1,10 +1,9 @@
-from dataclasses import dataclass
+from pydantic import BaseModel
 
 from algebra.field.base import Field, FieldElement
 from algebra.number.util import is_prime
 
 
-@dataclass
 class FinitePrimeField(Field):
     char: int
 
@@ -29,7 +28,6 @@ class FinitePrimeField(Field):
         return self.char
 
 
-@dataclass
 class FinitePrimeFieldElement(FieldElement):
     field: FinitePrimeField
     value: int

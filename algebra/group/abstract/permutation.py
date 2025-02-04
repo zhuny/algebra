@@ -1,12 +1,12 @@
-from dataclasses import dataclass, field
+import pydantic
+from pydantic import BaseModel
 from typing import Dict, Type
 
 from algebra.group.abstract.base import GroupRep, GroupElement
 from algebra.number.util import lcm
 
 
-@dataclass
-class PermutationObject:
+class PermutationObject(BaseModel):
     permutation: 'PermutationGroupRep'
     value: int
 
@@ -20,7 +20,6 @@ class PermutationObject:
         return self.value < other.value
 
 
-@dataclass(unsafe_hash=False)
 class PermutationGroupRep(GroupRep):
     degree: int
 
@@ -70,13 +69,12 @@ class PermutationGroupRep(GroupRep):
         return self.group_([[[0, 1]], [list(range(self.degree))]])
 
 
-@dataclass
-class PermutationGroupElement(GroupElement[PermutationObject]):
+class PermutationGroupElement(GroupElement):
     group: PermutationGroupRep
     perm_map: Dict[
         PermutationObject,
         PermutationObject
-    ] = field(default_factory=dict)
+    ] = pydantic.Field(default_factory=dict)
 
     def __add__(self, other: 'PermutationGroupElement'):
         s = set(self.perm_map) | set(other.perm_map)

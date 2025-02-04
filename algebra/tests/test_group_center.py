@@ -13,7 +13,7 @@ class TestGroupCenter(unittest.TestCase):
             factorial *= n
 
             with self.subTest(f"Center of S_{n} is trivial"):
-                perm = PermutationGroupRep(n)
+                perm = PermutationGroupRep(degree=n)
                 ol = list(perm.object_list())
 
                 group = perm.group(perm.element(ol), perm.element(ol[:2]))
@@ -30,7 +30,7 @@ class TestGroupCenter(unittest.TestCase):
         """
         for x in range(2, 5):
             for y in range(2, 5):
-                perm = PermutationGroupRep(x + y)
+                perm = PermutationGroupRep(degree=x + y)
                 ol = list(perm.object_list())
 
                 group = perm.group(
@@ -52,7 +52,7 @@ class TestGroupCenter(unittest.TestCase):
         Center of D_4n is <r^2n>
         """
         for n in range(2, 11):
-            perm = PermutationGroupRep(n * 2)
+            perm = PermutationGroupRep(degree=n * 2)
             ol = list(perm.object_list())
 
             e1 = perm.element(ol)
@@ -76,7 +76,7 @@ class TestGroupCenter(unittest.TestCase):
             self.assertTrue(center.element_test(gen))
 
     def test_normal_check(self):
-        perm = PermutationGroupRep(4)
+        perm = PermutationGroupRep(degree=4)
         ol = list(perm.object_list())
 
         symmetric = perm.group(

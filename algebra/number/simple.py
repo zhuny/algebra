@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from pydantic import BaseModel
 from enum import Enum
 from fractions import Fraction
 from typing import List, Set, Dict, Union
@@ -59,8 +59,7 @@ class Sign(Enum):
             return cls.NEGATIVE
 
 
-@dataclass
-class Radical:
+class Radical(BaseModel):
     body: List['RadicalElement'] = field(default_factory=list)
 
     @classmethod
@@ -231,8 +230,7 @@ class Radical:
                 return element.multiply
 
 
-@dataclass
-class RadicalElement:
+class RadicalElement(BaseModel):
     multiply: Number  # will be normalized to Fraction.
     base_split: Set[int] = field(default_factory=set)
 

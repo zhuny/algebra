@@ -338,7 +338,7 @@ def main():
             po.load(args.cache, context)
             po.show()
 
-    # build_subgroup(po, s_n, args)
+    build_subgroup(po, s_n, args)
     show_subgroup_key(po, s_n, args)
 
 

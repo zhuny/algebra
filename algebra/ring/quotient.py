@@ -1,11 +1,10 @@
-from dataclasses import dataclass
+from pydantic import BaseModel
 from typing import Type
 
 from algebra.ring.base import Ring, RingElement
 
 
-@dataclass
-class Ideal:
+class Ideal(BaseModel):
     ring: Ring
     generator: list[RingElement]
 
@@ -16,7 +15,6 @@ class Ideal:
         raise NotImplementedError(self)
 
 
-@dataclass
 class QuotientRing(Ring):
     parent: Ring
     ideal: Ideal
@@ -36,7 +34,6 @@ class QuotientRing(Ring):
         return self.element(1)
 
 
-@dataclass(eq=False)
 class QuotientRingElement(RingElement):
     ring: QuotientRing
     element: RingElement

@@ -1,19 +1,17 @@
-import dataclasses
+from pydantic import BaseModel
 import itertools
-from dataclasses import dataclass
 
 from algebra.group.abstract.automorphism import AutomorphismGroupRep
 from algebra.group.abstract.base import GroupElement, GroupRep, Group
 
 
-@dataclass
 class PolyCyclicGroupRep(GroupRep):
     degree: int
     number: int
-    power_relation: dict[int, list[int]] = dataclasses.field(
+    power_relation: dict[int, list[int]] = pydantic.field(
         default_factory=dict
     )
-    commute_relation: dict[tuple[int, int], list[int]] = dataclasses.field(
+    commute_relation: dict[tuple[int, int], list[int]] = pydantic.field(
         default_factory=dict
     )
 
@@ -44,7 +42,6 @@ class PolyCyclicGroupRep(GroupRep):
         return itertools.combinations(gen_list, count)
 
 
-@dataclass
 class PolyCyclicGroup(Group):
     def p_covering_group(self):
         from algebra.group.abstract.polycyclic.p_convering import \
@@ -128,7 +125,6 @@ class PolyCyclicGroup(Group):
         pass
 
 
-@dataclass
 class PolyCyclicGroupElement(GroupElement):
     group: PolyCyclicGroupRep
     power: list[int]
@@ -291,7 +287,6 @@ class PolyCyclicGroupElement(GroupElement):
         pass
 
 
-@dataclass
-class PolyCyclicIndex:
+class PolyCyclicIndex(BaseModel):
     index: int
     power: int

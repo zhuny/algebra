@@ -1,10 +1,9 @@
-from dataclasses import dataclass
+from pydantic import BaseModel
 
 from algebra.ring.polynomial.base import PolynomialRingElement
 
 
-@dataclass
-class PolynomialData:
+class PolynomialData(BaseModel):
     polynomial: PolynomialRingElement
     power: int = 1
 

@@ -1,13 +1,12 @@
 import functools
 import math
-from dataclasses import dataclass
+from pydantic import BaseModel
 from typing import Type, Any
 
 from algebra.ring.base import Ring, RingElement
 from algebra.ring.quotient import Ideal
 
 
-@dataclass
 class BuiltinWrapRingElement(RingElement):
     value: Any
 
@@ -53,12 +52,10 @@ class IntegerRing(Ring):
         )
 
 
-@dataclass
 class IntegerRingElement(BuiltinWrapRingElement):
     pass
 
 
-@dataclass
 class IntegerIdeal(Ideal):
     generator: list[IntegerRingElement]
 

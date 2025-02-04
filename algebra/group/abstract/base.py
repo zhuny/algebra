@@ -1,10 +1,12 @@
 import collections
 import itertools
 import random
-from dataclasses import dataclass, field
 from queue import Queue
-from typing import List, TypeVar, Generic, Set, Dict, Optional, Iterator, Union, \
+from typing import List, TypeVar, Set, Dict, Optional, Iterator, Union, \
     Type
+
+import pydantic
+from pydantic import BaseModel
 
 from algebra.number.util import factorize
 from algebra.util.my_hash import int_sequence_hash
@@ -12,8 +14,7 @@ from algebra.util.my_hash import int_sequence_hash
 T = TypeVar("T")
 
 
-@dataclass
-class GroupRep:
+class GroupRep(BaseModel):
     @property
     def identity(self):
         raise NotImplementedError(self)
@@ -133,14 +134,11 @@ class StabilizerOrderTraveler:
             return g.act(o) not in orbit_set
 
 
-@dataclass
-class Group(Generic[T]):
-    represent: GroupRep = field(repr=False)
+class Group(BaseModel):
+    represent: GroupRep
     generator: List['GroupElement']
     name: Optional[str] = ''
-    _stabilizer_chain: Optional['StabilizerChain'] = field(
-        repr=False, default=None
-    )
+    _stabilizer_chain: Optional['StabilizerChain'] = None
 
     def __str__(self):
         if self.name:
@@ -439,7 +437,9 @@ class Group(Generic[T]):
 
         for valid_image in itertools.product(*candidate_list):
             hom = GroupHomomorphism(
-                self, others, dict(zip(self.generator, valid_image)),
+                domain=self,
+                codomain=others,
+                mapping=dict(zip(self.generator, valid_image)),
                 raise_exception=False
             )
             if not hom.is_valid_structure():
@@ -515,8 +515,7 @@ class ElementContainer:
                 return element
 
 
-@dataclass
-class ElementInfo:
+class ElementInfo(BaseModel):
     element: 'GroupElement'
     factor: Optional[List['GroupElement']] = None
 
@@ -530,7 +529,7 @@ class ElementInfo:
         else:
             factor = self._normalize_factor(self.factor + other.factor)
 
-        return ElementInfo(element, factor)
+        return ElementInfo(element=element, factor=factor)
 
     def __sub__(self, other):
         if not isinstance(other, ElementInfo):
@@ -545,7 +544,7 @@ class ElementInfo:
             factor = [-f for f in self.factor]
             factor.reverse()
 
-        return ElementInfo(-self.element, factor)
+        return ElementInfo(element=-self.element, factor=factor)
 
     def show(self):
         print(self.element)
@@ -582,12 +581,11 @@ class ElementInfo:
         return factor_result
 
 
-@dataclass
-class StabilizerChain(Generic[T]):
+class StabilizerChain(BaseModel):
     group: Group
     point: T = None
-    transversal: Dict[T, ElementInfo] = field(default_factory=dict)
-    generator_factor: Dict['GroupElement', ElementInfo] = field(
+    transversal: Dict[T, ElementInfo] = pydantic.Field(default_factory=dict)
+    generator_factor: Dict['GroupElement', ElementInfo] = pydantic.Field(
         default_factory=dict
     )
     stabilizer: Optional['StabilizerChain'] = None
@@ -670,7 +668,7 @@ class StabilizerChain(Generic[T]):
         :return:
         """
         if isinstance(alpha, GroupElement):
-            alpha = ElementInfo(alpha)
+            alpha = ElementInfo(element=alpha)
 
         # It is implementation of Schreier-Sims algorithm
         if not self.element_test(alpha.element):
@@ -687,8 +685,8 @@ class StabilizerChain(Generic[T]):
                     is_factor=self.is_factor
                 )
                 self.transversal[beta] = ElementInfo(
-                    self.group.represent.identity,
-                    [] if self.is_factor else None
+                    element=self.group.represent.identity,
+                    factor=[] if self.is_factor else None
                 )
 
                 delta = alpha.element.act(beta)
@@ -751,8 +749,7 @@ class StabilizerChain(Generic[T]):
         return new_group
 
 
-@dataclass
-class GroupElement(Generic[T]):
+class GroupElement(BaseModel):
     group: GroupRep
 
     def __add__(self, other: 'GroupElement') -> 'GroupElement':

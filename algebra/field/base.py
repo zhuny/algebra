@@ -1,8 +1,7 @@
-from dataclasses import dataclass
+from pydantic import BaseModel
 
 
-@dataclass
-class Field:
+class Field(BaseModel):
     def element(self, *args) -> 'FieldElement':
         raise NotImplementedError(self)
 
@@ -16,8 +15,7 @@ class Field:
         raise NotImplementedError(self)
 
 
-@dataclass(eq=False)
-class FieldElement:
+class FieldElement(BaseModel):
     field: Field
 
     def __str__(self):
