@@ -32,21 +32,20 @@ class GroupRep(BaseModel):
     def element(self, *args):
         raise NotImplementedError(self)
 
-    def group(self, *elements, name=''):
-        # *elements는 최대한 사용 안하는 쪽으로
-        if len(elements) == 1 and isinstance(elements[0], list):
-            elements = elements[0]
-
+    def group(self, elements, name=''):
+        element_list = []
         for element in elements:
             if not isinstance(element, GroupElement):
-                raise TypeError("GroupElement should be given")
+                element = self.element(element)
 
             if element.group != self:
                 raise ValueError("Element should be belong to this group")
 
+            element_list.append(element)
+
         return self.group_cls(
             represent=self,
-            generator=list(elements),
+            generator=element_list,
             name=name
         )
 
@@ -167,7 +166,7 @@ class Group(BaseModel):
         return int_sequence_hash('Group', key_list)
 
     def append(self, element):
-        return self.represent.group(element, *self.generator)
+        return self.represent.group(self.generator + [element])
 
     def copy(self):
         return self.represent.group(*self.generator)
@@ -753,10 +752,10 @@ class GroupElement(BaseModel):
     group: GroupRep
 
     def __add__(self, other: 'GroupElement') -> 'GroupElement':
-        raise NotImplementedError
+        raise NotImplementedError(self)
 
     def __neg__(self) -> 'GroupElement':
-        raise NotImplementedError
+        raise NotImplementedError(self)
 
     def __sub__(self, other: 'GroupElement') -> 'GroupElement':
         return self + (-other)
@@ -765,17 +764,16 @@ class GroupElement(BaseModel):
         return (self - other).is_identity()
 
     def is_identity(self) -> bool:
-        raise NotImplementedError
+        raise NotImplementedError(self)
 
     def order(self) -> int:
-        raise NotImplementedError
+        raise NotImplementedError(self)
 
     def act(self, o: T) -> T:
-        # raise NotImplementedError
         """
         "Group Action" on some Set and T is a element of the set.
 
         :param o: Element on T
         :return: Another T
         """
-        pass
+        raise NotImplementedError(self)

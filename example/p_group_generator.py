@@ -3,7 +3,7 @@ from algebra.group.abstract.polycyclic.base import PolyCyclicGroupRep
 
 def main():
     # C2 X C2
-    g = PolyCyclicGroupRep(2, 2).as_group()
+    g = PolyCyclicGroupRep(degree=2, number=2).as_group()
 
     pcg = g.p_covering_group()
     pcg.show('Normalized')
@@ -13,18 +13,13 @@ def main():
         print(group)
 
     ag = pcg.automorphism_group()
-    for g in ag.generator:
-        print(g)
+    print('Automorphism :', ag)
 
     pm = pcg.lower_exponent_p_central()
-    subgroup_orbit_list = ClassifyContainer()
     for subgroup in pm.subgroup_list():
-        if subgroup_orbit_list.is_element(subgroup):
-            continue
-        subgroup_orbit_list.update(ag.orbit(subgroup))
-
-    for bc in subgroup_orbit_list.by_class:
-        print(bc)
+        print(subgroup)
+        for o in ag.orbit(subgroup):
+            print('>', o)
 
 
 class ClassifyContainer:

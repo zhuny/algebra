@@ -1,3 +1,7 @@
+import collections
+import operator
+
+import pydantic
 from pydantic import BaseModel
 import itertools
 
@@ -8,10 +12,10 @@ from algebra.group.abstract.base import GroupElement, GroupRep, Group
 class PolyCyclicGroupRep(GroupRep):
     degree: int
     number: int
-    power_relation: dict[int, list[int]] = pydantic.field(
+    power_relation: dict[int, list[int]] = pydantic.Field(
         default_factory=dict
     )
-    commute_relation: dict[tuple[int, int], list[int]] = pydantic.field(
+    commute_relation: dict[tuple[int, int], list[int]] = pydantic.Field(
         default_factory=dict
     )
 
@@ -20,7 +24,11 @@ class PolyCyclicGroupRep(GroupRep):
         return PolyCyclicGroup
 
     def element(self, power):
-        return PolyCyclicGroupElement(self, power)
+        return PolyCyclicGroupElement(group=self, power=power)
+
+    @property
+    def identity(self):
+        return self.element([0] * self.number)
 
     def from_index(self, index):
         power = [0] * self.number
@@ -43,6 +51,31 @@ class PolyCyclicGroupRep(GroupRep):
 
 
 class PolyCyclicGroup(Group):
+    generator: list['PolyCyclicGroupElement']
+
+    def __hash__(self):
+        return hash((id(self.represent), str(self)))
+
+    def model_post_init(self, __context):
+        index_max = {}
+        for g in self.generator:
+            g = g.normalize()
+            while not g.is_identity():
+                gmi = g.min_index()
+                if gmi in index_max:
+                    g -= index_max[gmi]
+                    g = g.normalize()
+                else:
+                    index_max[gmi] = g
+                    break
+
+        result = []
+        for _, g in sorted(index_max.items()):
+            result = [g1.sub(g) for g1 in result]
+            result.append(g)
+
+        self.generator = result
+
     def p_covering_group(self):
         from algebra.group.abstract.polycyclic.p_convering import \
             PCoveringGroupAlgorithm
@@ -60,17 +93,20 @@ class PolyCyclicGroup(Group):
     def lower_exponent_p_central(self, other: 'PolyCyclicGroup' = None):
         if other is None:
             other = self
-        result = PolyCyclicGroup(represent=self.represent, generator=[])
 
+        generator_list = []
         for g1 in self.generator:
             for h in other.generator:
                 for g2 in other.generator:
-                    result._append(
+                    generator_list.append(
                         g1 + h - g1 - h +
                         g2 * self.represent.degree
                     )
 
-        return result
+        return PolyCyclicGroup(
+            represent=self.represent,
+            generator=generator_list
+        )
 
     def automorphism_group(self):
         exponent_series = list(self.lower_exponent_p_central_series())
@@ -105,24 +141,20 @@ class PolyCyclicGroup(Group):
             print(j, i, rel)
         print()
 
-    def _append(self, element: 'PolyCyclicGroupElement'):
-        element = element.normalize()
-        index_map = {
-            g.min_index(): g
-            for g in self.generator
-        }
-
-        while not element.is_identity():
-            min_index = element.min_index()
-            if min_index in index_map:
-                element -= index_map[min_index]
-                element = element.normalize()
-            else:
-                self.generator.append(element)
-                break
-
     def subgroup_list(self):
-        pass
+        element_list = [self.represent.identity]
+        for generator in self.generator:
+            element_list.extend([
+                element + generator
+                for element in element_list
+            ])
+
+        subgroup_list = {self.represent.group([])}
+        for element in element_list:
+            for subgroup in list(subgroup_list):
+                subgroup_list.add(subgroup.append(element))
+
+        return subgroup_list
 
 
 class PolyCyclicGroupElement(GroupElement):
@@ -156,11 +188,9 @@ class PolyCyclicGroupElement(GroupElement):
                     right_stack.extend(
                         self._to_index(self.group.power_relation[right.index])
                     )
-                right_stack.append(
-                    PolyCyclicIndex(
-                        right.index,
-                        right.power + self.group.degree
-                    )
+                self._append_index(
+                    right_stack,
+                    right.index, right.power + self.group.degree
                 )
                 continue
 
@@ -181,21 +211,24 @@ class PolyCyclicGroupElement(GroupElement):
                                 self.group.power_relation[left.index]
                             )
                         )
-                right_stack.append(PolyCyclicIndex(left.index, r))
+                self._append_index(right_stack,left.index, r)
             else:
                 pair = left.index, right.index
                 if pair not in self.group.commute_relation:
                     right_stack.extend([left, right])
                 else:
-                    right_stack.append(PolyCyclicIndex(right.index, right.power - 1))
+                    self._append_index(
+                        right_stack,
+                        right.index, right.power - 1
+                    )
                     for _ in range(left.power):
                         right_stack.extend(
                             self._to_index(
                                 self.group.commute_relation[pair]
                             )
                         )
-                        right_stack.append(PolyCyclicIndex(left.index, 1))
-                    right_stack.append(PolyCyclicIndex(right.index, 1))
+                        self._append_index(right_stack,left.index, 1)
+                    self._append_index(right_stack,right.index, 1)
 
         self._show(stack, right_stack)
 
@@ -204,6 +237,10 @@ class PolyCyclicGroupElement(GroupElement):
         for left in stack:
             p[left.index] = left.power
         return PolyCyclicGroupElement(group=self.group, power=p)
+
+    @staticmethod
+    def _append_index(stack, index, power):
+        stack.append(PolyCyclicIndex(index=index, power=power))
 
     def __add__(self, other: 'PolyCyclicElement'):
         return self._normalize_sequence(
@@ -220,11 +257,14 @@ class PolyCyclicGroupElement(GroupElement):
         stack = self._build_stack()
         stack.reverse()
         return self._normalize_sequence([
-            PolyCyclicIndex(index.index, -index.power)
+            PolyCyclicIndex(index=index.index, power=-index.power)
             for index in stack
         ])
 
     def __mul__(self, other):
+        if other == 0:
+            return self.group.identity
+
         current = self
         for i in range(1, other):
             current += self
@@ -267,11 +307,15 @@ class PolyCyclicGroupElement(GroupElement):
                 return self * e
         return self
 
+    def sub(self, other):
+        other_mi = other.min_index()
+        return self - other * self.power[other_mi]
+
     def _build_stack(self):
         power_list = []
         for i, p in enumerate(self.power):
             if p != 0:
-                power_list.append(PolyCyclicIndex(i, p))
+                power_list.append(PolyCyclicIndex(index=i, power=p))
         return power_list
 
     def _to_index(self, int_list):
