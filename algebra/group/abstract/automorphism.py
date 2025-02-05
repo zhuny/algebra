@@ -1,5 +1,7 @@
 import io
 
+from pydantic import BaseModel
+
 from algebra.group.abstract.base import GroupRep, Group, GroupElement
 
 
@@ -22,8 +24,15 @@ class AutomorphismGroup(Group):
     generator: list['AutomorphismGroupElement']
 
 
-class AutomorphismGroupElement(GroupElement):
+class AutomorphismMap(BaseModel):
     group_element_map: dict[GroupElement, GroupElement]
+
+    def value(self, element: GroupElement):
+        raise NotImplementedError(self)
+
+
+class AutomorphismGroupElement(GroupElement):
+    value: AutomorphismMap
 
     def __str__(self):
         with io.StringIO() as output:
@@ -31,15 +40,5 @@ class AutomorphismGroupElement(GroupElement):
                 print(k, '->', v, file=output)
             return output.getvalue().strip()
 
-    @classmethod
-    def from_value(cls, rep, v):
-        if isinstance(v, dict):
-            return cls(
-                represent=rep,
-                group_element_map=dict(v)
-            )
-        else:
-            raise ValueError('Unknown Type')
-
     def act(self, o):
-        assert False
+        return self.value.value(o)
