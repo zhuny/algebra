@@ -17,7 +17,7 @@ class AutomorphismGroupRep(GroupRep):
         return AutomorphismGroupElement
 
     def element(self, element):
-        return self.element_cls(group=self, group_element_map=element)
+        return self.element_cls(group=self, value=element)
 
 
 class AutomorphismGroup(Group):
@@ -36,7 +36,7 @@ class AutomorphismGroupElement(GroupElement):
 
     def __str__(self):
         with io.StringIO() as output:
-            for k, v in self.group_element_map.items():
+            for k, v in self.value.group_element_map.items():
                 print(k, '->', v, file=output)
             return output.getvalue().strip()
 
