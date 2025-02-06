@@ -104,13 +104,27 @@ class PolyCyclicRowReduced:
 
     def append_mult(self, e, rows=None):
         g = PolyCyclicRow(e, rows)
-        d = e.group.degree
+        self._append_power(g)
+        self._append_commute(g)
+
+    def _append_power(self, g):
+        d = g.element.group.degree
         while not g.is_identity():
-            self.append_one(g.element, g.rows)
+            self._append_one(g)
             g *= d
 
+    def _append_commute(self, g):
+        if g.is_identity():
+            return
+
+        index_item = list(self.index_map.items())
+        for _, e in index_item:
+            self._append_one(g + e - g - e)
+
     def append_one(self, e, rows=None):
-        g = PolyCyclicRow(e, rows)
+        return self._append_one(PolyCyclicRow(e, rows))
+
+    def _append_one(self, g: 'PolyCyclicRow'):
         while not g.is_identity():
             g = g.normalize()
             gmi = g.min_index()

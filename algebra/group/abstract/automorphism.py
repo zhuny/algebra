@@ -1,4 +1,5 @@
 import io
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -27,7 +28,9 @@ class AutomorphismGroup(Group):
 class AutomorphismMap(BaseModel):
     group_element_map: dict[GroupElement, GroupElement]
 
-    def value(self, element: GroupElement):
+    def value(self, element: Any):
+        # GroupElement 혹은 이와 관련된 여러 타입들 (collection of GroupElement)
+        #  ex. Group, list[GroupElement], ...
         raise NotImplementedError(self)
 
 
