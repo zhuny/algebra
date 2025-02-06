@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from algebra.group.abstract.automorphism import AutomorphismGroupRep, \
     AutomorphismMap
 from algebra.group.abstract.base import GroupElement, GroupRep, Group
+from algebra.group.abstract.polycyclic.reduced import PolyCyclicRowReduced
 
 
 class PolyCyclicGroupRep(GroupRep):
@@ -51,111 +52,54 @@ class PolyCyclicGroupRep(GroupRep):
         return itertools.combinations(gen_list, count)
 
 
-class PolyCyclicRow:
-    def __init__(self, element, rows=None):
-        self.element = element
-        self.rows = rows or []
-
-    def __add__(self, other):
-        return PolyCyclicRow(
-            self.element + other.element,
-            [a + b for a, b in zip(self.rows, other.rows)]
-        )
-
-    def __sub__(self, other):
-        return PolyCyclicRow(
-            self.element - other.element,
-            [a - b for a, b in zip(self.rows, other.rows)]
-        )
-
-    def __mul__(self, other: int):
-        assert other >= 1
-        current = self
-        for _ in range(1, other):
-            current += self
-        return current
-
-    def normalize(self):
-        min_index = self.element.min_index()
-        lead_num = self.element.power[min_index]
-        degree = self.element.group.degree
-        assert lead_num > 0
-        power = pow(lead_num, degree - 2, degree)
-        return self * power
-
-    def is_identity(self):
-        return self.element.is_identity()
-
-    def min_index(self):
-        return self.element.min_index()
-
-    def sub(self, other):
-        other_mi = other.min_index()
-        number = self.element.power[other_mi]
-        if number > 0:
-            return self - other * number
-        else:
-            return self
-
-
-class PolyCyclicRowReduced:
-    def __init__(self):
-        self.index_map = {}
-
-    def append_mult(self, e, rows=None):
-        g = PolyCyclicRow(e, rows)
-        self._append_power(g)
-        self._append_commute(g)
-
-    def _append_power(self, g):
-        d = g.element.group.degree
-        while not g.is_identity():
-            self._append_one(g)
-            g *= d
-
-    def _append_commute(self, g):
-        if g.is_identity():
-            return
-
-        index_item = list(self.index_map.items())
-        for _, e in index_item:
-            self._append_one(g + e - g - e)
-
-    def append_one(self, e, rows=None):
-        return self._append_one(PolyCyclicRow(e, rows))
-
-    def _append_one(self, g: 'PolyCyclicRow'):
-        while not g.is_identity():
-            g = g.normalize()
-            gmi = g.min_index()
-            if gmi in self.index_map:
-                g -= self.index_map[gmi]
-            else:
-                self.index_map[gmi] = g
-                break
-
-        return g
-
-    def arrange_reverse(self):
-        result = []
-        for i, g in sorted(self.index_map.items()):
-            result = [(i1, g1.sub(g)) for i1, g1 in result]
-            result.append((i, g))
-
-        self.index_map = dict(result)
-
-    def get_reduced(self):
-        return [
-            row.element
-            for _, row in sorted(self.index_map.items())
-        ]
-
-
 class PolyCyclicGroup(Group):
     generator: list['PolyCyclicGroupElement']
 
     def __hash__(self):
         return hash((id(self.represent), str(self)))
+
+    def __truediv__(self, other: 'PolyCyclicGroup'):
+        assert self.represent is other.represent
+
+        # 몇몇 index를 제거 하기 위한 reduce 구성
+        right_align = PolyCyclicRowReduced(align=True)
+        for g in other.generator:
+            right_align.append_mult(g)
+
+        # index_converting
+        index_list = list(range(self.represent.number))
+        for i, e in right_align.get_sorted_map():
+            index_list.remove(i)
+
+        # 새로운 Quotient Group Represent 생성
+        rep = PolyCyclicGroupRep(
+            degree=self.represent.degree,
+            number=self.represent.number - len(right_align.index_map)
+        )
+
+        # reduce power relate
+        for index, rel in self.represent.power_relation.items():
+            e = self.represent.from_index(index)
+            e *= self.represent.degree
+            e_red = right_align.reduce(e)
+            if not e_red.is_identity():
+                rep.power_relation[index] = right_align.pop_index(e_red)
+
+        # reduce commute relate
+        for (i, j), rel in self.represent.commute_relation.items():
+            ei = self.represent.from_index(i)
+            ej = self.represent.from_index(j)
+            eij = right_align.reduce(ei + ej - ei - ej)
+            if not eij.is_identity():
+                rep.commute_relation[i, j] = right_align.pop_index(eij)
+
+        # reduce generator from this group
+        generator_list = []
+        for generator in self.generator:
+            reduced = right_align.reduce(generator)
+            generator_list.append(right_align.pop_index(reduced))
+
+        return rep.group(generator_list)
 
     def model_post_init(self, __context):
         reduced = PolyCyclicRowReduced()
@@ -270,7 +214,7 @@ class PolyCyclicAutomorphismMap(AutomorphismMap):
         for k, v in self.group_element_map.items():
             reduced.append_mult(k, [v])
 
-        result = reduced.append_one(element, [element.group.identity])
+        result = reduced.reduce(element, [element.group.identity])
         for row in result.rows:
             return -row
 
@@ -360,7 +304,7 @@ class PolyCyclicGroupElement(GroupElement):
     def _append_index(stack, index, power):
         stack.append(PolyCyclicIndex(index=index, power=power))
 
-    def __add__(self, other: 'PolyCyclicElement'):
+    def __add__(self, other: 'PolyCyclicGroupElement'):
         return self._normalize_sequence(
             itertools.chain(
                 self._build_stack(),
@@ -415,15 +359,6 @@ class PolyCyclicGroupElement(GroupElement):
             if p != 0:
                 return False
         return True
-
-    def normalize(self):
-        for i, p in enumerate(self.power):
-            if p != 0:
-                e = pow(abs(p), self.group.degree - 2, self.group.degree)
-                if p < 0:
-                    e = -e
-                return self * e
-        return self
 
     def _build_stack(self):
         power_list = []

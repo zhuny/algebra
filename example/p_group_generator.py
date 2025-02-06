@@ -32,8 +32,8 @@ def main():
 
     for i, c in enumerate(cc.by_class):
         print('Class :', i)
-        for o in c:
-            print('>', o)
+        print('Rep :', c[0])
+        (pcg / c[0]).show()
 
 
 class ClassifyContainer:

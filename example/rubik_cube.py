@@ -111,7 +111,7 @@ class Rubik:
             yield Rotation(axis, 1)
 
     def group(self):
-        perm = PermutationGroupRep(len(self.face_list))
+        perm = PermutationGroupRep(degree=len(self.face_list))
         ol = perm.object_list()
         face_map = dict(zip(self.face_list, ol))
 
