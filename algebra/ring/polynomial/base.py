@@ -1,11 +1,10 @@
 import collections
 import copy
-import dataclasses
+from pydantic import BaseModel
 import itertools
 import math
 import re
 import warnings
-from dataclasses import dataclass
 from fractions import Fraction
 from functools import singledispatchmethod
 from typing import List
@@ -25,7 +24,6 @@ from algebra.util.decorator import iter_to_str
 from algebra.util.zero_dict import remove_zero_dict
 
 
-@dataclass(unsafe_hash=False)
 class PolynomialRing(Ring):
     field: Field
     number: int = 0
@@ -136,7 +134,6 @@ class PolynomialRing(Ring):
         return Monomial(ring=self, power=power)
 
 
-@dataclass(eq=False)
 class PolynomialRingElement(RingElement):
     ring: PolynomialRing
     value: dict['Monomial', FieldElement]
@@ -558,8 +555,7 @@ class PolynomialRingElement(RingElement):
             raise TypeError(f"Unknown Type : {type(monomial)}")
 
 
-@dataclass
-class Monomial:
+class Monomial(BaseModel):
     power: List[int]
     ring: 'PolynomialRing'
 
@@ -664,7 +660,6 @@ class Monomial:
         )
 
 
-@dataclass
 class PolynomialIdeal(Ideal):
     generator: list[PolynomialRingElement]
     _algorithm = None
@@ -704,7 +699,6 @@ class PolynomialIdeal(Ideal):
         return self._algorithm
 
 
-@dataclass
 class PolynomialQuotientRing(QuotientRing):
     parent: PolynomialRing
     ideal: PolynomialIdeal
@@ -714,7 +708,6 @@ class PolynomialQuotientRing(QuotientRing):
         return PolynomialQuotientRingElement(ring=self, element=parent.element)
 
 
-@dataclass(eq=False)
 class PolynomialQuotientRingElement(QuotientRingElement):
     ring: PolynomialQuotientRing
     element: PolynomialRingElement

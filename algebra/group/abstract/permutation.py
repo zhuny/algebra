@@ -1,12 +1,12 @@
-from dataclasses import dataclass, field
+import pydantic
+from pydantic import BaseModel
 from typing import Dict, Type
 
 from algebra.group.abstract.base import GroupRep, GroupElement
 from algebra.number.util import lcm
 
 
-@dataclass
-class PermutationObject:
+class PermutationObject(BaseModel):
     permutation: 'PermutationGroupRep'
     value: int
 
@@ -20,7 +20,6 @@ class PermutationObject:
         return self.value < other.value
 
 
-@dataclass(unsafe_hash=False)
 class PermutationGroupRep(GroupRep):
     degree: int
 
@@ -43,13 +42,10 @@ class PermutationGroupRep(GroupRep):
         if o.permutation != self:
             raise ValueError('Permutation Not Correct')
 
-    def element(self, *args):
-        if args:
-            if isinstance(args[0], PermutationObject):
-                args = [args]
-
+    def element(self, element):
         i = self.identity
-        for seq in args:
+
+        for seq in element:
             mapping = {}
 
             if isinstance(seq, (tuple, list)):
@@ -62,21 +58,32 @@ class PermutationGroupRep(GroupRep):
                     raise ValueError("Should be same")
                 mapping.update(seq)
 
-            i += self.cls_element(group=self, perm_map=mapping)
+            new_mapping = {
+                self._wrap_object(k): self._wrap_object(v)
+                for k, v in mapping.items()
+            }
+
+            i += self.cls_element(group=self, perm_map=new_mapping)
 
         return i
 
     def as_group(self):
         return self.group_([[[0, 1]], [list(range(self.degree))]])
 
+    def _wrap_object(self, o):
+        if isinstance(o, int):
+            o = PermutationObject(permutation=self, value=o)
+        if not isinstance(o, PermutationObject):
+            raise TypeError("Should be a PermutationObject")
+        return o
 
-@dataclass
-class PermutationGroupElement(GroupElement[PermutationObject]):
+
+class PermutationGroupElement(GroupElement):
     group: PermutationGroupRep
     perm_map: Dict[
         PermutationObject,
         PermutationObject
-    ] = field(default_factory=dict)
+    ] = pydantic.Field(default_factory=dict)
 
     def __add__(self, other: 'PermutationGroupElement'):
         s = set(self.perm_map) | set(other.perm_map)

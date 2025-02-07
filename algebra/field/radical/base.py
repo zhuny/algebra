@@ -3,7 +3,7 @@ import functools
 import itertools
 import math
 import time
-from dataclasses import dataclass
+from pydantic import BaseModel
 from fractions import Fraction
 from typing import Any, Union
 
@@ -19,8 +19,7 @@ from algebra.ring.polynomial.monomial_ordering import \
 from algebra.util.decorator import iter_to_str, Timer
 
 
-@dataclass
-class Interval:
+class Interval(BaseModel):
     start: NumberType
     end: NumberType
 
@@ -113,8 +112,7 @@ class ElementMerger:
         return ODRadical(body=result)
 
 
-@dataclass(eq=False)
-class ODRadical:
+class ODRadical(BaseModel):
     body: dict['ODRadicalElement', Fraction]
     interval: Interval = None
 
@@ -409,8 +407,7 @@ class ODRadical:
     #     return bs.start
 
 
-@dataclass(unsafe_hash=False, eq=False)
-class ODRadicalElement:
+class ODRadicalElement(BaseModel):
     power: dict[int, Fraction]
     interval: Interval = None
     _key = None

@@ -1,11 +1,10 @@
-from dataclasses import dataclass
+from pydantic import BaseModel
 from fractions import Fraction
 
 from algebra.field.base import Field, FieldElement
 from algebra.number.util import is_square, is_square_free
 
 
-@dataclass
 class RationalField(Field):
     def element(self, value) -> 'FieldElement':
         if isinstance(value, RationalFieldElement):
@@ -17,7 +16,6 @@ class RationalField(Field):
         return 0
 
 
-@dataclass(eq=False)
 class RationalFieldElement(FieldElement):
     value: Fraction
 

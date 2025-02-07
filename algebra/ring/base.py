@@ -1,8 +1,7 @@
-from dataclasses import dataclass
+from pydantic import BaseModel
 
 
-@dataclass
-class Ring:
+class Ring(BaseModel):
     def element(self, *args):
         raise NotImplementedError(self)
 
@@ -31,8 +30,7 @@ class Ring:
         raise NotImplementedError(self)
 
 
-@dataclass
-class RingElement:
+class RingElement(BaseModel):
     ring: Ring
 
     def is_zero(self):

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from pydantic import BaseModel
 from typing import List, Any
 
 
@@ -31,7 +31,6 @@ class RingBase:
         raise NotImplementedError(self)
 
 
-@dataclass
-class CalculationStep:
+class CalculationStep(BaseModel):
     name: str
     argv: List[Any]

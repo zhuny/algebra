@@ -5,6 +5,8 @@ import secrets
 import sys
 from pathlib import Path
 
+import tqdm
+
 from algebra.group.abstract.permutation import PermutationGroupRep
 from algebra.group.abstract.shortcut import symmetric_group
 
@@ -147,6 +149,9 @@ class PosetOrder:
             yield element.value
 
     def dump(self, filename):
+        if filename is None:
+            return
+
         node_to_id = {}
         id_to_node = {}
         for element in self.travel():
@@ -313,6 +318,13 @@ def parse_args():
     return parser.parse_args()
 
 
+def factorial(n):
+    answer = 1
+    for i in range(2, n+1):
+        answer *= i
+    return answer
+
+
 def main():
     args = parse_args()
 
@@ -326,7 +338,7 @@ def main():
             po.load(args.cache, context)
             po.show()
 
-    # build_subgroup(po, s_n, args)
+    build_subgroup(po, s_n, args)
     show_subgroup_key(po, s_n, args)
 
 
@@ -343,20 +355,17 @@ def build_subgroup(po, s_n, args):
     po.insert(s_n.represent.group())
     count = 0
 
-    for element in s_n.element_list():
+    for element in tqdm.tqdm(s_n.element_list(), total=factorial(args.degree)):
         if po.has(s_n.represent.group(element)):
-            print(element, 'skipped')
             continue
 
         count += 1
-        print(count, element)
 
         for group in po.element_list():
             po.insert(group.append(element))
 
-        if count % 10 == 0 and args.cache is not None:
+        if count % 10 == 0:
             po.dump(args.cache)
-            print('saved')
 
     print(po.size)
     po.dump(args.cache)
@@ -367,7 +376,8 @@ def build_subgroup(po, s_n, args):
         'con': GroupingGroup('is_conjugate'),
         'galois': GroupingGroup('is_conjugate', condition='is_transitive')
     }
-    for group in po.element_list():
+
+    for group in tqdm.tqdm(po.element_list(), total=po.size):
         for grouping in grouping_dict.values():
             grouping.append(group)
 

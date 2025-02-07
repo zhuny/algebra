@@ -5,7 +5,7 @@ from algebra.group.abstract.permutation import PermutationGroupRep
 
 class TestPermutationGroupRep(unittest.TestCase):
     def test_add(self):
-        perm = PermutationGroupRep(4)
+        perm = PermutationGroupRep(degree=4)
         a0, a1, a2, a3 = perm.object_list()
 
         e1 = perm.element(a0, a1)  # (0, 1)
@@ -17,7 +17,7 @@ class TestPermutationGroupRep(unittest.TestCase):
         self.assertEqual(e2 + (-e2), perm.identity)
 
     def test_orbit(self):
-        perm = PermutationGroupRep(5)
+        perm = PermutationGroupRep(degree=5)
         a0, a1, a2, a3, a4 = perm.object_list()
         e1 = perm.element(a0, a1, a2)  # (0 1 2)
         group = perm.group(e1)  # <(0 1 2)>
@@ -29,7 +29,7 @@ class TestPermutationGroupRep(unittest.TestCase):
         self.assertSetEqual(group.orbit(a4), {a4})
 
     def test_stabilizer(self):
-        perm = PermutationGroupRep(10)
+        perm = PermutationGroupRep(degree=10)
 
         ol = list(perm.object_list())
 
@@ -49,7 +49,7 @@ class TestPermutationGroupRep(unittest.TestCase):
         # Test with symmetric group
         factorial = 2
         for i in range(3, 11):
-            perm = PermutationGroupRep(i)
+            perm = PermutationGroupRep(degree=i)
             ol = list(perm.object_list())
 
             e1 = perm.element(ol)
@@ -62,7 +62,7 @@ class TestPermutationGroupRep(unittest.TestCase):
 
     def test_stabilizer_chain_dihedral(self):
         for i in range(4, 11):
-            perm = PermutationGroupRep(i)
+            perm = PermutationGroupRep(degree=i)
             ol = list(perm.object_list())
 
             e1 = perm.element(ol)
@@ -77,7 +77,7 @@ class TestPermutationGroupRep(unittest.TestCase):
 
     def test_mathieu_group(self):
         with self.subTest("M11"):
-            perm = PermutationGroupRep(11)
+            perm = PermutationGroupRep(degree=11)
             ol = list(perm.object_list())
 
             e1 = perm.element(ol)  # (1,2,3,4,5,6,7,8,9,10,11)
@@ -89,7 +89,7 @@ class TestPermutationGroupRep(unittest.TestCase):
             self.assertEqual(m11.order(), 7920)
 
         with self.subTest("M12"):
-            perm = PermutationGroupRep(12)
+            perm = PermutationGroupRep(degree=12)
             ol = list(perm.object_list())
 
             e1 = perm.element(ol[:-1])  # (0123456789a)
@@ -105,7 +105,7 @@ class TestPermutationGroupRep(unittest.TestCase):
             self.assertEqual(m12.order(), 95_040)
 
         with self.subTest("M24"):
-            perm = PermutationGroupRep(24)
+            perm = PermutationGroupRep(degree=24)
             ol = list(perm.object_list())
 
             e1 = self.from_num(
@@ -122,7 +122,7 @@ class TestPermutationGroupRep(unittest.TestCase):
             self.assertEqual(m24.order(), 244_823_040)
 
     def test_rubik_cube(self):
-        perm = PermutationGroupRep(54)
+        perm = PermutationGroupRep(degree=54)
 
         group = perm.group_([
             [
@@ -178,7 +178,7 @@ class TestPermutationGroupRep(unittest.TestCase):
         :return:
         """
         # Create S_10
-        perm = PermutationGroupRep(10)
+        perm = PermutationGroupRep(degree=10)
         ol = list(perm.object_list())
 
         e1 = perm.element(ol)
@@ -209,7 +209,7 @@ class TestPermutationGroupRep(unittest.TestCase):
         :return:
         """
         # Create S_4
-        perm = PermutationGroupRep(4)
+        perm = PermutationGroupRep(degree=4)
         ol = list(perm.object_list())
 
         e1 = perm.element(ol)
@@ -237,7 +237,7 @@ class TestPermutationGroupRep(unittest.TestCase):
         self.assertEqual(normal_closure_e5.order(), 24)
 
     def test_element_test(self):
-        perm = PermutationGroupRep(8)
+        perm = PermutationGroupRep(degree=8)
         ol = list(perm.object_list())
 
         group = perm.group(

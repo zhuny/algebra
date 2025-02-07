@@ -1,16 +1,12 @@
-import dataclasses
-from dataclasses import dataclass
+from pydantic import BaseModel
 from typing import Any
 
 from algebra.group.abstract.permutation import PermutationGroupRep, \
     PermutationGroupElement, PermutationObject
 
 
-@dataclass(unsafe_hash=False)
 class MonomialActionGroupRep(PermutationGroupRep):
-    degree: int = dataclasses.field(init=False)
     custom_object_list: list[Any]
-    object_to_index: dict[Any, int] = dataclasses.field(init=False)
 
     def __post_init__(self):
         self.degree = len(self.custom_object_list)
@@ -25,7 +21,6 @@ class MonomialActionGroupRep(PermutationGroupRep):
         return MonomialActionGroupElement
 
 
-@dataclass(unsafe_hash=False)
 class MonomialActionGroupElement(PermutationGroupElement):
     def act_polynomial(self, polynomial):
         from algebra.ring.polynomial.base import Monomial, PolynomialRingElement

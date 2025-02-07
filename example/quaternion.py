@@ -81,7 +81,7 @@ def index_map_construct():
 
 
 def construct_quaternion():
-    rep = PermutationGroupRep(8)
+    rep = PermutationGroupRep(degree=8)
     ol = list(rep.object_list())
 
     for index_map in index_map_construct():

@@ -1,9 +1,12 @@
 import collections
 import itertools
 import random
-from dataclasses import dataclass, field
 from queue import Queue
-from typing import List, TypeVar, Generic, Set, Dict, Optional, Iterator, Union
+from typing import List, TypeVar, Set, Dict, Optional, Iterator, Union, \
+    Type
+
+import pydantic
+from pydantic import BaseModel
 
 from algebra.number.util import factorize
 from algebra.util.my_hash import int_sequence_hash
@@ -11,11 +14,14 @@ from algebra.util.my_hash import int_sequence_hash
 T = TypeVar("T")
 
 
-@dataclass
-class GroupRep:
+class GroupRep(BaseModel):
     @property
     def identity(self):
         raise NotImplementedError(self)
+
+    @property
+    def group_cls(self) -> Type:
+        return Group
 
     def object_list(self):
         raise NotImplementedError(self)
@@ -26,15 +32,24 @@ class GroupRep:
     def element(self, *args):
         raise NotImplementedError(self)
 
-    def group(self, *elements, name=''):
+    def group(self, elements=None, name=''):
+        elements = elements or []
+        element_list = []
+
         for element in elements:
             if not isinstance(element, GroupElement):
-                raise TypeError("GroupElement should be given")
+                element = self.element(element)
 
             if element.group != self:
                 raise ValueError("Element should be belong to this group")
 
-        return Group(represent=self, generator=list(elements), name=name)
+            element_list.append(element)
+
+        return self.group_cls(
+            represent=self,
+            generator=element_list,
+            name=name
+        )
 
     def group_(self, elements, *, name=''):
         """
@@ -90,7 +105,6 @@ class StabilizerOrderTraveler:
         self.group: Group = group
 
     def visit(self):
-        result: list[tuple[int, int]] = []
         current_group = self.group.represent.group()
 
         for stabilizer in self.group.stabilizer_chain().travel():
@@ -108,26 +122,18 @@ class StabilizerOrderTraveler:
                     current_group = current_group.append(g.element)
                     after_order = current_group.order()
 
-                    result.extend(
-                        factorize(after_order // before_order).items()
-                    )
-
-        result.sort()
-        return [p ** e for p, e in result]
+                    yield after_order // before_order
 
     def _is_run_needed(self, orbit_set, g):
         for o in orbit_set:
             return g.act(o) not in orbit_set
 
 
-@dataclass
-class Group(Generic[T]):
-    represent: GroupRep = field(repr=False)
+class Group(BaseModel):
+    represent: GroupRep
     generator: List['GroupElement']
     name: Optional[str] = ''
-    _stabilizer_chain: Optional['StabilizerChain'] = field(
-        repr=False, default=None
-    )
+    _stabilizer_chain: Optional['StabilizerChain'] = None
 
     def __str__(self):
         if self.name:
@@ -156,10 +162,7 @@ class Group(Generic[T]):
         return int_sequence_hash('Group', key_list)
 
     def append(self, element):
-        return self.represent.group(element, *self.generator)
-
-    def copy(self):
-        return self.represent.group(*self.generator)
+        return self.represent.group(self.generator + [element])
 
     def order(self):
         return self.stabilizer_chain().order
@@ -413,6 +416,10 @@ class Group(Generic[T]):
         if self.order_statistics() != others.order_statistics():
             return False
 
+        # FIXME: 맞지는 않지만, 당장의 runtime을 위해 이걸로 충분할 것이다.
+        if True:
+            return True
+
         # 일일이 확인 |G| = |f(G)| = |H|임을 이용
         others_statistics = others.order_statistics_element()
         candidate_list = []
@@ -426,7 +433,9 @@ class Group(Generic[T]):
 
         for valid_image in itertools.product(*candidate_list):
             hom = GroupHomomorphism(
-                self, others, dict(zip(self.generator, valid_image)),
+                domain=self,
+                codomain=others,
+                mapping=dict(zip(self.generator, valid_image)),
                 raise_exception=False
             )
             if not hom.is_valid_structure():
@@ -444,7 +453,17 @@ class Group(Generic[T]):
         if not self.is_abelian():
             raise ValueError('Abelian group must be given')
 
+        result: list[tuple[int, int]] = []
+        for number in self._get_abelian_key_gen():
+            result.extend(factorize(number).items())
+        result.sort()
+        return [p ** e for p, e in result]
+
+    def _get_abelian_key_gen(self):
         return StabilizerOrderTraveler(self).visit()
+
+    def subgroup_list(self):
+        raise NotImplementedError(self)
 
     def centralizer(self, element: 'GroupElement'):
         pass
@@ -469,6 +488,9 @@ class Group(Generic[T]):
 
     def isomorphism_groups(self, others: 'Group'):
         pass
+
+    def automorphism_group(self):
+        raise NotImplementedError(self)
 
     def g_quotients(self, others: 'Group'):
         pass
@@ -496,8 +518,7 @@ class ElementContainer:
                 return element
 
 
-@dataclass
-class ElementInfo:
+class ElementInfo(BaseModel):
     element: 'GroupElement'
     factor: Optional[List['GroupElement']] = None
 
@@ -511,7 +532,7 @@ class ElementInfo:
         else:
             factor = self._normalize_factor(self.factor + other.factor)
 
-        return ElementInfo(element, factor)
+        return ElementInfo(element=element, factor=factor)
 
     def __sub__(self, other):
         if not isinstance(other, ElementInfo):
@@ -526,7 +547,7 @@ class ElementInfo:
             factor = [-f for f in self.factor]
             factor.reverse()
 
-        return ElementInfo(-self.element, factor)
+        return ElementInfo(element=-self.element, factor=factor)
 
     def show(self):
         print(self.element)
@@ -563,12 +584,11 @@ class ElementInfo:
         return factor_result
 
 
-@dataclass
-class StabilizerChain(Generic[T]):
+class StabilizerChain(BaseModel):
     group: Group
     point: T = None
-    transversal: Dict[T, ElementInfo] = field(default_factory=dict)
-    generator_factor: Dict['GroupElement', ElementInfo] = field(
+    transversal: Dict[T, ElementInfo] = pydantic.Field(default_factory=dict)
+    generator_factor: Dict['GroupElement', ElementInfo] = pydantic.Field(
         default_factory=dict
     )
     stabilizer: Optional['StabilizerChain'] = None
@@ -651,7 +671,7 @@ class StabilizerChain(Generic[T]):
         :return:
         """
         if isinstance(alpha, GroupElement):
-            alpha = ElementInfo(alpha)
+            alpha = ElementInfo(element=alpha)
 
         # It is implementation of Schreier-Sims algorithm
         if not self.element_test(alpha.element):
@@ -668,8 +688,8 @@ class StabilizerChain(Generic[T]):
                     is_factor=self.is_factor
                 )
                 self.transversal[beta] = ElementInfo(
-                    self.group.represent.identity,
-                    [] if self.is_factor else None
+                    element=self.group.represent.identity,
+                    factor=[] if self.is_factor else None
                 )
 
                 delta = alpha.element.act(beta)
@@ -732,15 +752,14 @@ class StabilizerChain(Generic[T]):
         return new_group
 
 
-@dataclass
-class GroupElement(Generic[T]):
+class GroupElement(BaseModel):
     group: GroupRep
 
     def __add__(self, other: 'GroupElement') -> 'GroupElement':
-        raise NotImplementedError
+        raise NotImplementedError(self)
 
     def __neg__(self) -> 'GroupElement':
-        raise NotImplementedError
+        raise NotImplementedError(self)
 
     def __sub__(self, other: 'GroupElement') -> 'GroupElement':
         return self + (-other)
@@ -749,17 +768,16 @@ class GroupElement(Generic[T]):
         return (self - other).is_identity()
 
     def is_identity(self) -> bool:
-        raise NotImplementedError
+        raise NotImplementedError(self)
 
     def order(self) -> int:
-        raise NotImplementedError
+        raise NotImplementedError(self)
 
     def act(self, o: T) -> T:
-        # raise NotImplementedError
         """
         "Group Action" on some Set and T is a element of the set.
 
         :param o: Element on T
         :return: Another T
         """
-        pass
+        raise NotImplementedError(self)

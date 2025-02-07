@@ -1,7 +1,7 @@
 import collections
 import functools
 import math
-from dataclasses import dataclass, field
+from pydantic import BaseModel
 from fractions import Fraction
 from typing import List
 
@@ -9,8 +9,7 @@ from algebra.number.types import Number, NumberType
 from algebra.number.util import factorize, lcm
 
 
-@dataclass(eq=False, frozen=True, unsafe_hash=True)
-class Radical:
+class Radical(BaseModel):
     inv: int  # should be positive integer
     body: 'SimpleRadical'
 
@@ -92,8 +91,7 @@ class Radical:
             return f"({upper})/{self.inv}"
 
 
-@dataclass(eq=False, frozen=True)
-class SimpleRadical:
+class SimpleRadical(BaseModel):
     constant: int
     body: List['SimpleRadicalElement'] = field(default_factory=list)
 
@@ -225,8 +223,7 @@ class SimpleRadical:
         return "".join(stream)
 
 
-@dataclass(frozen=True, unsafe_hash=True)
-class SimpleRadicalElement:
+class SimpleRadicalElement(BaseModel):
     multiplier: int
     index: int
     radicand: SimpleRadical

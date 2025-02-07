@@ -1,22 +1,29 @@
-from dataclasses import dataclass, InitVar
+import pydantic
+from pydantic import BaseModel
 from typing import Dict, List
 
 from algebra.group.abstract.base import Group, GroupElement, GroupRep
 from algebra.group.abstract.permutation import PermutationGroupRep
 
 
-@dataclass
 class GroupDirectProductRep(PermutationGroupRep):
     subgroup_list: List[GroupRep]
+    degree: int = 0
+    object_map_right: dict[
+        GroupElement, GroupElement
+    ] = pydantic.Field(
+        default_factory=dict
+    )
+    object_map_left: dict[GroupElement, GroupElement] = pydantic.Field(
+        default_factory=dict
+    )
 
     def __hash__(self):
         return hash(f"GDPR{self.degree}")
 
-    def __init__(self, group_rep_list):
-        self.subgroup_list = group_rep_list
-
+    def model_post_init(self, context):
         object_list = list(self._sub_object_list())
-        super().__init__(len(object_list))
+        self.degree = len(object_list)
 
         this_object_list = list(self.object_list())
 
@@ -66,14 +73,13 @@ class GroupDirectProductRep(PermutationGroupRep):
                 yield i, o
 
 
-@dataclass
-class GroupHomomorphism:
+class GroupHomomorphism(BaseModel):
     domain: Group
     codomain: Group
     mapping: Dict[GroupElement, GroupElement]
-    raise_exception: InitVar[bool] = True
+    raise_exception: bool = True
 
-    def __post_init__(self, raise_exception):
+    def __post_init__(self):
         # domain의 generator가 모두 맞게 있는지 확인한다.
         domain_gen_set = set(self.domain.generator)
         mapping_set = set(self.mapping)
@@ -86,7 +92,7 @@ class GroupHomomorphism:
                 raise ValueError('Target Value')
 
         # mapping 값이 제대로 됐는지 확인
-        if raise_exception:
+        if self.raise_exception:
             if not self.is_valid_structure():
                 raise ValueError('Mapping not Hom')
 
@@ -109,6 +115,15 @@ class GroupHomomorphism:
             value += mapping[f]
         return value
 
+    def value_group(self, group: Group):
+        return Group(
+            represent=self.codomain.represent,
+            generator=[
+                self.value(g)
+                for g in group.generator
+            ]
+        )
+
     def kernel(self) -> 'Group':
         direct = self.as_direct_product()
         stabilizer = direct.stabilizer_many([
@@ -130,7 +145,7 @@ class GroupHomomorphism:
 
     def as_direct_product(self) -> Group:
         # rep 생성
-        group_rep = GroupDirectProductRep([
+        group_rep = GroupDirectProductRep(subgroup_list=[
             self.domain.represent,
             self.codomain.represent
         ])
