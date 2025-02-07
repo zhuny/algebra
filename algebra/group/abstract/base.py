@@ -32,8 +32,10 @@ class GroupRep(BaseModel):
     def element(self, *args):
         raise NotImplementedError(self)
 
-    def group(self, elements, name=''):
+    def group(self, elements=None, name=''):
+        elements = elements or []
         element_list = []
+
         for element in elements:
             if not isinstance(element, GroupElement):
                 element = self.element(element)
@@ -103,7 +105,6 @@ class StabilizerOrderTraveler:
         self.group: Group = group
 
     def visit(self):
-        result: list[tuple[int, int]] = []
         current_group = self.group.represent.group()
 
         for stabilizer in self.group.stabilizer_chain().travel():
@@ -121,12 +122,7 @@ class StabilizerOrderTraveler:
                     current_group = current_group.append(g.element)
                     after_order = current_group.order()
 
-                    result.extend(
-                        factorize(after_order // before_order).items()
-                    )
-
-        result.sort()
-        return [p ** e for p, e in result]
+                    yield after_order // before_order
 
     def _is_run_needed(self, orbit_set, g):
         for o in orbit_set:
@@ -456,6 +452,13 @@ class Group(BaseModel):
         if not self.is_abelian():
             raise ValueError('Abelian group must be given')
 
+        result: list[tuple[int, int]] = []
+        for number in self._get_abelian_key_gen():
+            result.extend(factorize(number).items())
+        result.sort()
+        return [p ** e for p, e in result]
+
+    def _get_abelian_key_gen(self):
         return StabilizerOrderTraveler(self).visit()
 
     def subgroup_list(self):

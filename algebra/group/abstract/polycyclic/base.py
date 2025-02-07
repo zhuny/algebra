@@ -127,7 +127,7 @@ class PolyCyclicGroup(Group):
         return new_rep.group(generator_list)
 
     def model_post_init(self, __context):
-        reduced = PolyCyclicRowReduced()
+        reduced = PolyCyclicRowReduced()  # 두고두고 쓸 듯
         for g in self.generator:
             reduced.append_mult(g)
         reduced.arrange_reverse()
@@ -205,6 +205,23 @@ class PolyCyclicGroup(Group):
                 subgroup_list.add(subgroup.append(element))
 
         return subgroup_list
+
+    def _get_abelian_key_gen(self):
+        group = self.represent.group()
+        for generator in self.generator:
+            if group.element_test(generator):
+                continue
+            group = group.append(generator)
+            yield generator.order()
+
+    def element_test(self, element: 'GroupElement'):
+        reduced = PolyCyclicRowReduced()
+        for g in self.generator:
+            reduced.append_mult(g)
+        reduced.arrange_reverse()
+
+        row = reduced.reduce(element)
+        return row.is_identity()
 
 
 class PolyCyclicAutomorphismMap(AutomorphismMap):
@@ -373,6 +390,16 @@ class PolyCyclicGroupElement(GroupElement):
             if p != 0:
                 return False
         return True
+
+    def order(self) -> int:
+        current = self
+        current_order = 1
+
+        while not current.is_identity():
+            current_order *= self.group.degree
+            current *= self.group.degree
+
+        return current_order
 
     def _build_stack(self):
         power_list = []

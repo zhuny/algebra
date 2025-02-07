@@ -5,7 +5,9 @@ from algebra.group.abstract.polycyclic.base import PolyCyclicGroupRep
 def get_reference_group_list():
     rep = PermutationGroupRep(degree=8)
 
-    yield rep.group([[[0, 1]], [[2, 3]], [[4, 5]]], name='Z2^3')
+    yield rep.group([[[0, 1]], [[2, 3]], [[4, 5]]], name='Z2Z2Z2')
+    yield rep.group([[[0, 1]], [[2, 3, 4, 5]]], name='Z2Z4')
+    yield rep.group([[[0, 1, 2, 3]], [[4, 5, 6, 7]]], name='Z4Z4')
 
 
 def main():
@@ -46,8 +48,7 @@ def main():
         result.show()
         for reference in reference_group_list:
             if reference.is_isomorphism(result):
-                print(reference)
-                break
+                print('Isomorphic to', reference)  # 2번 이상 출력되면 안됨
         print()
 
 
