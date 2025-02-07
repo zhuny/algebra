@@ -7,7 +7,13 @@ def get_reference_group_list():
 
     yield rep.group([[[0, 1]], [[2, 3]], [[4, 5]]], name='Z2Z2Z2')
     yield rep.group([[[0, 1]], [[2, 3, 4, 5]]], name='Z2Z4')
+    yield rep.group([[[0, 1, 2, 3, 4, 5, 6, 7]]], name='Z2Z4')
     yield rep.group([[[0, 1, 2, 3]], [[4, 5, 6, 7]]], name='Z4Z4')
+    yield rep.group([[[0, 1, 2, 3]], [[1, 3]]], name='D8')
+    yield rep.group([
+        [[0, 2, 1, 3], [4, 7, 5, 6]],  # i
+        [[0, 4, 1, 5], [2, 6, 3, 7]]  # j
+    ], name='Q8')
 
 
 def main():
@@ -40,6 +46,9 @@ def main():
         cc.update(ag.orbit(subgroup))
 
     reference_group_list = list(get_reference_group_list())
+    for reference in reference_group_list:
+        print(reference, reference.order(), reference.order_statistics())
+
     for i, c in enumerate(cc.by_class):
         print('Class :', i)
         print('Quotient :', c[0])

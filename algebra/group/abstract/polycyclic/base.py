@@ -26,7 +26,7 @@ class PolyCyclicGroupRep(GroupRep):
         return PolyCyclicGroup
 
     def element(self, power):
-        return PolyCyclicGroupElement(group=self, power=power)
+        return PolyCyclicGroupElement(group=self, power=list(power))
 
     @property
     def identity(self):
@@ -222,6 +222,43 @@ class PolyCyclicGroup(Group):
 
         row = reduced.reduce(element)
         return row.is_identity()
+
+    def element_list(self):
+        return GroupElementTraveler(self).travel()
+
+
+class Traveler:
+    def travel(self):
+        queue = list(self.source_list())
+        done = set()
+
+        while queue:
+            element = queue.pop()
+            if element in done:
+                continue
+            yield element
+            done.add(element)
+
+            queue.extend(self.adj_list(element))
+
+    def source_list(self):
+        raise NotImplementedError(self)
+
+    def adj_list(self, element):
+        raise NotImplementedError(self)
+
+
+class GroupElementTraveler(Traveler):
+    def __init__(self, group: PolyCyclicGroup):
+        super().__init__()
+        self.group = group
+
+    def source_list(self):
+        yield self.group.represent.identity
+
+    def adj_list(self, element):
+        for g in self.group.generator:
+            yield element + g
 
 
 class PolyCyclicAutomorphismMap(AutomorphismMap):
