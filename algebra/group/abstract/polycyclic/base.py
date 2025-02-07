@@ -51,6 +51,53 @@ class PolyCyclicGroupRep(GroupRep):
             return gen_list
         return itertools.combinations(gen_list, count)
 
+    def _remove_index(self, index, sub_rel):
+        rel_map = {}
+        for k in range(self.number):
+            if k < index:
+                rel_map[k] = [k]
+            elif k == index:
+                rel_map[k] = sub_rel
+            else:
+                rel_map[k] = [k - 1]
+        self.power_relation = self._remove_index_obj(
+            self.power_relation, rel_map
+        )
+        self.commute_relation = self._remove_index_obj(
+            self.commute_relation, rel_map
+        )
+        self.number -= 1
+
+    def _remove_index_obj(self, o, rel_map):
+        if isinstance(o, int):
+            return rel_map[o][0]
+        elif isinstance(o, (tuple, list)):
+            o_ = []
+            for i in o:
+                o_.extend(rel_map[i])
+            if isinstance(o, tuple):
+                o_ = tuple(o_)
+            return o_
+        elif isinstance(o, dict):
+            o_ = {}
+            for k, v in o.items():
+                k = self._remove_index_obj(k, rel_map)
+                v = self._remove_index_obj(v, rel_map)
+                if v:
+                    o_[k] = v
+            return o_
+        else:
+            raise TypeError
+
+    def show(self, msg=None):
+        if msg:
+            print(msg)
+        print(f'PCG({self.degree}, {self.number}) with..')
+        for i, rel in self.power_relation.items():
+            print(i, rel)
+        for (j, i), rel in self.commute_relation.items():
+            print(j, i, rel)
+
 
 class PolyCyclicGroup(Group):
     generator: list['PolyCyclicGroupElement']
@@ -66,40 +113,18 @@ class PolyCyclicGroup(Group):
         for g in other.generator:
             right_align.append_mult(g)
 
-        # index_converting
-        index_list = list(range(self.represent.number))
-        for i, e in right_align.get_sorted_map():
-            index_list.remove(i)
+        new_rep = self.represent.model_copy(deep=True)
+        for index, element in right_align.get_sorted_map():
+            new_rel = self.represent.from_index(index) - element.element
+            new_rep._remove_index(index, new_rel.to_index_list())
 
-        # 새로운 Quotient Group Represent 생성
-        rep = PolyCyclicGroupRep(
-            degree=self.represent.degree,
-            number=self.represent.number - len(right_align.index_map)
-        )
-
-        # reduce power relate
-        for index, rel in self.represent.power_relation.items():
-            e = self.represent.from_index(index)
-            e *= self.represent.degree
-            e_red = right_align.reduce(e)
-            if not e_red.is_identity():
-                rep.power_relation[index] = right_align.pop_index(e_red)
-
-        # reduce commute relate
-        for (i, j), rel in self.represent.commute_relation.items():
-            ei = self.represent.from_index(i)
-            ej = self.represent.from_index(j)
-            eij = right_align.reduce(ei + ej - ei - ej)
-            if not eij.is_identity():
-                rep.commute_relation[i, j] = right_align.pop_index(eij)
-
-        # reduce generator from this group
         generator_list = []
-        for generator in self.generator:
-            reduced = right_align.reduce(generator)
-            generator_list.append(right_align.pop_index(reduced))
+        for g in self.generator:
+            row = right_align.reduce(g)
+            new_index = right_align.pop_index(row)
+            generator_list.append(new_index)
 
-        return rep.group(generator_list)
+        return new_rep.group(generator_list)
 
     def model_post_init(self, __context):
         reduced = PolyCyclicRowReduced()
@@ -165,17 +190,6 @@ class PolyCyclicGroup(Group):
 
     def order(self):
         return pow(self.represent.degree, len(self.generator))
-
-    def show(self, msg=None):
-        rep: PolyCyclicGroupRep = self.represent
-        if msg:
-            print(msg)
-        print(f'PCG({rep.degree}, {rep.number}) with..')
-        for i, rel in rep.power_relation.items():
-            print(i, rel)
-        for (j, i), rel in rep.commute_relation.items():
-            print(j, i, rel)
-        print()
 
     def subgroup_list(self):
         element_list = [self.represent.identity]

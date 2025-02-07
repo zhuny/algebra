@@ -6,7 +6,7 @@ def main():
     g = PolyCyclicGroupRep(degree=2, number=2).as_group()
 
     pcg = g.p_covering_group()
-    pcg.show('Normalized')
+    pcg.represent.show('Normalized')
     print(pcg.order())
 
     for group in pcg.lower_exponent_p_central_series():
@@ -32,8 +32,11 @@ def main():
 
     for i, c in enumerate(cc.by_class):
         print('Class :', i)
-        print('Rep :', c[0])
-        (pcg / c[0]).show()
+        print('Quotient :', c[0])
+        result = pcg / c[0]
+        result.represent.show('New :')
+        result.show()
+        print()
 
 
 class ClassifyContainer:
