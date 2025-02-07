@@ -42,13 +42,10 @@ class PermutationGroupRep(GroupRep):
         if o.permutation != self:
             raise ValueError('Permutation Not Correct')
 
-    def element(self, *args):
-        if args:
-            if isinstance(args[0], PermutationObject):
-                args = [args]
-
+    def element(self, element):
         i = self.identity
-        for seq in args:
+
+        for seq in element:
             mapping = {}
 
             if isinstance(seq, (tuple, list)):
@@ -61,12 +58,24 @@ class PermutationGroupRep(GroupRep):
                     raise ValueError("Should be same")
                 mapping.update(seq)
 
-            i += self.cls_element(group=self, perm_map=mapping)
+            new_mapping = {
+                self._wrap_object(k): self._wrap_object(v)
+                for k, v in mapping.items()
+            }
+
+            i += self.cls_element(group=self, perm_map=new_mapping)
 
         return i
 
     def as_group(self):
         return self.group_([[[0, 1]], [list(range(self.degree))]])
+
+    def _wrap_object(self, o):
+        if isinstance(o, int):
+            o = PermutationObject(permutation=self, value=o)
+        if not isinstance(o, PermutationObject):
+            raise TypeError("Should be a PermutationObject")
+        return o
 
 
 class PermutationGroupElement(GroupElement):

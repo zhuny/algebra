@@ -1,4 +1,11 @@
+from algebra.group.abstract.permutation import PermutationGroupRep
 from algebra.group.abstract.polycyclic.base import PolyCyclicGroupRep
+
+
+def get_reference_group_list():
+    rep = PermutationGroupRep(degree=8)
+
+    yield rep.group([[[0, 1]], [[2, 3]], [[4, 5]]], name='Z2^3')
 
 
 def main():
@@ -30,12 +37,17 @@ def main():
             continue
         cc.update(ag.orbit(subgroup))
 
+    reference_group_list = list(get_reference_group_list())
     for i, c in enumerate(cc.by_class):
         print('Class :', i)
         print('Quotient :', c[0])
         result = pcg / c[0]
         result.represent.show('New :')
         result.show()
+        for reference in reference_group_list:
+            if reference.is_isomorphism(result):
+                print(reference)
+                break
         print()
 
 
