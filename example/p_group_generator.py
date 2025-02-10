@@ -23,8 +23,8 @@ def get_reference_group_list():
 
 
 def main():
-    # C2 X C2
-    g = PolyCyclicGroupRep(degree=2, number=2).as_group()
+    # C2 X C2 X C2
+    g = PolyCyclicGroupRep(degree=2, number=3).as_group()
 
     pcg = g.p_covering_group()
     pcg.represent.show('Normalized')
@@ -50,6 +50,10 @@ def main():
         if cc.is_element(subgroup):
             continue
         cc.update(ag.orbit(subgroup))
+        print(subgroup)
+        for ob in cc.by_class[-1]:
+            print('>', ob)
+        print(len(cc.element_set))
 
     reference_group_list = list(get_reference_group_list())
     for reference in reference_group_list:
