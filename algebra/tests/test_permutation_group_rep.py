@@ -19,8 +19,7 @@ class TestPermutationGroupRep(unittest.TestCase):
     def test_orbit(self):
         perm = PermutationGroupRep(degree=5)
         a0, a1, a2, a3, a4 = perm.object_list()
-        e1 = perm.element(a0, a1, a2)  # (0 1 2)
-        group = perm.group(e1)  # <(0 1 2)>
+        group = perm.group([[[0, 1, 2]]])
 
         self.assertSetEqual(group.orbit(a0), {a0, a1, a2})
         self.assertSetEqual(group.orbit(a1), {a0, a1, a2})
@@ -31,48 +30,39 @@ class TestPermutationGroupRep(unittest.TestCase):
     def test_stabilizer(self):
         perm = PermutationGroupRep(degree=10)
 
-        ol = list(perm.object_list())
+        e1 = [[0, 1, 2]]
+        e2 = [[2, 3, 4], [5, 6, 7, 8]]
 
-        e1 = perm.element(*ol[:3])  # (0 1 2)
-        e2 = perm.element(ol[2:5], ol[5:9])  # (2 3 4)(5 6 7 8)
+        group = perm.group([e1, e2])  # <(0 1 2), (2 3 4)(5 6 7 8)>
 
-        print(f"{e1=!s}")
-        print(f"{e2=!s}")
-
-        group = perm.group(e1, e2)  # <(0 1 2), (2 3 4)(5 6 7 8)>
-
-        subgroup = group.stabilizer(ol[0])
-        for g1 in subgroup.generator:
-            print(g1)
+        for o in perm.object_list():
+            subgroup = group.stabilizer(o)
+            print(subgroup)
 
     def test_stabilizer_chain_sym(self):
         # Test with symmetric group
         factorial = 2
         for i in range(3, 11):
             perm = PermutationGroupRep(degree=i)
-            ol = list(perm.object_list())
 
-            e1 = perm.element(ol)
-            e2 = perm.element(ol[:2])
+            e1 = [list(range(i))]
+            e2 = [[0, 1]]
 
             # symmetric group of order `i`
-            group = perm.group(e1, e2)
+            group = perm.group([e1, e2])
             factorial *= i
             self.assertEqual(group.order(), factorial)
 
     def test_stabilizer_chain_dihedral(self):
         for i in range(4, 11):
             perm = PermutationGroupRep(degree=i)
-            ol = list(perm.object_list())
 
-            e1 = perm.element(ol)
-            e2 = perm.element(
-                *[
-                    (ol[j], ol[-j])
-                    for j in range(1, (i + 1) // 2)
-                ]
-            )
-            dihedral = perm.group(e1, e2)
+            e1 = [list(range(i))]
+            e2 = [
+                [j, (-j) % i]
+                for j in range(1, (i + 1) // 2)
+            ]
+            dihedral = perm.group([e1, e2])
             self.assertEqual(dihedral.stabilizer_chain().order, 2 * i)
 
     def test_mathieu_group(self):
@@ -124,7 +114,7 @@ class TestPermutationGroupRep(unittest.TestCase):
     def test_rubik_cube(self):
         perm = PermutationGroupRep(degree=54)
 
-        group = perm.group_([
+        group = perm.group([
             [
                 [0, 2, 8, 6], [1, 5, 7, 3], [18, 45, 29, 38],
                 [19, 46, 28, 37], [20, 47, 27, 36]
@@ -210,22 +200,21 @@ class TestPermutationGroupRep(unittest.TestCase):
         """
         # Create S_4
         perm = PermutationGroupRep(degree=4)
-        ol = list(perm.object_list())
-
-        e1 = perm.element(ol)
-        e2 = perm.element(ol[:2])
-        sym_group = perm.group(e1, e2)
+        sym_group = perm.group([
+            [[0, 1, 2, 3]],
+            [[0, 1]]
+        ])
 
         self.assertEqual(sym_group.order(), 24)
 
         # This normal closure should be V_4
-        e3 = perm.element(ol[:2], ol[2:])
+        e3 = perm.element([[0, 1], [2, 3]])
         normal_closure_e3 = sym_group.normal_closure([e3])
         self.assertTrue(sym_group.is_normal(normal_closure_e3))
         self.assertEqual(normal_closure_e3.order(), 4)
 
         # This normal closure should be A_4
-        e4 = perm.element(ol[:3])
+        e4 = perm.element([[[0, 1, 2]]])
         normal_closure_e4 = sym_group.normal_closure([e4])
         self.assertTrue(sym_group.is_normal(normal_closure_e4))
         self.assertEqual(normal_closure_e4.order(), 12)

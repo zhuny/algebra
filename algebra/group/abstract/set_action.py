@@ -8,7 +8,7 @@ from algebra.group.abstract.permutation import PermutationGroupRep, \
 class MonomialActionGroupRep(PermutationGroupRep):
     custom_object_list: list[Any]
 
-    def __post_init__(self):
+    def model_post_init(self, __context):
         self.degree = len(self.custom_object_list)
         self.object_to_index = dict(enumerate(self.custom_object_list))
 

@@ -23,7 +23,7 @@ class Interval(BaseModel):
     start: NumberType
     end: NumberType
 
-    def __post_init__(self):
+    def model_post_init(self, __context):
         if not isinstance(self.start, Fraction):
             self.start = Fraction(self.start)
         if not isinstance(self.end, Fraction):
@@ -130,7 +130,7 @@ class ODRadical(BaseModel):
         element = ODRadicalElement(power=power)
         return cls(body={element: Fraction(mult)})
 
-    def __post_init__(self):
+    def model_post_init(self, __context):
         self.interval_refresh()
 
     def __add__(self, other):
@@ -416,7 +416,7 @@ class ODRadicalElement(BaseModel):
     def one(cls):
         return cls(power={})
 
-    def __post_init__(self):
+    def model_post_init(self, __context):
         end = 1
         for p in self.power:
             end *= p

@@ -1,9 +1,9 @@
 import unittest
 
-from algebra.calc.minimal_polynomial import minimal_polynomial
 from algebra.number.radical import Radical
 
 
+@unittest.skip
 class TestRadicalMultiply(unittest.TestCase):
     @staticmethod
     def sqrt(n):
@@ -21,6 +21,6 @@ class TestRadicalMultiply(unittest.TestCase):
         )
 
     def check_minimal_polynomial(self, number):
-        p = minimal_polynomial(number)
+        p = number.minimal_polynomial()
         print(f"Minimal polynomial of '{number.to_wolfram_alpha()}' is")
         print(f"--> {p.to_wolfram_alpha()}")

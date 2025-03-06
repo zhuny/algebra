@@ -1,4 +1,7 @@
-class MonomialOrderingBase:
+from algebra.util.model import AlgebraModelBase
+
+
+class MonomialOrderingBase(AlgebraModelBase):
     def key(self, monomial):
         raise NotImplementedError()
 

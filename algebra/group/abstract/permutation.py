@@ -58,6 +58,9 @@ class PermutationGroupRep(GroupRep):
                     raise ValueError("Should be same")
                 mapping.update(seq)
 
+            else:
+                raise ValueError("Should be a dict or list")
+
             new_mapping = {
                 self._wrap_object(k): self._wrap_object(v)
                 for k, v in mapping.items()

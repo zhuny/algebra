@@ -6,9 +6,9 @@ from algebra.number.radical import Radical, SimpleRadical, SimpleRadicalElement
 class TestRadicalMultiply(unittest.TestCase):
     def test_error_input(self):
         with self.assertRaises(ValueError):
-            Radical(-1, SimpleRadical(0))
+            Radical(inv=-1, body=SimpleRadical(constant=0))
         with self.assertRaises(ValueError):
-            Radical(0, SimpleRadical(0))
+            Radical(inv=0, body=SimpleRadical(constant=0))
 
     def test_sin_60(self):
         sin_60 = Radical.from_number(3).sqrt() / 2

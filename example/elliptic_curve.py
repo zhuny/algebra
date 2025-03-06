@@ -11,7 +11,7 @@ class EllipticCurveRep(GroupRep):
     a: FieldElement | int
     b: FieldElement | int
 
-    def __post_init__(self):
+    def model_post_init(self, __context):
         self.a = self.field.element(self.a)
         self.b = self.field.element(self.b)
 

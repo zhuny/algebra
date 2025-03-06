@@ -1,6 +1,6 @@
 import collections
 import copy
-from pydantic import BaseModel
+import functools
 import itertools
 import math
 import re
@@ -9,14 +9,13 @@ from fractions import Fraction
 from functools import singledispatchmethod
 from typing import List
 
+from pydantic import BaseModel
+
 from algebra.field.base import Field, FieldElement
 from algebra.matrix.matrix import Matrix
-from algebra.number.util import divisor_list
 from algebra.ring.base import Ring, RingElement
-from algebra.ring.polynomial.monomial_ordering import MonomialOrderingBase, \
-    GradedReverseLexicographicOrdering
-from algebra.ring.polynomial.naming import VariableNameGenerator, \
-    VariableNameIndexGenerator, VariableNameListGenerator
+from algebra.ring.polynomial.monomial_ordering import MonomialOrderingBase
+from algebra.ring.polynomial.naming import VariableNameGenerator
 from algebra.ring.polynomial.variable import VariableSystemBase, VariableSystem, \
     VariableContainer
 from algebra.ring.quotient import Ideal, QuotientRing, QuotientRingElement
@@ -30,9 +29,8 @@ class PolynomialRing(Ring):
     variable_system: (
             VariableSystemBase | VariableNameGenerator
     ) = None
-    variable: VariableContainer = dataclasses.field(init=False)
 
-    def __post_init__(self):
+    def model_post_init(self, __context):
         # number와 variable_system 값 구죽하기 시작
         number = self.number
         variable_system = None
@@ -69,9 +67,13 @@ class PolynomialRing(Ring):
         self.variable_system = variable_system
 
         # variable construction
+
+    @functools.cached_property
+    def variable(self) -> VariableContainer:
+        # run only once
         container = VariableContainer()
         self.variable_system.register_variable(container, self._variable_list())
-        self.variable = container
+        return container
 
     def __hash__(self) -> int:
         return id(self)
@@ -139,7 +141,7 @@ class PolynomialRingElement(RingElement):
     value: dict['Monomial', FieldElement]
     _degree: 'Monomial' = None
 
-    def __post_init__(self):
+    def model_post_init(self, __context):
         # drop zero element
         self.value = remove_zero_dict(self.value)
 
@@ -559,7 +561,7 @@ class Monomial(BaseModel):
     power: List[int]
     ring: 'PolynomialRing'
 
-    def __post_init__(self):
+    def model_post_init(self, __context):
         for i, p in enumerate(self.power):
             if p < 0:
                 raise ValueError(f"{i}-th index is negative.")

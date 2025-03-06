@@ -79,7 +79,7 @@ class GroupHomomorphism(BaseModel):
     mapping: Dict[GroupElement, GroupElement]
     raise_exception: bool = True
 
-    def __post_init__(self):
+    def model_post_init(self, __context):
         # domain의 generator가 모두 맞게 있는지 확인한다.
         domain_gen_set = set(self.domain.generator)
         mapping_set = set(self.mapping)

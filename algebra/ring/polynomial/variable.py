@@ -1,12 +1,15 @@
-from typing import Any
+from typing import Any, Self
+
+import pydantic
 
 from algebra.ring.polynomial.monomial_ordering import \
     GradedReverseLexicographicOrdering, MonomialOrderingBase
 from algebra.ring.polynomial.naming import VariableNameIndexGenerator, \
     VariableNameGenerator, VariableNameListGenerator
+from algebra.util.model import AlgebraModelBase
 
 
-class VariableSystemBase:
+class VariableSystemBase(AlgebraModelBase):
     def get_name(self, index: int) -> str:
         raise NotImplementedError(self)
 
@@ -21,18 +24,32 @@ class VariableSystemBase:
 
 
 class VariableSystem(VariableSystemBase):
-    def __init__(self,
-                 naming: None | int | str | VariableNameGenerator = None,
-                 ordering=None):
-        self.naming = self._wrap_naming(naming)
-        self.ordering = ordering or GradedReverseLexicographicOrdering()
+    naming: None | int | str | VariableNameGenerator = None
+    ordering: MonomialOrderingBase = pydantic.Field(
+        default_factory=GradedReverseLexicographicOrdering
+    )
 
-    def _wrap_naming(self, naming) -> VariableNameGenerator:
+    @pydantic.model_validator(mode='before')
+    @classmethod
+    def wrap_ordering(cls, data):
+        if data.get('ordering') is None:
+            data.pop('ordering', None)
+        return data
+
+    # @pydantic.model_validator(mode='after')
+    # def wrap_naming(self) -> Self:
+    #     return self.model_copy(update={
+    #         'naming': self._wrap_naming(self.naming)
+    #     })
+
+    @pydantic.field_validator('naming', mode='before')
+    @classmethod
+    def wrap_naming(cls, naming) -> VariableNameGenerator:
         if naming is None:
-            return VariableNameListGenerator('x')
+            return VariableNameListGenerator(name_list=['x'])
         elif isinstance(naming, int):
             if naming == 1:
-                return VariableNameListGenerator('x')
+                return VariableNameListGenerator(name_list=['x'])
             else:
                 return VariableNameIndexGenerator('x', naming)
         elif isinstance(naming, str):
@@ -40,7 +57,7 @@ class VariableSystem(VariableSystemBase):
         elif isinstance(naming, VariableNameGenerator):
             return naming
         else:
-            raise NotImplementedError(naming)
+            raise TypeError(naming)
 
     def get_name(self, index: int) -> str:
         return self.naming.get(index)

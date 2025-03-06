@@ -59,7 +59,7 @@ class IntegerRingElement(BuiltinWrapRingElement):
 class IntegerIdeal(Ideal):
     generator: list[IntegerRingElement]
 
-    def __post_init__(self):
+    def model_post_init(self, __context):
         if len(self.generator) == 0:
             raise ValueError("At least one element is needed")
 

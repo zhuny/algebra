@@ -1,7 +1,8 @@
+import pydantic
 from pydantic import BaseModel
 from enum import Enum
 from fractions import Fraction
-from typing import List, Set, Dict, Union
+from typing import List, Set, Dict, Union, Any
 
 from algebra.number.types import Number, NumberType
 from algebra.number.util import factorize
@@ -60,11 +61,11 @@ class Sign(Enum):
 
 
 class Radical(BaseModel):
-    body: List['RadicalElement'] = field(default_factory=list)
+    body: List['RadicalElement'] = pydantic.Field(default_factory=list)
 
     @classmethod
     def from_num(cls, number: Number):
-        return cls(body=[RadicalElement(number)])
+        return cls(body=[RadicalElement(multiply=number)])
 
     @classmethod
     def sqrt(cls, number):
@@ -232,9 +233,9 @@ class Radical(BaseModel):
 
 class RadicalElement(BaseModel):
     multiply: Number  # will be normalized to Fraction.
-    base_split: Set[int] = field(default_factory=set)
+    base_split: Set[int] = pydantic.Field(default_factory=set)
 
-    def __post_init__(self):
+    def model_post_init(self, __context: Any) -> None:
         if not isinstance(self.multiply, Fraction):
             self.multiply = Fraction(self.multiply)
 

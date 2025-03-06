@@ -1,19 +1,22 @@
 import collections
 import functools
 import math
-from pydantic import BaseModel
 from fractions import Fraction
-from typing import List
+from typing import Tuple
+
+import pydantic
+from pydantic import BaseModel
 
 from algebra.number.types import Number, NumberType
 from algebra.number.util import factorize, lcm
+from algebra.util.model import AlgebraModelBase
 
 
-class Radical(BaseModel):
+class Radical(AlgebraModelBase):
     inv: int  # should be positive integer
     body: 'SimpleRadical'
 
-    def __post_init__(self):
+    def model_post_init(self, __context):
         if self.inv == 0:
             raise ValueError("Zero division?")
         if self.inv < 0:
@@ -26,7 +29,7 @@ class Radical(BaseModel):
             Float is not recommended
         :return: Radical object
         """
-        return cls(inv=n.denominator, body=SimpleRadical(n.numerator))
+        return cls(inv=n.denominator, body=SimpleRadical(constant=n.numerator))
 
     def __eq__(self, other):
         return (self - other).is_zero()
@@ -91,9 +94,9 @@ class Radical(BaseModel):
             return f"({upper})/{self.inv}"
 
 
-class SimpleRadical(BaseModel):
+class SimpleRadical(AlgebraModelBase):
     constant: int
-    body: List['SimpleRadicalElement'] = field(default_factory=list)
+    body: Tuple['SimpleRadicalElement', ...] = pydantic.Field(default_factory=tuple)
 
     @classmethod
     def _wrap(cls, other):
@@ -102,11 +105,11 @@ class SimpleRadical(BaseModel):
         assert isinstance(other, SimpleRadical)
         return other
 
-    def __hash__(self):
-        return hash((
-            self.constant,
-            tuple(sorted(self.body, key=hash))
-        ))
+    # def __hash__(self):
+    #     return hash((
+    #         self.constant,
+    #         tuple(sorted(self.body, key=hash))
+    #     ))
 
     def __eq__(self, other):
         return (self - other).is_zero()
@@ -135,20 +138,20 @@ class SimpleRadical(BaseModel):
         ]
         return SimpleRadical(
             constant=self.constant * other.constant,
-            body=body
+            body=tuple(body)
         )
 
     def __truediv__(self, other):
         assert isinstance(other, int)
         return SimpleRadical(
             constant=self.constant // other,
-            body=[body / other for body in self.body]
+            body=tuple(body / other for body in self.body)
         )
 
     def __neg__(self):
         return SimpleRadical(
             constant=-self.constant,
-            body=[-x for x in self.body]
+            body=tuple(-x for x in self.body)
         )
 
     def __pow__(self, power, modulo=None):
@@ -190,11 +193,11 @@ class SimpleRadical(BaseModel):
                 SimpleRadicalElement(
                     multiplier=multiplier,
                     index=index,
-                    radicand=SimpleRadical(rad_const)
+                    radicand=SimpleRadical(constant=rad_const)
                 )
             )
 
-        return SimpleRadical(constant=const, body=body_rest)
+        return SimpleRadical(constant=const, body=tuple(body_rest))
 
     def _is_integer(self):
         return len(self.body) == 0
@@ -206,9 +209,9 @@ class SimpleRadical(BaseModel):
     def sqrt(self):
         return SimpleRadical(
             constant=0,
-            body=[
-                SimpleRadicalElement(multiplier=1, index=2, radicand=self)
-            ]
+            body=(
+                SimpleRadicalElement(multiplier=1, index=2, radicand=self),
+            )
         )
 
     def to_wolfram_alpha(self):
@@ -227,6 +230,9 @@ class SimpleRadicalElement(BaseModel):
     multiplier: int
     index: int
     radicand: SimpleRadical
+
+    def __hash__(self):
+        return hash((self.multiplier, self.index, self.radicand))
 
     def __neg__(self):
         return SimpleRadicalElement(

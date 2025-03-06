@@ -15,7 +15,7 @@ class TestShortcut(unittest.TestCase):
 
             sym_group = symmetric_group(i)
 
-            self.assertEqual(sym_group.order(), factorial)
+            self.assertEqual(sym_group.order(), factorial, f'S_{i}')
 
     def test_symmetric_error(self):
         with self.assertRaises(ValueError):

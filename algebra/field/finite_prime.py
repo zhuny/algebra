@@ -7,7 +7,7 @@ from algebra.number.util import is_prime
 class FinitePrimeField(Field):
     char: int
 
-    def __post_init__(self):
+    def model_post_init(self, __context):
         if not is_prime(self.char):
             raise ValueError("Prime should be given")
 
