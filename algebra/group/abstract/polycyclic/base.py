@@ -69,7 +69,7 @@ class PolyCyclicGroupRep(GroupRep):
             return gen_list
         return itertools.combinations(gen_list, count)
 
-    def _remove_index(self, index, sub_rel):
+    def remove_index(self, index, sub_rel):
         rel_map = {}
         for k in range(self.number):
             if k < index:
@@ -134,7 +134,7 @@ class PolyCyclicGroup(Group):
         new_rep = self.represent.model_copy(deep=True)
         for index, element in right_align.get_sorted_map():
             new_rel = self.represent.from_index(index) - element.element
-            new_rep._remove_index(index, new_rel.to_index_list())
+            new_rep.remove_index(index, new_rel.to_index_list())
 
         generator_list = []
         for g in self.generator:

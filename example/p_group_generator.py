@@ -23,8 +23,12 @@ def get_reference_group_list():
 
 
 def main():
-    # C2 X C2 X C2
-    g = PolyCyclicGroupRep(degree=2, number=3).as_group()
+    # Q8
+    g = PolyCyclicGroupRep(
+        degree=2, number=3,
+        power_relation={0: [2], 1: [2]},
+        commute_relation={(1, 0): [2]}
+    ).as_group()
 
     pcg = g.p_covering_group()
     pcg.represent.show('Normalized')
@@ -77,7 +81,7 @@ def main():
         print()
 
     print(result_relation.model_dump())
-    print(json.dumps(result_relation.model_dump(), indent=4))
+    # print(json.dumps(result_relation.model_dump(), indent=4))
 
 
 class ClassifyContainer:
