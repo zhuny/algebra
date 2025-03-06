@@ -1,9 +1,12 @@
+import functools
 import itertools
+import random
 from functools import singledispatchmethod
 from typing import Any
 
 import pydantic
-from pydantic import BaseModel
+from pydantic import BaseModel, model_serializer, PlainSerializer
+from typing_extensions import Annotated
 
 from algebra.group.abstract.automorphism import AutomorphismGroupRep, \
     AutomorphismMap
@@ -11,13 +14,28 @@ from algebra.group.abstract.base import GroupElement, GroupRep, Group
 from algebra.group.abstract.polycyclic.reduced import PolyCyclicRowReduced
 
 
+def dict_to_item_list(o):
+    result = []
+    for k, v in o.items():
+        if isinstance(k, tuple):
+            k = list(k)
+        result.append({'key': k, 'value': v})
+    return result
+
+
+DictWrapper = Annotated[
+    dict[int | tuple[int, int], list[int]],
+    PlainSerializer(dict_to_item_list, return_type=list)
+]
+
+
 class PolyCyclicGroupRep(GroupRep):
     degree: int
     number: int
-    power_relation: dict[int, list[int]] = pydantic.Field(
+    power_relation: DictWrapper = pydantic.Field(
         default_factory=dict
     )
-    commute_relation: dict[tuple[int, int], list[int]] = pydantic.Field(
+    commute_relation: DictWrapper = pydantic.Field(
         default_factory=dict
     )
 
@@ -51,7 +69,7 @@ class PolyCyclicGroupRep(GroupRep):
             return gen_list
         return itertools.combinations(gen_list, count)
 
-    def _remove_index(self, index, sub_rel):
+    def remove_index(self, index, sub_rel):
         rel_map = {}
         for k in range(self.number):
             if k < index:
@@ -116,7 +134,7 @@ class PolyCyclicGroup(Group):
         new_rep = self.represent.model_copy(deep=True)
         for index, element in right_align.get_sorted_map():
             new_rel = self.represent.from_index(index) - element.element
-            new_rep._remove_index(index, new_rel.to_index_list())
+            new_rep.remove_index(index, new_rel.to_index_list())
 
         generator_list = []
         for g in self.generator:
@@ -127,12 +145,17 @@ class PolyCyclicGroup(Group):
         return new_rep.group(generator_list)
 
     def model_post_init(self, __context):
-        reduced = PolyCyclicRowReduced()  # 두고두고 쓸 듯
-        for g in self.generator:
-            reduced.append_mult(g)
-        reduced.arrange_reverse()
+        self.generator = self.reduced_row.get_reduced()
 
-        self.generator = reduced.get_reduced()
+    @model_serializer
+    def ser_model(self) -> dict[str, Any]:
+        return {
+            'represent': self.represent.model_dump(),
+            'generator': [
+                g.model_dump(exclude={'group'})
+                for g in self.generator
+            ]
+        }
 
     def p_covering_group(self):
         from algebra.group.abstract.polycyclic.p_convering import \
@@ -183,6 +206,13 @@ class PolyCyclicGroup(Group):
         if len(exponent_series) > 1:
             assert False
 
+        # Fill fixed generators
+        free_generator = self.generator[:free_number]
+        for gen in auto_group_gen:
+            for g in free_generator:
+                if g not in gen:
+                    gen[g] = g
+
         return auto_group_rep.group([
             PolyCyclicAutomorphismMap(group_element_map=gen)
             for gen in auto_group_gen
@@ -192,19 +222,7 @@ class PolyCyclicGroup(Group):
         return pow(self.represent.degree, len(self.generator))
 
     def subgroup_list(self):
-        element_list = [self.represent.identity]
-        for generator in self.generator:
-            element_list.extend([
-                element + generator
-                for element in element_list
-            ])
-
-        subgroup_list = {self.represent.group([])}
-        for element in element_list:
-            for subgroup in list(subgroup_list):
-                subgroup_list.add(subgroup.append(element))
-
-        return subgroup_list
+        return SubgroupTraveler(self).travel()
 
     def _get_abelian_key_gen(self):
         group = self.represent.group()
@@ -215,21 +233,25 @@ class PolyCyclicGroup(Group):
             yield generator.order()
 
     def element_test(self, element: 'GroupElement'):
-        reduced = PolyCyclicRowReduced()
-        for g in self.generator:
-            reduced.append_mult(g)
-        reduced.arrange_reverse()
-
-        row = reduced.reduce(element)
+        row = self.reduced_row.reduce(element)
         return row.is_identity()
 
     def element_list(self):
         return GroupElementTraveler(self).travel()
 
+    @functools.cached_property
+    def reduced_row(self) -> PolyCyclicRowReduced:
+        reduced = PolyCyclicRowReduced()
+        for g in self.generator:
+            reduced.append_mult(g)
+        reduced.arrange_reverse()
+        return reduced
+
 
 class Traveler:
     def travel(self):
         queue = list(self.source_list())
+        random.shuffle(queue)
         done = set()
 
         while queue:
@@ -240,6 +262,7 @@ class Traveler:
             done.add(element)
 
             queue.extend(self.adj_list(element))
+            random.shuffle(queue)
 
     def source_list(self):
         raise NotImplementedError(self)
@@ -261,6 +284,20 @@ class GroupElementTraveler(Traveler):
             yield element + g
 
 
+class SubgroupTraveler(Traveler):
+    def __init__(self, group: PolyCyclicGroup):
+        super().__init__()
+        self.group = group
+        self.element_list = list(GroupElementTraveler(self.group).travel())
+
+    def source_list(self):
+        yield self.group.represent.group([])
+
+    def adj_list(self, group):
+        for element in self.element_list:
+            yield group.append(element)
+
+
 class PolyCyclicAutomorphismMap(AutomorphismMap):
     @singledispatchmethod
     def value(self, element: Any):
@@ -278,13 +315,16 @@ class PolyCyclicAutomorphismMap(AutomorphismMap):
         ])
 
     def _value(self, element: GroupElement):
+        result = self.row_reduced.reduce(element, [element.group.identity])
+        for row in result.rows:
+            return -row
+
+    @functools.cached_property
+    def row_reduced(self) -> PolyCyclicRowReduced:
         reduced = PolyCyclicRowReduced()
         for k, v in self.group_element_map.items():
             reduced.append_mult(k, [v])
-
-        result = reduced.reduce(element, [element.group.identity])
-        for row in result.rows:
-            return -row
+        return reduced
 
 
 class PolyCyclicGroupElement(GroupElement):

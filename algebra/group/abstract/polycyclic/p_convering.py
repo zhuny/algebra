@@ -38,12 +38,12 @@ class PCoveringGroupAlgorithm:
         for left, right in self.optimize_check_pair(rep):
             if left != right:
                 diff = left - right
-                if diff.is_zero():
+                if diff.is_identity():
                     diff = - left + right
 
                 diff_index = diff.max_index()
-                left = diff - self.generator(diff_index)
-                self._remove_gen(diff_index, left)
+                left = diff - rep.from_index(diff_index)
+                rep.remove_index(diff_index, left.to_index_list())
                 return True
 
         return False
