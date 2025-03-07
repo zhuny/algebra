@@ -1,76 +1,51 @@
-import pydantic
+import itertools
+from typing import Dict, List, Type
+
 from pydantic import BaseModel
-from typing import Dict, List
 
 from algebra.group.abstract.base import Group, GroupElement, GroupRep
-from algebra.group.abstract.permutation import PermutationGroupRep
 
 
-class GroupDirectProductRep(PermutationGroupRep):
-    subgroup_list: List[GroupRep]
-    degree: int = 0
-    object_map_right: dict[
-        GroupElement, GroupElement
-    ] = pydantic.Field(
-        default_factory=dict
-    )
-    object_map_left: dict[GroupElement, GroupElement] = pydantic.Field(
-        default_factory=dict
-    )
+class DirectProductGroupRep(GroupRep):
+    rep_list: tuple[GroupRep, ...]
 
-    def __hash__(self):
-        return hash(f"GDPR{self.degree}")
+    @property
+    def group_cls(self) -> Type:
+        return DirectProductGroup
 
-    def model_post_init(self, context):
-        object_list = list(self._sub_object_list())
-        self.degree = len(object_list)
+    @property
+    def cls_element(self) -> Type:
+        return DirectProductGroupElement
 
-        this_object_list = list(self.object_list())
+    def element(self, element):
+        if not isinstance(element, (tuple, list)):
+            raise ValueError("Tuple or list expected")
 
-        self.object_map_right = dict(zip(object_list, this_object_list))
-        self.object_map_left = dict(zip(this_object_list, object_list))
+        if len(element) != len(self.rep_list):
+            raise ValueError("Length not matched")
 
-    def right_element_map(self, item: List[GroupElement]):
-        if len(item) != len(self.subgroup_list):
-            raise ValueError('Dimension not matched')
+        return self.cls_element(
+            represent=self,
+            value_list=tuple(
+                rep.element(e)
+                for e, rep in zip(element, self.rep_list)
+            )
+        )
 
-        for i, g in zip(item, self.subgroup_list):
-            if i.group != g:
-                raise ValueError('Group not matched')
+    def as_group(self):
+        group_list = [rep.as_group() for rep in self.rep_list]
+        gen_list = [g.generator for g in group_list]
+        return self.group(elements=list(itertools.product(*gen_list)))
 
-        mapping = {}
-        map_right = self.object_map_right
-        for i, g in enumerate(item):
-            for o1 in g.group.object_list():
-                o2 = g.act(o1)
-                if o1 != o2:
-                    mapping[map_right[i, o1]] = map_right[i, o2]
 
-        return self.element(mapping)
+class DirectProductGroupElement(GroupElement):
+    represent: DirectProductGroupRep
+    value_list: tuple[GroupElement, ...]
 
-    def right_object_map(self, obj):
-        return self.object_map_right[obj]
 
-    def left_element_mep(self, element: GroupElement):
-        if element.group != self:
-            raise ValueError('Group not Matched')
-
-        item = []
-        for subgroup in self.subgroup_list:
-            gen = {}
-            for o1 in subgroup.object_list():
-                o2 = self.object_map_right[o1]
-                o3 = element.act(o2)
-                if o2 != o3:
-                    gen[o1] = self.object_map_left[o3]
-            item.append(subgroup.element(gen))
-
-        return item
-
-    def _sub_object_list(self):
-        for i, subgroup in enumerate(self.subgroup_list):
-            for o in subgroup.object_list():
-                yield i, o
+class DirectProductGroup(Group):
+    represent: DirectProductGroupRep
+    generator: tuple[DirectProductGroupElement, ...]
 
 
 class GroupHomomorphism(BaseModel):

@@ -28,7 +28,10 @@ class PermutationGroupRep(GroupRep):
 
     @property
     def identity(self):
-        return self.cls_element(group=self)
+        return self.cls_element(represent=self)
+
+    def order(self):
+        return self.stabilizer_chain().order
 
     @property
     def cls_element(self) -> Type:
@@ -43,6 +46,9 @@ class PermutationGroupRep(GroupRep):
             raise ValueError('Permutation Not Correct')
 
     def element(self, element):
+        if isinstance(element, self.cls_element):
+            return element
+
         i = self.identity
 
         for seq in element:
@@ -71,7 +77,7 @@ class PermutationGroupRep(GroupRep):
                 for k, v in mapping.items()
             }
 
-            i += self.cls_element(group=self, perm_map=new_mapping)
+            i += self.cls_element(represent=self, perm_map=new_mapping)
 
         return i
 
@@ -87,7 +93,7 @@ class PermutationGroupRep(GroupRep):
 
 
 class PermutationGroupElement(GroupElement):
-    group: PermutationGroupRep
+    represent: PermutationGroupRep
     perm_map: Dict[
         PermutationObject,
         PermutationObject
@@ -100,11 +106,11 @@ class PermutationGroupElement(GroupElement):
             e2 = other.act(self.act(e1))
             if e1 != e2:
                 d[e1] = e2
-        return self.cls_element(group=self.group, perm_map=d)
+        return self.cls_element(represent=self.represent, perm_map=d)
 
     def __neg__(self):
         return self.cls_element(
-            group=self.group,
+            represent=self.represent,
             perm_map={v: k for k, v in self.perm_map.items()}
         )
 

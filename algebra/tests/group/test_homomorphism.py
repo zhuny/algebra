@@ -1,8 +1,30 @@
 import unittest
 
+from algebra.group.abstract.permutation import PermutationGroupRep
 from algebra.group.abstract.shortcut import dihedral_group, symmetric_group, \
     cyclic_group, alternative_group
-from algebra.group.homomorphism import GroupHomomorphism
+from algebra.group.homomorphism import GroupHomomorphism, DirectProductGroupRep
+
+
+class TestGroupProductDirect(unittest.TestCase):
+    def test_group_order(self):
+        gr1 = PermutationGroupRep(degree=4)
+        gr2 = PermutationGroupRep(degree=5)
+
+        prod = DirectProductGroupRep(rep_list=(gr1, gr2))
+
+        print(prod.as_group())
+
+        self.assertEqual(
+            prod.as_group().order(),
+            gr1.as_group().order() * gr2.as_group().order()
+        )
+
+        e1 = prod.element([
+            [[0, 1], [2, 3]],  # gr1 기준
+            [[0, 1, 2, 3, 4]]  # gr2 기준
+        ])
+        self.assertEqual(e1.order(), 10)
 
 
 @unittest.skipIf(True, "Homomorphism이 permutation 중심")

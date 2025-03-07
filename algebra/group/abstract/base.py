@@ -40,7 +40,7 @@ class GroupRep(BaseModel):
             if not isinstance(element, GroupElement):
                 element = self.element(element)
 
-            if element.group != self:
+            if element.represent != self:
                 raise ValueError("Element should be belong to this group")
 
             element_list.append(element)
@@ -108,11 +108,11 @@ class StabilizerOrderTraveler:
             return g.act(o) not in orbit_set
 
 
+# generic을 받아서 GroupElement를 받을 수 있도록 하자
 class Group(BaseModel):
     represent: GroupRep
     generator: List['GroupElement']
     name: Optional[str] = ''
-    _stabilizer_chain: Optional['StabilizerChain'] = None
 
     def __str__(self):
         if self.name:
@@ -140,11 +140,14 @@ class Group(BaseModel):
 
         return int_sequence_hash('Group', key_list)
 
+    def group_copy(self):
+        return self.represent.group(elements=self.generator)
+
     def append(self, element):
         return self.represent.group(self.generator + [element])
 
     def order(self):
-        return self.stabilizer_chain().order
+        raise NotImplementedError(self)
 
     def order_statistics(self):
         order_count = collections.defaultdict(int)
@@ -726,13 +729,13 @@ class StabilizerChain(BaseModel):
                 self.generator_factor[alpha.element] = alpha
 
     def construct(self):
-        new_group = self.group.copy()
+        new_group = self.group.group_copy()
         new_group._stabilizer_chain = self
         return new_group
 
 
 class GroupElement(BaseModel):
-    group: GroupRep
+    represent: GroupRep
 
     def __add__(self, other: 'GroupElement') -> 'GroupElement':
         raise NotImplementedError(self)
