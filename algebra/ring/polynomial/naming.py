@@ -15,7 +15,7 @@ class VariableNameGenerator(AlgebraModelBase):
 
 
 class VariableNameListGenerator(VariableNameGenerator):
-    name_list: list[str]
+    name_list: list[str] | str
 
     @pydantic.field_validator('name_list', mode='before')
     @classmethod
@@ -37,9 +37,8 @@ class VariableNameListGenerator(VariableNameGenerator):
 
 
 class VariableNameIndexGenerator(VariableNameGenerator):
-    def __init__(self, name, size=3):
-        self.name = name
-        self.size = size
+    name: str
+    size: int = 3
 
     def get(self, index: int) -> str:
         return f'{self.name}{index}'

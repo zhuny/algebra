@@ -35,7 +35,7 @@ class TestPrimaryNumber(unittest.TestCase):
         self.assertTrue(n5 / n2, Fraction(5, 2))
 
     def test_field(self):
-        fpf = FinitePrimeField(101)
+        fpf = FinitePrimeField(char=101)
         e1 = fpf.element(10)
         e2 = fpf.element(83)
         e3 = e1 / e2

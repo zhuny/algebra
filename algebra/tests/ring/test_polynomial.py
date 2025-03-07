@@ -59,7 +59,7 @@ class TestPolynomial(unittest.TestCase):
         self.assertTrue(f1 == f2)
 
     def test_calculate_with_finite_2_1(self):
-        pr = PolynomialRing(field=FinitePrimeField(101), number=2)
+        pr = PolynomialRing(field=FinitePrimeField(char=101), number=2)
         x, y = pr.variables()
 
         f1 = x * x - y
@@ -75,7 +75,7 @@ class TestPolynomial(unittest.TestCase):
         self.assertEqual(mp, expected)
 
     def test_calculate_with_finite_2_4(self):
-        pr = PolynomialRing(field=FinitePrimeField(101), number=2)
+        pr = PolynomialRing(field=FinitePrimeField(char=101), number=2)
         x, y = pr.variables()
 
         f1 = y * y * y - x * y - 2 * y * y + y
@@ -112,7 +112,7 @@ class TestPolynomial(unittest.TestCase):
         self.assertEqual(mp, expected)
 
     def test_minimal_polynomial_2_17(self):
-        pr = PolynomialRing(field=FinitePrimeField(101), number=6)
+        pr = PolynomialRing(field=FinitePrimeField(char=101), number=6)
         variable_list = list(pr.variables())
         variable_list[4] -= 7
         variable_list[5] -= 1
@@ -125,7 +125,7 @@ class TestPolynomial(unittest.TestCase):
         quotient.element(f).minimal_polynomial()
 
     def test_minimal_polynomial_2_2(self):
-        pr = PolynomialRing(field=FinitePrimeField(23), number=3)
+        pr = PolynomialRing(field=FinitePrimeField(char=23), number=3)
         x, y, z = pr.variables()
 
         g1 = self._poly(x,

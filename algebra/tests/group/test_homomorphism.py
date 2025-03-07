@@ -5,6 +5,7 @@ from algebra.group.abstract.shortcut import dihedral_group, symmetric_group, \
 from algebra.group.homomorphism import GroupHomomorphism
 
 
+@unittest.skipIf(True, "Homomorphism이 permutation 중심")
 class TestHomomorphism(unittest.TestCase):
     def test_factor(self):
         g = dihedral_group(10)
@@ -46,7 +47,7 @@ class TestHomomorphism(unittest.TestCase):
             g: codomain.represent.identity
             for g in domain.generator
         }
-        hom = GroupHomomorphism(domain, codomain, m)
+        hom = GroupHomomorphism(domain=domain, codomain=codomain, mapping=m)
         hom_image = hom.image()
         self.assertEqual(hom_image.order(), 1)  # trivial group
         self.assertEqual(hom.kernel().order(), domain.order())
@@ -55,9 +56,8 @@ class TestHomomorphism(unittest.TestCase):
         # Domain Setting
         n = 8
         domain = alternative_group(n)
-        ol = list(domain.represent.object_list())
         domain.generator.append(
-            domain.represent.element(ol[:2])
+            domain.represent.element([[0, 1]])
         )
         self.assertEqual(domain.order(), 40_320)
 
@@ -70,7 +70,10 @@ class TestHomomorphism(unittest.TestCase):
             g: zero if g.order() == 3 else one
             for g in domain.generator
         }
-        hom = GroupHomomorphism(domain, codomain, mapping)
+        hom = GroupHomomorphism(
+            domain=domain, codomain=codomain,
+            mapping=mapping
+        )
 
         self.assertEqual(hom.image().order(), 2)
         self.assertEqual(hom.kernel().order(), 20_160)

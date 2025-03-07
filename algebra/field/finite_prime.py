@@ -13,10 +13,12 @@ class FinitePrimeField(Field):
 
     def element(self, number) -> 'FieldElement':
         if isinstance(number, int):
-            return FinitePrimeFieldElement(self, number % self.char)
+            return FinitePrimeFieldElement(field=self, value=number % self.char)
         elif isinstance(number, FinitePrimeFieldElement):
             if number.field == self:
                 return number
+            else:
+                raise ValueError("field not matched")
 
         raise ValueError("Invalid element")
 

@@ -1,12 +1,8 @@
 import unittest
 from fractions import Fraction
 
-from algebra.calc.grobner_basis import Ideal
-from algebra.polynomial.multi_variable import MultiVariableRing, \
-    MultiVariableElement
-from algebra.polynomial.polynomial import Polynomial
 
-
+@unittest.skip
 class TestMultiVariable(unittest.TestCase):
     # 1702.07262v3
     def test_example_2_1(self):

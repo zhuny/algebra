@@ -119,17 +119,19 @@ class GaloisGroupConstructor:
 
         degree = self.polynomial.degree()
 
-        v_system = CombineVariableSystem([
-            VariableNameIndexGenerator('x', degree),
-            VariableNameListGenerator('y')
+        v_system = CombineVariableSystem(system_list=[
+            VariableNameIndexGenerator(name='x', size=degree),
+            VariableNameListGenerator(name_list='y')
         ])
 
         pr = PolynomialRing(
-            self.polynomial.ring.field,
+            field=self.polynomial.ring.field,
             variable_system=v_system
         )
 
         # assign
         self.ring = pr
         self.ideal = self._build_ideal(pr)
-        self.mono_group = MonomialActionGroupRep(pr.variable.x).as_group()
+        self.mono_group = MonomialActionGroupRep(
+            custom_object_list=pr.variable.x
+        ).as_group()

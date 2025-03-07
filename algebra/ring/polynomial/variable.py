@@ -51,9 +51,9 @@ class VariableSystem(VariableSystemBase):
             if naming == 1:
                 return VariableNameListGenerator(name_list=['x'])
             else:
-                return VariableNameIndexGenerator('x', naming)
+                return VariableNameIndexGenerator(name='x', size=naming)
         elif isinstance(naming, str):
-            return VariableNameListGenerator(naming)
+            return VariableNameListGenerator(name_list=naming)
         elif isinstance(naming, VariableNameGenerator):
             return naming
         else:
@@ -73,14 +73,14 @@ class VariableSystem(VariableSystemBase):
 
 
 class CombineVariableSystem(VariableSystemBase):
-    def __init__(self,
-                 system_list: list[VariableSystemBase |
-                                   VariableNameGenerator |
-                                   MonomialOrderingBase]):
-        self.system_list = [
-            self._wrap_system(system)
-            for system in system_list
-        ]
+    system_list: list[
+        VariableSystemBase | VariableNameGenerator | MonomialOrderingBase
+    ]
+
+    @pydantic.field_validator('system_list', mode='before')
+    @classmethod
+    def wrap_system_list(cls, system_list):
+        return [cls._wrap_system(system) for system in system_list]
 
     @staticmethod
     def _wrap_system(system):

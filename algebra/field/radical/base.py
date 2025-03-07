@@ -2,26 +2,23 @@ import collections
 import functools
 import itertools
 import math
-import time
-from pydantic import BaseModel
 from fractions import Fraction
-from typing import Any, Union
+
+from pydantic import BaseModel
 
 from algebra.field.rational import RationalField, RationalFieldElement
-from algebra.number.base import RingBase, CalculationStep
-from algebra.number.types import Number, NumberType
+from algebra.number.base import CalculationStep
+from algebra.number.types import Number
 from algebra.number.util import factorize
-from algebra.polynomial.polynomial import Polynomial
-from algebra.ring.polynomial.base import PolynomialRingElement, PolynomialRing, \
-    PolynomialIdeal
+from algebra.ring.polynomial.base import PolynomialRingElement, PolynomialRing
 from algebra.ring.polynomial.monomial_ordering import \
     GradedReverseLexicographicOrdering
 from algebra.util.decorator import iter_to_str, Timer
 
 
 class Interval(BaseModel):
-    start: NumberType
-    end: NumberType
+    start: Number
+    end: Number
 
     def model_post_init(self, __context):
         if not isinstance(self.start, Fraction):

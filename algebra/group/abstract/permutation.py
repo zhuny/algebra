@@ -48,7 +48,12 @@ class PermutationGroupRep(GroupRep):
         for seq in element:
             mapping = {}
 
-            if isinstance(seq, (tuple, list)):
+            if isinstance(seq, (tuple, list, range)):
+                if isinstance(seq, range):
+                    seq = list(seq)
+                for e in seq:
+                    if not isinstance(e, int):
+                        raise ValueError("Element should be int")
                 if len(set(seq)) != len(seq):
                     raise ValueError("Sequence has a unique value")
                 mapping.update(zip(seq, seq[1:] + seq[:1]))
@@ -71,7 +76,7 @@ class PermutationGroupRep(GroupRep):
         return i
 
     def as_group(self):
-        return self.group_([[[0, 1]], [list(range(self.degree))]])
+        return self.group([[[0, 1]], [list(range(self.degree))]])
 
     def _wrap_object(self, o):
         if isinstance(o, int):
@@ -102,6 +107,15 @@ class PermutationGroupElement(GroupElement):
             group=self.group,
             perm_map={v: k for k, v in self.perm_map.items()}
         )
+
+    def __mul__(self, other):
+        if not isinstance(other, int):
+            return NotImplemented()
+
+        current = self
+        for i in range(1, other):
+            current += self
+        return current
 
     def to_seq(self):
         done = set()

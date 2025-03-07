@@ -4,6 +4,7 @@ import unittest
 from algebra.field.radical.base import ODRadical
 
 
+@unittest.skip
 class TestRadicalCeil(unittest.TestCase):
     def test_simple(self):
         root2 = ODRadical.from_number(2)

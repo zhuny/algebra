@@ -258,7 +258,7 @@ class GroupNode(Node):
     def from_json(cls, value, context):
         from algebra.group.abstract.base import Group
         group: Group = context['group']
-        return group.represent.group_(value)
+        return group.represent.group(value)
 
 
 class GroupSetNode(Node):

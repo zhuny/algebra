@@ -27,7 +27,7 @@ class PolynomialRing(Ring):
     field: Field
     number: int = 0
     variable_system: (
-            VariableSystemBase | VariableNameGenerator
+            VariableSystemBase | VariableNameGenerator | MonomialOrderingBase
     ) = None
 
     def model_post_init(self, __context):

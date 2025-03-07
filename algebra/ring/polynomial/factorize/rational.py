@@ -48,7 +48,7 @@ class ConvertToFiniteFactorization(Pipeline):
         int_polynomial = data.polynomial.to_integer()
         prime = self._get_valid_prime(int_polynomial)
 
-        ring = PolynomialRing(FinitePrimeField(prime), number=1)
+        ring = PolynomialRing(field=FinitePrimeField(char=prime), number=1)
 
         return int_polynomial.convert(ring)
 

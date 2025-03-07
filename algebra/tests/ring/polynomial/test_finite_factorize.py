@@ -6,7 +6,7 @@ from algebra.ring.polynomial.base import PolynomialRing
 
 class TestFiniteFactorize(unittest.TestCase):
     def test_power(self):
-        pr = PolynomialRing(field=FinitePrimeField(83))
+        pr = PolynomialRing(field=FinitePrimeField(char=83), number=1)
 
         n = 12
         e1 = pr.element([1, 1])
@@ -19,7 +19,7 @@ class TestFiniteFactorize(unittest.TestCase):
         self.assertTrue(e2 == t)
 
     def test_simple_factorize(self):
-        pr = PolynomialRing(field=FinitePrimeField(83))
+        pr = PolynomialRing(field=FinitePrimeField(char=83), number=1)
 
         e1 = pr.element([1, 1])
         e2 = pr.element([3, 1])
@@ -34,7 +34,7 @@ class TestFiniteFactorize(unittest.TestCase):
                 self.assertEqual(p, 19)
 
     def test_char_validation(self):
-        pr = PolynomialRing(field=FinitePrimeField(83))
+        pr = PolynomialRing(field=FinitePrimeField(char=83), number=1)
 
         e1 = pr.element([3, 2, 1]) ** 83
 

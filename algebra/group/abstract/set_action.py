@@ -7,10 +7,10 @@ from algebra.group.abstract.permutation import PermutationGroupRep, \
 
 class MonomialActionGroupRep(PermutationGroupRep):
     custom_object_list: list[Any]
+    degree: int = 0
 
-    def model_post_init(self, __context):
+    def model_post_init(self, __context: Any) -> None:
         self.degree = len(self.custom_object_list)
-        self.object_to_index = dict(enumerate(self.custom_object_list))
 
     def __hash__(self):
         # super class가 hash가 정의 되어 있음에도 실행을 안한다.

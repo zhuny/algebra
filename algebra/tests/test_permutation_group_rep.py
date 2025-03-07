@@ -6,12 +6,11 @@ from algebra.group.abstract.permutation import PermutationGroupRep
 class TestPermutationGroupRep(unittest.TestCase):
     def test_add(self):
         perm = PermutationGroupRep(degree=4)
-        a0, a1, a2, a3 = perm.object_list()
 
-        e1 = perm.element(a0, a1)  # (0, 1)
+        e1 = perm.element([[0, 1]])  # (0, 1)
         self.assertEqual(e1 + e1, perm.identity)
 
-        e2 = perm.element(a1, a2, a3)  # (1, 2, 3)
+        e2 = perm.element([[0, 1, 2]])  # (1, 2, 3)
         self.assertNotEqual(e2 + e2, perm.identity)
         self.assertEqual(e2 + e2 + e2, perm.identity)
         self.assertEqual(e2 + (-e2), perm.identity)
@@ -68,47 +67,44 @@ class TestPermutationGroupRep(unittest.TestCase):
     def test_mathieu_group(self):
         with self.subTest("M11"):
             perm = PermutationGroupRep(degree=11)
-            ol = list(perm.object_list())
-
-            e1 = perm.element(ol)  # (1,2,3,4,5,6,7,8,9,10,11)
-            e2 = perm.element(  # (3,7,11,8)(4,10,5,6)
-                (ol[2], ol[6], ol[10], ol[7]),
-                (ol[3], ol[9], ol[4], ol[5])
-            )
-            m11 = perm.group(e1, e2)
+            m11 = perm.group([
+                [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]],
+                [
+                    [2, 6, 10, 7],
+                    [3, 9, 4, 5]
+                ]
+            ])
             self.assertEqual(m11.order(), 7920)
 
         with self.subTest("M12"):
             perm = PermutationGroupRep(degree=12)
-            ol = list(perm.object_list())
-
-            e1 = perm.element(ol[:-1])  # (0123456789a)
-            e2 = perm.element(
-                (ol[0], ol[11]), (ol[1], ol[10]), (ol[2], ol[5]),
-                (ol[3], ol[7]), (ol[4], ol[8]), (ol[6], ol[9])
-            )  # (0b)(1a)(25)(37)(48)(69)
-            e3 = perm.element(
-                (ol[2], ol[6], ol[10], ol[7]),
-                (ol[3], ol[9], ol[4], ol[5])
-            )  # (26a7)(3945)
-            m12 = perm.group(e1, e2, e3)
+            m12 = perm.group([
+                [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]],
+                [
+                    [0, 11], [1, 10], [2, 5],
+                    [3, 7], [4, 8], [6, 9]
+                ],
+                [
+                    [2, 6, 10, 7],
+                    [3, 9, 4, 5]
+                ]
+            ])
             self.assertEqual(m12.order(), 95_040)
 
         with self.subTest("M24"):
             perm = PermutationGroupRep(degree=24)
-            ol = list(perm.object_list())
-
-            e1 = self.from_num(
-                perm, ol,
-                ((1, 16, 8, 23, 13, 14, 5),
-                 (2, 7, 11, 19, 20, 24, 12), (3, 4, 17, 9, 22, 21, 15))
-            )
-            e2 = self.from_num(
-                perm, ol,
-                ((1, 24), (2, 21), (3, 10), (4, 22), (5, 9), (6, 23), (7, 8),
-                 (11, 18), (12, 20), (13, 14), (15, 19), (16, 17))
-            )
-            m24 = perm.group(e1, e2)
+            m24 = perm.group([
+                [
+                    [1, 16, 8, 23, 13, 14, 5],
+                    [2, 7, 11, 19, 20, 24, 12],
+                    [3, 4, 17, 9, 22, 21, 15]
+                ],
+                [
+                    [1, 24], [2, 21], [3, 10], [4, 22],
+                    [5, 9], [6, 23], [7, 8], [11, 18],
+                    [12, 20], [13, 14], [15, 19], [16, 17]
+                ]
+            ])
             self.assertEqual(m24.order(), 244_823_040)
 
     def test_rubik_cube(self):
@@ -171,22 +167,20 @@ class TestPermutationGroupRep(unittest.TestCase):
         perm = PermutationGroupRep(degree=10)
         ol = list(perm.object_list())
 
-        e1 = perm.element(ol)
-        e2 = perm.element(ol[:2])
-        sym_group = perm.group(e1, e2)
+        sym_group = perm.as_group()
 
         factorial_10 = 10 * 9 * 8 * 7 * 6 * 5 * 4 * 3 * 2 * 1
 
         self.assertEqual(sym_group.order(), factorial_10)
 
         # This normal closure should be A_10
-        e3 = perm.element(ol[:3])
+        e3 = perm.element([[0, 1, 2]])
         normal_closure_e3 = sym_group.normal_closure([e3])
         self.assertTrue(sym_group.is_normal(normal_closure_e3))
         self.assertEqual(normal_closure_e3.order(), factorial_10 // 2)
 
         # This normal closure should be itself
-        e4 = perm.element(ol[:4])
+        e4 = perm.element([[0, 1, 2, 3]])
         normal_closure_e4 = sym_group.normal_closure([e4])
         self.assertTrue(sym_group.is_normal(normal_closure_e4))
         self.assertEqual(normal_closure_e4.order(), factorial_10)
@@ -214,13 +208,13 @@ class TestPermutationGroupRep(unittest.TestCase):
         self.assertEqual(normal_closure_e3.order(), 4)
 
         # This normal closure should be A_4
-        e4 = perm.element([[[0, 1, 2]]])
+        e4 = perm.element([[0, 1, 2]])
         normal_closure_e4 = sym_group.normal_closure([e4])
         self.assertTrue(sym_group.is_normal(normal_closure_e4))
         self.assertEqual(normal_closure_e4.order(), 12)
 
         # This normal closure should be itself
-        e5 = perm.element(ol[:])
+        e5 = perm.element([[0, 1, 2, 3]])
         normal_closure_e5 = sym_group.normal_closure([e5])
         self.assertTrue(sym_group.is_normal(normal_closure_e5))
         self.assertEqual(normal_closure_e5.order(), 24)
@@ -229,10 +223,10 @@ class TestPermutationGroupRep(unittest.TestCase):
         perm = PermutationGroupRep(degree=8)
         ol = list(perm.object_list())
 
-        group = perm.group(
-            perm.element(ol[:4]), perm.element(ol[:2]),
-            perm.element(ol[4:]), perm.element(ol[4:6])
-        )
+        group = perm.group([
+            [[0, 1, 2, 3]], [[0, 1]],
+            [[4, 5, 6, 7]], [[4, 5]]
+        ])
 
         self.assertEqual(group.order(), 24 * 24)
 
@@ -241,11 +235,3 @@ class TestPermutationGroupRep(unittest.TestCase):
             group.normal_closure([
                 perm.element(ol[3:5])
             ])
-
-    def from_num(self, perm, ol, nums):
-        return perm.element(
-            *[
-                [ol[i - 1] for i in num]
-                for num in nums
-            ]
-        )

@@ -107,7 +107,7 @@ class BuchbergerAlgorithm:
         return [element for _, element in self.output]
 
     def minimal_polynomial(self, element: PolynomialRingElement):
-        result_ring = PolynomialRing(element.ring.field, number=1)
+        result_ring = PolynomialRing(field=element.ring.field, number=1)
 
         reduce_algorithm = RowReducedAlgorithm()
         reduce_algorithm.add_row(

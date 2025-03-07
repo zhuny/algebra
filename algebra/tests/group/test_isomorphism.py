@@ -32,13 +32,13 @@ class TestHomomorphism(unittest.TestCase):
             offset += num
             generator.append(element_)
 
-        return g.group_(generator, name=str(tuple(ab)).replace(' ', ''))
+        return g.group(generator, name=str(tuple(ab)).replace(' ', ''))
 
     def test_abelian_pair_2(self):
         g1 = self._construct_abelian([2, 4])
 
         pgr = PermutationGroupRep(degree=10)
-        g2 = pgr.group_([
+        g2 = pgr.group([
             [[0, 1]],
             [[2, 3, 4, 5], [6, 7, 8, 9]]
         ])
@@ -48,11 +48,11 @@ class TestHomomorphism(unittest.TestCase):
     def test_abelian_pair_3(self):
         rep = PermutationGroupRep(degree=8)
 
-        g1 = rep.group_([
+        g1 = rep.group([
             [[0, 1], [2, 3]],
             [[0, 2], [1, 3]]
         ])
-        g2 = rep.group_([
+        g2 = rep.group([
             [[4, 5, 6, 7]]
         ])
 
