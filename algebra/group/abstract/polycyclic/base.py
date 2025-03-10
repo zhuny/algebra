@@ -265,10 +265,10 @@ class Traveler:
             random.shuffle(queue)
 
     def source_list(self):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def adj_list(self, element):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
 
 class GroupElementTraveler(Traveler):

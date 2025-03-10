@@ -1,36 +1,29 @@
 import collections
 import itertools
-import random
-from queue import Queue
-from typing import List, TypeVar, Set, Dict, Optional, Iterator, Union, \
-    Type
+from typing import List, Set, Optional, Iterator, Type
 
-import pydantic
 from pydantic import BaseModel
 
 from algebra.number.util import factorize
 from algebra.util.my_hash import int_sequence_hash
 
-T = TypeVar("T")
-
 
 class GroupRep(BaseModel):
     @property
     def identity(self):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     @property
     def group_cls(self) -> Type:
-        return Group
+        raise NotImplementedError(type(self))
 
-    def object_list(self):
-        raise NotImplementedError(self)
+    @property
+    def element_cls(self) -> Type:
+        raise NotImplementedError(type(self))
 
-    def check_object(self, o):
-        raise NotImplementedError(self)
-
-    def element(self, *args):
-        raise NotImplementedError(self)
+    def element(self, *args, **kwargs):
+        # you may need to override this function
+        return self.element_cls(*args, **kwargs)
 
     def group(self, elements=None, *, name=''):
         elements = elements or []
@@ -52,60 +45,7 @@ class GroupRep(BaseModel):
         )
 
     def as_group(self):
-        raise NotImplementedError(self)
-
-
-class StabilizerTraveler:
-    def __init__(self, group):
-        self.group: Group = group
-
-    def visit(self):
-        stack = [(
-            self.group.stabilizer_chain(),
-            self.group.represent.identity
-        )]
-
-        while stack:
-            chain, element = stack.pop()
-            chain: StabilizerChain
-            element: GroupElement
-            if chain.is_trivial():
-                yield element
-            else:
-                for t in chain.transversal.values():
-                    stack.append((
-                        chain.stabilizer,
-                        t.element + element
-                    ))
-
-
-class StabilizerOrderTraveler:
-    def __init__(self, group):
-        self.group: Group = group
-
-    def visit(self):
-        current_group = self.group.represent.group()
-
-        for stabilizer in self.group.stabilizer_chain().travel():
-            order = len(stabilizer.transversal)
-            if order == 0:
-                break
-
-            orbit_set = {stabilizer.point}
-            for g in stabilizer.transversal.values():
-                if self._is_run_needed(orbit_set, g.element):
-                    for o in list(orbit_set):
-                        orbit_set.update(g.element.orbit(o))
-
-                    before_order = current_group.order()
-                    current_group = current_group.append(g.element)
-                    after_order = current_group.order()
-
-                    yield after_order // before_order
-
-    def _is_run_needed(self, orbit_set, g):
-        for o in orbit_set:
-            return g.act(o) not in orbit_set
+        raise NotImplementedError(type(self))
 
 
 # generic을 받아서 GroupElement를 받을 수 있도록 하자
@@ -147,7 +87,7 @@ class Group(BaseModel):
         return self.represent.group(self.generator + [element])
 
     def order(self):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def order_statistics(self):
         order_count = collections.defaultdict(int)
@@ -162,7 +102,7 @@ class Group(BaseModel):
         return dict(order_count)
 
     def element_list(self) -> Iterator['GroupElement']:
-        return StabilizerTraveler(self).visit()
+        raise NotImplementedError(type(self))
 
     def is_abelian(self):
         for g1 in self.generator:
@@ -172,37 +112,13 @@ class Group(BaseModel):
         return True
 
     def is_subgroup(self, other: 'Group'):
+        if self.represent != other.represent:
+            return False
+
         for g in self.generator:
             if not other.element_test(g):
                 return False
         return True
-
-    def orbit(self, o: T) -> Set[T]:
-        done = set()
-        queue = {o}
-        while queue:
-            c = queue.pop()
-            done.add(c)
-            for g in self.generator:
-                gc = g.act(c)
-                if gc not in done:
-                    queue.add(gc)
-        return done
-
-    def orbit_list(self):
-        o_done = set()
-        o_list = []
-
-        for o in self.represent.object_list():
-            if o in o_done:
-                continue
-
-            orbit = self.orbit(o)
-            if len(orbit) > 1:
-                o_list.append(orbit)
-            o_done.update(orbit)
-
-        return o_list
 
     def is_transitive(self):
         object_list = list(self.represent.object_list())
@@ -237,120 +153,24 @@ class Group(BaseModel):
             return False
 
         return (
-            self.is_contained(other) and
-            other.is_contained(self)
+            self.is_subgroup(other) and
+            other.is_subgroup(self)
         )
-
-    def is_contained(self, other: 'Group') -> bool:
-        for g in other.generator:
-            if not self.element_test(g):
-                return False
-        return True
-
-    def stabilizer(self, o: T) -> 'Group':
-        self.represent.check_object(o)
-
-        done = set()
-        queue = {o}
-        transversal = {o: self.represent.identity}
-
-        new_generator = []
-        while queue:
-            c = queue.pop()
-            done.add(c)
-            for g in self.generator:
-                gc = g.act(c)
-                if gc not in done:
-                    transversal[gc] = transversal[c] + g
-                    queue.add(gc)
-                else:
-                    new_generator.append(
-                        transversal[c] + g - transversal[gc]
-                    )
-
-        return Group(
-            represent=self.represent,
-            generator=[
-                g
-                for g in new_generator
-                if not g.is_identity()
-            ]
-        )
-
-    def stabilizer_many(self, obj_list: List[T]) -> 'Group':
-        current = self
-        for obj in obj_list:
-            current = current.stabilizer(obj)
-        return current
-
-    def stabilizer_chain(self, is_factor: bool = False) -> 'StabilizerChain':
-        if self._stabilizer_chain is not None:
-            # check factor info
-            if not is_factor or self._stabilizer_chain.is_factor:
-                return self._stabilizer_chain
-
-        chain = StabilizerChain(
-            group=self.represent.group(),
-            is_factor=is_factor
-        )
-        obj_iter = ElementContainer(self.represent.object_list())
-        for g in self.generator:
-            if is_factor:
-                g = ElementInfo(g, [g])
-            chain.extend(g, obj_iter)
-
-        self._stabilizer_chain = chain
-        return chain
 
     def element_test(self, element: 'GroupElement'):
-        return self.stabilizer_chain().element_test(element)
+        raise NotImplementedError(type(self))
 
     def random_element(self) -> 'GroupElement':
-        element = self.represent.identity
-        for stabilizer in self.stabilizer_chain().travel():
-            if stabilizer.is_trivial():
-                break
-            info = random.choice(list(stabilizer.transversal.values()))
-            element += info.element
-        return element
+        raise NotImplementedError(type(self))
 
     def factor(self, element: 'GroupElement'):
-        chain = self.stabilizer_chain(True)
-        if not self.element_test(element):
-            raise ValueError('Element not in the Group')
-
-        return chain.factor(element)
+        raise NotImplementedError(type(self))
 
     def normal_closure(self, element_list: List['GroupElement']):
-        for element in element_list:
-            if not self.element_test(element):
-                raise ValueError('Element should be belong to this group')
-
-        chain = StabilizerChain(group=self.represent.group())
-        obj_iter = ElementContainer(self.represent.object_list())
-
-        insert_queue = set(element_list)
-        while insert_queue:
-            element = insert_queue.pop()
-
-            for generator in self.generator:
-                new_element = -generator + element + generator
-                if not chain.element_test(new_element):
-                    chain.extend(new_element, obj_iter)
-                    insert_queue.add(new_element)
-
-        return chain.construct()
+        raise NotImplementedError(type(self))
 
     def center(self):
-        chain = StabilizerChain(group=self.represent.group())
-        obj_iter = ElementContainer(self.represent.object_list())
-
-        for element in self.element_list():
-            if self.is_commute(element):
-                if not chain.element_test(element):
-                    chain.extend(element, obj_iter)
-
-        return chain.construct()
+        raise NotImplementedError(type(self))
 
     def is_commute(self, element: 'GroupElement'):
         for gen in self.generator:
@@ -442,10 +262,10 @@ class Group(BaseModel):
         return [p ** e for p, e in result]
 
     def _get_abelian_key_gen(self):
-        return StabilizerOrderTraveler(self).visit()
+        raise NotImplementedError(type(self))
 
     def subgroup_list(self):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def centralizer(self, element: 'GroupElement'):
         pass
@@ -472,276 +292,23 @@ class Group(BaseModel):
         pass
 
     def automorphism_group(self):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def g_quotients(self, others: 'Group'):
         pass
 
-
-class ElementContainer:
-    def __init__(self, element_list):
-        self.element_set = set(element_list)
-        self.element_iter = self.iter_repeat()
-        self.element_used = set()
-
-    def iter_repeat(self):
-        while True:
-            for element in self.element_set:
-                yield element
-
-    def get_next(self, group_element: 'GroupElement'):
-        for element in self.element_iter:
-            if element in self.element_used:
-                continue
-
-            acted_element = group_element.act(element)
-            if acted_element != element:
-                self.element_used.add(element)
-                return element
-
-
-class ElementInfo(BaseModel):
-    element: 'GroupElement'
-    factor: Optional[List['GroupElement']] = None
-
-    def __add__(self, other):
-        if not isinstance(other, ElementInfo):
-            raise TypeError('ElementInfo is required')
-
-        element = self.element + other.element
-        if self.factor is None or other.factor is None:
-            factor = None
-        else:
-            factor = self._normalize_factor(self.factor + other.factor)
-
-        return ElementInfo(element=element, factor=factor)
-
-    def __sub__(self, other):
-        if not isinstance(other, ElementInfo):
-            raise TypeError('ElementInfo is required')
-
-        return self + (-other)
-
-    def __neg__(self):
-        if self.factor is None:
-            factor = None
-        else:
-            factor = [-f for f in self.factor]
-            factor.reverse()
-
-        return ElementInfo(element=-self.element, factor=factor)
-
-    def show(self):
-        print(self.element)
-        if self.factor is not None:
-            for factor in self.factor:
-                print('-', factor)
-            print('-', len(self.factor))
-
-    def length(self):
-        return len(self.factor) if self.factor else 0
-
-    def _normalize_factor(self, factor_list):
-        factor_count = []
-
-        for factor in factor_list:
-            if factor_count and (factor_count[-1][0] - factor).is_identity():
-                factor_count[-1][1] += 1
-            elif factor_count and (factor_count[-1][0] + factor).is_identity():
-                factor_count[-1][1] -= 1
-            else:
-                factor_count.append([factor, 1])
-            if factor_count[-1][1] == 0:
-                factor_count.pop()
-
-        factor_result = []
-        for factor, count in factor_count:
-            order_it = count % factor.order()
-            order_left = -count % factor.order()
-
-            if order_it > order_left:
-                order_it = order_left
-                factor = -factor
-            factor_result.extend([factor] * order_it)
-        return factor_result
-
-
-class StabilizerChain(BaseModel):
-    group: Group
-    point: T = None
-    transversal: Dict[T, ElementInfo] = pydantic.Field(default_factory=dict)
-    generator_factor: Dict['GroupElement', ElementInfo] = pydantic.Field(
-        default_factory=dict
-    )
-    stabilizer: Optional['StabilizerChain'] = None
-    depth: int = 0
-    is_factor: bool = False
-
-    @property
-    def order(self):
-        if self.is_trivial():
-            return 1
-        else:
-            return len(self.transversal) * self.stabilizer.order
-
-    def is_trivial(self):
-        return self.point is None
-
-    def travel(self):
-        current = self
-        yield current
-        while not current.is_trivial():
-            current = current.stabilizer
-            yield current
-
-    def element_test(self, element: 'GroupElement'):
-        if element.is_identity():
-            return True
-
-        for stabilizer in self.travel():
-            if stabilizer.point is None:
-                return element.is_identity()
-
-            base = element.act(stabilizer.point)
-            if base not in stabilizer.transversal:
-                return False
-
-            t = stabilizer.transversal[base]
-            element -= t.element
-
-        # Unreachable
-        return True
-
-    def factor(self, element: 'GroupElement') -> List['GroupElement']:
-        if element.is_identity():
-            return []
-
-        factor_info = ElementInfo(
-            self.group.represent.identity,
-            []
-        )
-
-        for stabilizer in self.travel():
-            if stabilizer.point is None:
-                break
-
-            base = element.act(stabilizer.point)
-            info = stabilizer.transversal[base]
-            element -= info.element
-            factor_info += info
-
-        return factor_info.factor
-
-    def show(self):
-        for stack in self.travel():
-            print(f"=== STACK-{stack.depth} ===")
-            print(f"Fixed Point : {stack.point}")
-            print("Transversal")
-            for k, t in stack.transversal.items():
-                print(f"  - {k} : {t.element}")
-            print("Group Generator")
-            for g in stack.group.generator:
-                print(f"  - {g}")
-            print()
-
-    def extend(self,
-               alpha: Union[ElementInfo, 'GroupElement'],
-               next_object: ElementContainer):
-        """
-        :param alpha: Inserted element
-        :param next_object: Object for permutation
-        :return:
-        """
-        if isinstance(alpha, GroupElement):
-            alpha = ElementInfo(element=alpha)
-
-        # It is implementation of Schreier-Sims algorithm
-        if not self.element_test(alpha.element):
-            # Extend existing stabilizer chain
-            if self.is_trivial():  # we are on the bottom of the chain
-                self.group.generator.append(alpha.element)
-                self.generator_factor[alpha.element] = alpha
-
-                # pick random object from base point
-                beta = self.point = next_object.get_next(alpha.element)
-                self.stabilizer = StabilizerChain(  # Add a new layer
-                    group=self.group.represent.group(),
-                    depth=self.depth + 1,
-                    is_factor=self.is_factor
-                )
-                self.transversal[beta] = ElementInfo(
-                    element=self.group.represent.identity,
-                    factor=[] if self.is_factor else None
-                )
-
-                delta = alpha.element.act(beta)
-                s = alpha  # orbit algorithm for single generator group
-
-                while delta != beta:
-                    self.transversal[delta] = s
-                    delta, s = alpha.element.act(delta), s + alpha
-
-                self.stabilizer.extend(s, next_object)  # remove recursive
-            else:
-                queue = Queue()
-                for delta, transversal in self.transversal.items():
-                    queue.put((delta, transversal, False))
-
-                new_orbit = collections.defaultdict(list)
-
-                while queue.qsize() > 0:
-                    delta, transversal, is_new = queue.get()
-                    check_element = [alpha]
-                    if is_new:
-                        for generator in self.generator_factor.values():
-                            check_element.append(generator)
-                            check_element.append(-generator)
-
-                    for element in check_element:
-                        gamma = element.element.act(delta)
-                        new_element = transversal + element
-
-                        if gamma not in self.transversal:
-                            if gamma not in new_orbit:
-                                queue.put((gamma, new_element, True))
-                            new_orbit[gamma].append(new_element)
-                        else:
-                            self.stabilizer.extend(
-                                new_element - self.transversal[gamma],
-                                next_object
-                            )
-
-                for gamma, new_element_list in new_orbit.items():
-                    new_element = min(
-                        new_element_list,
-                        key=lambda e: e.length()
-                    )
-                    self.transversal[gamma] = new_element
-                    for another_element in new_element_list:
-                        if new_element == another_element:
-                            continue
-                        self.stabilizer.extend(
-                            another_element - new_element,
-                            next_object
-                        )
-
-                self.group.generator.append(alpha.element)
-                self.generator_factor[alpha.element] = alpha
-
-    def construct(self):
-        new_group = self.group.group_copy()
-        new_group._stabilizer_chain = self
-        return new_group
+    def stabilize_pair(self, pair_list: list['GroupElementPair']):
+        raise NotImplementedError(type(self))
 
 
 class GroupElement(BaseModel):
     represent: GroupRep
 
     def __add__(self, other: 'GroupElement') -> 'GroupElement':
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def __neg__(self) -> 'GroupElement':
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def __sub__(self, other: 'GroupElement') -> 'GroupElement':
         return self + (-other)
@@ -750,16 +317,12 @@ class GroupElement(BaseModel):
         return (self - other).is_identity()
 
     def is_identity(self) -> bool:
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def order(self) -> int:
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
-    def act(self, o: T) -> T:
-        """
-        "Group Action" on some Set and T is a element of the set.
 
-        :param o: Element on T
-        :return: Another T
-        """
-        raise NotImplementedError(self)
+class GroupElementPair(BaseModel):
+    source: GroupElement
+    target: GroupElement

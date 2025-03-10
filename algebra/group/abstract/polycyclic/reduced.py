@@ -34,7 +34,7 @@ class PolyCyclicRow:
         return self.element.is_identity()
 
     def min_index(self):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def sub(self, other):
         other_mi = other.min_index()

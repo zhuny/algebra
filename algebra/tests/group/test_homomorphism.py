@@ -1,6 +1,6 @@
 import unittest
 
-from algebra.group.abstract.permutation import PermutationGroupRep
+from algebra.group.abstract.permutation.base import PermutationGroupRep
 from algebra.group.abstract.shortcut import dihedral_group, symmetric_group, \
     cyclic_group, alternative_group
 from algebra.group.homomorphism import GroupHomomorphism, DirectProductGroupRep

@@ -37,7 +37,7 @@ class AutomorphismMap(BaseModel):
     def value(self, element: Any):
         # GroupElement 혹은 이와 관련된 여러 타입들 (collection of GroupElement)
         #  ex. Group, list[GroupElement], ...
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
 
 class AutomorphismGroupElement(GroupElement):

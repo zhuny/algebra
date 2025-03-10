@@ -1,6 +1,6 @@
 from typing import Any
 
-from algebra.group.abstract.permutation import PermutationGroupRep
+from algebra.group.abstract.permutation.base import PermutationGroupRep
 
 
 def _check_positive_integer(n: Any):

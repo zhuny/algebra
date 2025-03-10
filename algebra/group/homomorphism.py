@@ -1,9 +1,10 @@
 import itertools
-from typing import Dict, List, Type
+from typing import Type
 
 from pydantic import BaseModel
 
-from algebra.group.abstract.base import Group, GroupElement, GroupRep
+from algebra.group.abstract.base import Group, GroupElement, GroupRep, \
+    GroupElementPair
 
 
 class DirectProductGroupRep(GroupRep):
@@ -47,11 +48,26 @@ class DirectProductGroup(Group):
     represent: DirectProductGroupRep
     generator: tuple[DirectProductGroupElement, ...]
 
+    def order(self) -> int:
+        total_order = 1
+
+        current: DirectProductGroup = self
+        for index, represent in enumerate(self.represent.rep_list):
+            generator = [g.value_list[index] for g in current.generator]
+            projected_group = represent.group(generator)
+            total_order *= projected_group.order()
+            current = projected_group.stabilize_pair([
+                GroupElementPair(source=g.value_list[index], target=g)
+                for g in current.generator
+            ])
+
+        return total_order
+
 
 class GroupHomomorphism(BaseModel):
     domain: Group
     codomain: Group
-    mapping: Dict[GroupElement, GroupElement]
+    mapping: dict[GroupElement, GroupElement]
     raise_exception: bool = True
 
     def model_post_init(self, __context):

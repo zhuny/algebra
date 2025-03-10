@@ -12,7 +12,7 @@ class Ideal(BaseModel):
         return self.is_contained(element1 - element2)
 
     def is_contained(self, element):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
 
 class QuotientRing(Ring):

@@ -11,16 +11,16 @@ from algebra.util.model import AlgebraModelBase
 
 class VariableSystemBase(AlgebraModelBase):
     def get_name(self, index: int) -> str:
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def get_key(self, monomial) -> Any:
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def get_size(self):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def register_variable(self, container, variable_iter):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
 
 class VariableSystem(VariableSystemBase):

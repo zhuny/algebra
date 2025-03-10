@@ -3,13 +3,13 @@ from pydantic import BaseModel
 
 class Ring(BaseModel):
     def element(self, *args):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def zero(self):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def one(self):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def __truediv__(self, ideal):
         from algebra.ring.quotient import Ideal, QuotientRing
@@ -27,7 +27,7 @@ class Ring(BaseModel):
         return self._build_ideal(element_list)
 
     def _build_ideal(self, element_list: list['RingElement']):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
 
 class RingElement(BaseModel):
@@ -37,16 +37,16 @@ class RingElement(BaseModel):
         """
         Identity of addition
         """
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def is_one(self):
         """
         Identity of multiply
         """
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def __add__(self, other):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -55,10 +55,10 @@ class RingElement(BaseModel):
         return self + (-other)
 
     def __neg__(self):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def __mul__(self, other):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def __pow__(self, power, modulo=None):
         if not (isinstance(power, int) and power >= 1):

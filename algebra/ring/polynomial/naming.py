@@ -5,13 +5,13 @@ from algebra.util.model import AlgebraModelBase
 
 class VariableNameGenerator(AlgebraModelBase):
     def get(self, index: int) -> str:
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def get_size(self):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def register_variable(self, container, variable_iter):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
 
 class VariableNameListGenerator(VariableNameGenerator):

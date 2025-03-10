@@ -16,7 +16,7 @@ class AlgorithmPipeline:
         self.polynomial = polynomial.monic()
 
     def get_pipeline(self) -> list['Pipeline']:
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
 
     def run(self):
         stream = [PolynomialData(polynomial=self.polynomial)]
@@ -43,4 +43,4 @@ class Pipeline:
                         break
 
     def run_one(self, data: PolynomialData):
-        raise NotImplementedError(self)
+        raise NotImplementedError(type(self))
