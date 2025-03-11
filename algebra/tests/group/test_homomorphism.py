@@ -13,8 +13,6 @@ class TestGroupProductDirect(unittest.TestCase):
 
         prod = DirectProductGroupRep(rep_list=(gr1, gr2))
 
-        print(prod.as_group())
-
         self.assertEqual(
             prod.as_group().order(),
             gr1.as_group().order() * gr2.as_group().order()

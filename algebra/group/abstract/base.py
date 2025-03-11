@@ -297,7 +297,7 @@ class Group(BaseModel):
     def g_quotients(self, others: 'Group'):
         pass
 
-    def stabilize_pair(self, pair_list: list['GroupElementPair']):
+    def stabilize_pair(self, rep: GroupRep, pair_list: list['GroupElementPair']):
         raise NotImplementedError(type(self))
 
 
@@ -324,5 +324,28 @@ class GroupElement(BaseModel):
 
 
 class GroupElementPair(BaseModel):
+    # act as pair temporary
+
     source: GroupElement
     target: GroupElement
+
+    def __str__(self):
+        return f'Pair(source={self.source}, target={self.target})'
+
+    def __add__(self, other):
+        return GroupElementPair(
+            source=self.source + other.source,
+            target=self.target + other.target
+        )
+
+    def __sub__(self, other):
+        return GroupElementPair(
+            source=self.source - other.source,
+            target=self.target - other.target
+        )
+
+    def __neg__(self):
+        return GroupElementPair(source=-self.source, target=-self.target)
+
+    def is_identity(self) -> bool:
+        return self.source.is_identity() and self.target.is_identity()

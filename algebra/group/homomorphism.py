@@ -11,6 +11,10 @@ class DirectProductGroupRep(GroupRep):
     rep_list: tuple[GroupRep, ...]
 
     @property
+    def identity(self):
+        return self.element([rep.identity for rep in self.rep_list])
+
+    @property
     def group_cls(self) -> Type:
         return DirectProductGroup
 
@@ -43,6 +47,27 @@ class DirectProductGroupElement(GroupElement):
     represent: DirectProductGroupRep
     value_list: tuple[GroupElement, ...]
 
+    def __str__(self):
+        return ' X '.join(map(str, self.value_list))
+
+    def __add__(self, other):
+        return self.represent.element([
+            a + b
+            for a, b in zip(self.value_list, other.value_list)
+        ])
+
+    def __neg__(self):
+        return self.represent.element([-a for a in self.value_list])
+
+    def is_identity(self) -> bool:
+        for v in self.value_list:
+            if not v.is_identity():
+                return False
+        return True
+
+    def order(self) -> int:
+        return self.represent.group([self]).order()
+
 
 class DirectProductGroup(Group):
     represent: DirectProductGroupRep
@@ -51,15 +76,16 @@ class DirectProductGroup(Group):
     def order(self) -> int:
         total_order = 1
 
-        current: DirectProductGroup = self
+        current_generator = self.generator
         for index, represent in enumerate(self.represent.rep_list):
-            generator = [g.value_list[index] for g in current.generator]
+            generator = [g.value_list[index] for g in current_generator]
             projected_group = represent.group(generator)
             total_order *= projected_group.order()
-            current = projected_group.stabilize_pair([
+            pair_list = projected_group.stabilize_pair(self.represent, [
                 GroupElementPair(source=g.value_list[index], target=g)
-                for g in current.generator
+                for g in current_generator
             ])
+            current_generator = [pair.target for pair in pair_list]
 
         return total_order
 

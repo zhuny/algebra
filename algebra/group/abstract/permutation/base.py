@@ -1,10 +1,12 @@
 import functools
+from operator import index
 
 import pydantic
 from pydantic import BaseModel
 from typing import Dict, Type, TypeVar, Set, Iterator
 
-from algebra.group.abstract.base import GroupRep, GroupElement, Group
+from algebra.group.abstract.base import GroupRep, GroupElement, Group, \
+    GroupElementPair
 from algebra.number.util import lcm
 
 
@@ -279,6 +281,40 @@ class PermutationGroup(Group):
             chain.extend(g, obj_iter)
 
         return chain
+
+    def stabilize_pair(self, rep: GroupRep, pair_list: list[GroupElementPair]):
+        # stabilize for every object in this represent
+
+        current_pair_list = pair_list
+        if len(pair_list) == 0:
+            return
+
+        pair_identity = GroupElementPair(
+            source=self.represent.identity,
+            target=rep.identity
+        )
+
+        for o in self.represent.object_list():
+            queue = {o}
+            traversal = {o: pair_identity}
+            new_pair_list = []
+
+            while queue:
+                c = queue.pop()
+                for pair in current_pair_list:
+                    gc = pair.source.act(c)
+                    if gc not in traversal:
+                        traversal[gc] = traversal[c] + pair
+                        queue.add(gc)
+                    else:
+                        new_element = traversal[c] + pair - traversal[gc]
+                        if new_element.is_identity():
+                            continue
+                        new_pair_list.append(new_element)
+
+            current_pair_list = new_pair_list
+
+        return current_pair_list
 
     def center(self):
         chain = StabilizerChain(group=self.represent.group())
