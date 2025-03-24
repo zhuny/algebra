@@ -25,7 +25,7 @@ class PolyCyclicRow:
     def normalize(self):
         min_index = self.min_index()
         lead_num = self.element.power[min_index]
-        degree = self.element.group.degree
+        degree = self.element.represent.degree
         assert lead_num > 0
         power = pow(lead_num, degree - 2, degree)
         return self * power
@@ -67,15 +67,20 @@ class PolyCyclicRowReduced:
             return PolyCyclicLeftRow(e, rows)
 
     def append_mult(self, e, rows=None):
+        for _ in self.append_mult_iter(e, rows):
+            pass
+
+    def append_mult_iter(self, e, rows=None):
         g = self.get_row(e, rows)
-        self._append_power(g)
-        self._append_commute(g)
+        yield from self._append_power(g)
+        yield from self._append_commute(g)
 
     def _append_power(self, g):
-        d = g.element.group.degree
+        d = g.element.represent.degree
         while not g.is_identity():
-            self._append_one(g)
+            yield self._append_one(g)
             g *= d
+        yield g
 
     def _append_commute(self, g):
         if g.is_identity():
@@ -83,7 +88,7 @@ class PolyCyclicRowReduced:
 
         index_item = list(self.index_map.items())
         for _, e in index_item:
-            self._append_one(g + e - g - e)
+            yield self._append_one(g + e - g - e)
 
     def reduce(self, e, rows=None):
         return self._append_one(self.get_row(e, rows), insert=False)

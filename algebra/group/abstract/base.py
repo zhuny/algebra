@@ -320,7 +320,8 @@ class GroupElement(BaseModel):
         raise NotImplementedError(type(self))
 
     def order(self) -> int:
-        raise NotImplementedError(type(self))
+        # 만약 더 빠른 알고리즘이 있다면 각 class에서 구현
+        return self.represent.group([self]).order()
 
 
 class GroupElementPair(BaseModel):

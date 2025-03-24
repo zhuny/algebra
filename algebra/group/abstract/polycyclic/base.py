@@ -10,7 +10,8 @@ from typing_extensions import Annotated
 
 from algebra.group.abstract.automorphism import AutomorphismGroupRep, \
     AutomorphismMap
-from algebra.group.abstract.base import GroupElement, GroupRep, Group
+from algebra.group.abstract.base import GroupElement, GroupRep, Group, \
+    GroupElementPair
 from algebra.group.abstract.polycyclic.reduced import PolyCyclicRowReduced
 
 
@@ -43,8 +44,13 @@ class PolyCyclicGroupRep(GroupRep):
     def group_cls(self):
         return PolyCyclicGroup
 
-    def element(self, power):
-        return PolyCyclicGroupElement(group=self, power=list(power))
+    def element(self, element):
+        if isinstance(element, list):
+            return PolyCyclicGroupElement(represent=self, power=list(element))
+        elif isinstance(element, PolyCyclicGroupElement):
+            return element
+        else:
+            raise ValueError("Unknown element type")
 
     @property
     def identity(self):
@@ -247,6 +253,17 @@ class PolyCyclicGroup(Group):
         reduced.arrange_reverse()
         return reduced
 
+    def stabilize_pair(self, rep: GroupRep, pair_list: list['GroupElementPair']):
+        reduced = PolyCyclicRowReduced()
+        result_pair = []
+
+        for pair in pair_list:
+            for row in reduced.append_mult_iter(pair.source, [pair]):
+                if row.is_identity():
+                    result_pair.append(row.rows[0])
+
+        return result_pair
+
 
 class Traveler:
     def travel(self):
@@ -328,14 +345,14 @@ class PolyCyclicAutomorphismMap(AutomorphismMap):
 
 
 class PolyCyclicGroupElement(GroupElement):
-    group: PolyCyclicGroupRep
+    represent: PolyCyclicGroupRep
     power: list[int]
 
     def __hash__(self):
-        return hash((id(self.group), tuple(self.power)))
+        return hash((id(self.represent), tuple(self.power)))
 
     def __eq__(self, other):
-        return self.group is other.group and self.power == other.power
+        return self.represent is other.group and self.power == other.power
 
     def __lt__(self, other):
         return self.power < other.power
@@ -354,13 +371,13 @@ class PolyCyclicGroupElement(GroupElement):
                 continue
 
             if right.power < 0:
-                if right.index in self.group.power_relation:
+                if right.index in self.represent.power_relation:
                     right_stack.extend(
-                        self._to_index(self.group.power_relation[right.index])
+                        self._to_index(self.represent.power_relation[right.index])
                     )
                 self._append_index(
                     right_stack,
-                    right.index, right.power + self.group.degree
+                    right.index, right.power + self.represent.degree
                 )
                 continue
 
@@ -373,18 +390,18 @@ class PolyCyclicGroupElement(GroupElement):
             if left.index < right.index:
                 stack.extend([left, right])
             elif left.index == right.index:
-                q, r = divmod(left.power + right.power, self.group.degree)
-                if left.index in self.group.power_relation:
+                q, r = divmod(left.power + right.power, self.represent.degree)
+                if left.index in self.represent.power_relation:
                     for _ in range(q):
                         right_stack.extend(
                             self._to_index(
-                                self.group.power_relation[left.index]
+                                self.represent.power_relation[left.index]
                             )
                         )
                 self._append_index(right_stack,left.index, r)
             else:
                 pair = left.index, right.index
-                if pair not in self.group.commute_relation:
+                if pair not in self.represent.commute_relation:
                     right_stack.extend([left, right])
                 else:
                     self._append_index(
@@ -394,7 +411,7 @@ class PolyCyclicGroupElement(GroupElement):
                     for _ in range(left.power):
                         right_stack.extend(
                             self._to_index(
-                                self.group.commute_relation[pair]
+                                self.represent.commute_relation[pair]
                             )
                         )
                         self._append_index(right_stack,left.index, 1)
@@ -403,10 +420,10 @@ class PolyCyclicGroupElement(GroupElement):
         self._show(stack, right_stack)
 
         # return result
-        p = [0] * self.group.number
+        p = [0] * self.represent.number
         for left in stack:
             p[left.index] = left.power
-        return PolyCyclicGroupElement(group=self.group, power=p)
+        return PolyCyclicGroupElement(represent=self.represent, power=p)
 
     @staticmethod
     def _append_index(stack, index, power):
@@ -433,7 +450,7 @@ class PolyCyclicGroupElement(GroupElement):
 
     def __mul__(self, other):
         if other == 0:
-            return self.group.identity
+            return self.represent.identity
 
         current = self
         for i in range(1, other):
@@ -473,8 +490,8 @@ class PolyCyclicGroupElement(GroupElement):
         current_order = 1
 
         while not current.is_identity():
-            current_order *= self.group.degree
-            current *= self.group.degree
+            current_order *= self.represent.degree
+            current *= self.represent.degree
 
         return current_order
 
