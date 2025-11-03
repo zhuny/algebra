@@ -1,6 +1,7 @@
 import itertools
-from typing import TypeVar, Any, Iterator
+from typing import TypeVar, Any, Iterator, Type
 
+from pydantic import BaseModel, ConfigDict
 from typing_extensions import Generic
 
 
@@ -10,7 +11,11 @@ E = TypeVar("E", bound="GroupElement")         # element 타입
 G = TypeVar("G", bound="GroupDefinition")      # group 타입
 
 
-class GroupRepresentation(Generic[R, E, G]):
+class AppBaseModel(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+
+class GroupRepresentation(AppBaseModel, Generic[R, E, G]):
     def element(self, *args, **kwargs) -> E:
         raise NotImplementedError(type(self))
 
@@ -18,10 +23,18 @@ class GroupRepresentation(Generic[R, E, G]):
         raise NotImplementedError(type(self))
 
     def group(self, generator_list: list[Any], name=None) -> G:
+        generator_list = [self.element(e) for e in generator_list]
+        return self.group_cls()(
+            representation=self,
+            generator_list=generator_list,
+            name=name
+        )
+
+    def group_cls(self) -> Type[G]:
         raise NotImplementedError(type(self))
 
 
-class GroupElement(Generic[R, E, G]):
+class GroupElement(AppBaseModel, Generic[R, E, G]):
     representation: R
 
     def __mul__(self: E, other: E) -> E:
@@ -63,7 +76,7 @@ class GroupElement(Generic[R, E, G]):
         raise NotImplementedError(type(self))
 
 
-class GroupDefinition(Generic[R, E, G]):
+class GroupDefinition(AppBaseModel, Generic[R, E, G]):
     representation: R
     name: str | None = None
     generator_list: list[E]

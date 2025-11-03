@@ -1,0 +1,70 @@
+from typing import TypeVar, Type
+
+from pydantic import Field, field_validator, model_validator
+
+from algebra2.group.permutation.base import PermutationGroupRepresentation, PermutationGroupElement, \
+    PermutationGroupObject, PermutationGroupDefinition
+
+# 앞으로 나올 4개를 서로 묶을 타입 변수
+R = TypeVar("R", bound="SimPermGrpRepresentation")  # representation 타입
+E = TypeVar("E", bound="SimPermGrpElement")         # element 타입
+G = TypeVar("G", bound="SimPermGrpDefinition")      # group 타입
+O = TypeVar("O", bound="SimPermGrpObject")          # object 타입
+
+
+class SimPermGrpRepresentation(PermutationGroupRepresentation[R, E, G, O]):
+    this_degree: int = Field(alias="degree")
+
+    def degree(self) -> int:
+        return self.this_degree
+
+    def element(self, cycle_list: list[list[int | O]]) -> E:
+        mapping = {}
+
+        for cycle in cycle_list:
+            cycle = [self.object(obj) for obj in cycle]
+
+            if len(set(cycle)) != len(cycle):
+                raise TypeError
+
+            mapping.update(zip(cycle, cycle[1:] + cycle[:1]))
+
+        return SimPermGrpElement(representation=self, data=mapping)
+
+    def object(self, num: int | O) -> O:
+        if isinstance(num, int):
+            num = SimPermGrpObject(representation=self, number=num)
+
+        if num.representation != self:
+            raise ValueError("Representation Not Matched")
+
+        return num
+
+    def group_cls(self) -> Type[G]:
+        return SimPermGrpDefinition
+
+
+class SimPermGrpDefinition(PermutationGroupDefinition[R, E, G, O]):
+    pass
+
+
+class SimPermGrpElement(PermutationGroupElement[R, E, G, O]):
+    def __repr__(self):
+        return repr({
+            k.number: v.number
+            for k, v in self.data.items()
+        })
+
+
+class SimPermGrpObject(PermutationGroupObject[R, E, G, O]):
+    number: int
+
+    @model_validator(mode="after")
+    def check_number(self):
+        if 0 <= self.number < self.representation.this_degree:
+            return self
+
+        raise ValueError("number range not corrected")
+
+    def __repr__(self):
+        return str(self.number)
