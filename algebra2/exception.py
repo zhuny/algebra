@@ -1,0 +1,2 @@
+class WorkInProgressError(Exception):
+    pass
