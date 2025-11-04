@@ -1,4 +1,4 @@
-from typing import TypeVar, Type
+from typing import TypeVar, Type, Union
 
 from pydantic import Field, field_validator, model_validator
 
@@ -18,16 +18,37 @@ class SimPermGrpRepresentation(PermutationGroupRepresentation[R, E, G, O]):
     def degree(self) -> int:
         return self.this_degree
 
-    def element(self, cycle_list: list[list[int | O]]) -> E:
+    def element(self,
+                cycle_info: Union[
+                    list[list[int | O]],
+                    dict[O, O],
+                    E
+                ]) -> E:
         mapping = {}
 
-        for cycle in cycle_list:
-            cycle = [self.object(obj) for obj in cycle]
+        if isinstance(cycle_info, SimPermGrpElement):
+            if self != cycle_info.representation:
+                raise ValueError("Representation not matched")
+            return cycle_info
 
-            if len(set(cycle)) != len(cycle):
-                raise TypeError
+        elif isinstance(cycle_info, dict):
+            for k, v in cycle_info.items():
+                k, v = self.object(k), self.object(v)
+                if k == v:
+                    continue
+                mapping[k] = v
 
-            mapping.update(zip(cycle, cycle[1:] + cycle[:1]))
+        elif isinstance(cycle_info, list):
+            for cycle in cycle_info:
+                cycle = [self.object(obj) for obj in cycle]
+
+                if len(set(cycle)) != len(cycle):
+                    raise TypeError
+
+                mapping.update(zip(cycle, cycle[1:] + cycle[:1]))
+
+        else:
+            raise TypeError(f"Unknown type : {type(cycle_info)}")
 
         return SimPermGrpElement(representation=self, data=mapping)
 
@@ -43,6 +64,9 @@ class SimPermGrpRepresentation(PermutationGroupRepresentation[R, E, G, O]):
     def group_cls(self) -> Type[G]:
         return SimPermGrpDefinition
 
+    def identity(self) -> E:
+        return self.element([])
+
 
 class SimPermGrpDefinition(PermutationGroupDefinition[R, E, G, O]):
     pass
@@ -54,6 +78,25 @@ class SimPermGrpElement(PermutationGroupElement[R, E, G, O]):
             k.number: v.number
             for k, v in self.data.items()
         })
+
+    def __mul__(self, other: E) -> E:
+        self._check_type(other)
+
+        other_map = dict(other.data)
+        result = {}
+        for k, v in self.data.items():
+            result[k] = other_map.pop(v, v)
+        result.update(other_map)
+
+        return self.representation.element(result)
+
+    def _check_type(self, other: E):
+        if type(self) != type(other):
+            # Strict check rather than isinstance
+            raise TypeError("Type not matched")
+
+        if self.representation != other.representation:
+            raise ValueError("Representation not matched")
 
 
 class SimPermGrpObject(PermutationGroupObject[R, E, G, O]):
@@ -68,3 +111,5 @@ class SimPermGrpObject(PermutationGroupObject[R, E, G, O]):
 
     def __repr__(self):
         return str(self.number)
+
+    __str__ = __repr__

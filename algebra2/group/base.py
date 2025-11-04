@@ -1,4 +1,5 @@
 import itertools
+import re
 from typing import TypeVar, Any, Iterator, Type
 
 from pydantic import BaseModel, ConfigDict
@@ -80,6 +81,16 @@ class GroupDefinition(AppBaseModel, Generic[R, E, G]):
     representation: R
     name: str | None = None
     generator_list: list[E]
+
+    @classmethod
+    def cls_name(cls):
+        return "".join(re.findall(r"[A-Z]", cls.__name__))
+
+    def __repr__(self):
+        additional = "" if self.name is None else ", " + self.name
+        return f"{self.cls_name()}({self.generator_list}{additional})"
+
+    __str__ = __repr__
 
     def __contains__(self, element: E) -> bool:
         raise NotImplementedError(type(self))

@@ -29,6 +29,15 @@ class PermutationGroupElement(GroupElement[R, E, G],
                               Generic[R, E, G, O]):
     data: dict[O, O]
 
+    def __truediv__(self, other: E) -> E:
+        return self * other.inverse()
+
+    def inverse(self) -> E:
+        return self.representation.element({
+            v: k
+            for k, v in self.data.items()
+        })
+
     def act(self, obj: O) -> O:
         return self.data.get(obj, obj)
 
@@ -41,11 +50,6 @@ class PermutationGroupElement(GroupElement[R, E, G],
 
 class PermutationGroupDefinition(GroupDefinition[R, E, G],
                                  Generic[R, E, G, O]):
-    def __repr__(self):
-        return f"PGD({self.generator_list})"
-
-    __str__ = __repr__
-
     def orbit(self, obj: Any) -> list[O]:
         obj: O = self.representation.object(obj)
         orbit_set = set()
@@ -66,8 +70,36 @@ class PermutationGroupDefinition(GroupDefinition[R, E, G],
     def orbits(self) -> list[list[O]]:
         raise WorkInProgressError()
 
-    def stabilizer(self, obj: O) -> G:
-        raise WorkInProgressError()
+    def stabilizer(self, obj: Any) -> G:
+        obj: O = self.representation.object(obj)
+        queue = [obj]
+        done = set()
+        transversal = {obj: self.representation.identity()}
+        new_generator = []
+
+        while queue:
+            current = queue.pop()
+            if current in done:
+                continue
+            done.add(current)
+
+            for g in self.generator_list:
+                other = g.act(current)
+                if other not in transversal:
+                    transversal[other] = transversal[current] * g
+                    queue.append(other)
+                else:
+                    new_generator.append(
+                        transversal[current] * g / transversal[other]
+                    )
+
+        return self.representation.group(
+            generator_list=new_generator,
+            name=(
+                None if self.name is None else
+                f"Stab({self.name}, {obj})"
+            )
+        )
 
     def stabilizer_set_wise(self, obj_set: Container[O]) -> G:
         raise WorkInProgressError()
