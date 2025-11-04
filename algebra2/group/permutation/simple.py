@@ -1,4 +1,4 @@
-from typing import TypeVar, Type, Union
+from typing import TypeVar, Type, Union, Iterator
 
 from pydantic import Field, field_validator, model_validator
 
@@ -18,40 +18,6 @@ class SimPermGrpRepresentation(PermutationGroupRepresentation[R, E, G, O]):
     def degree(self) -> int:
         return self.this_degree
 
-    def element(self,
-                cycle_info: Union[
-                    list[list[int | O]],
-                    dict[O, O],
-                    E
-                ]) -> E:
-        mapping = {}
-
-        if isinstance(cycle_info, SimPermGrpElement):
-            if self != cycle_info.representation:
-                raise ValueError("Representation not matched")
-            return cycle_info
-
-        elif isinstance(cycle_info, dict):
-            for k, v in cycle_info.items():
-                k, v = self.object(k), self.object(v)
-                if k == v:
-                    continue
-                mapping[k] = v
-
-        elif isinstance(cycle_info, list):
-            for cycle in cycle_info:
-                cycle = [self.object(obj) for obj in cycle]
-
-                if len(set(cycle)) != len(cycle):
-                    raise TypeError
-
-                mapping.update(zip(cycle, cycle[1:] + cycle[:1]))
-
-        else:
-            raise TypeError(f"Unknown type : {type(cycle_info)}")
-
-        return SimPermGrpElement(representation=self, data=mapping)
-
     def object(self, num: int | O) -> O:
         if isinstance(num, int):
             num = SimPermGrpObject(representation=self, number=num)
@@ -64,12 +30,21 @@ class SimPermGrpRepresentation(PermutationGroupRepresentation[R, E, G, O]):
     def group_cls(self) -> Type[G]:
         return SimPermGrpDefinition
 
+    def element_cls(self) -> Type[E]:
+        return SimPermGrpElement
+
     def identity(self) -> E:
         return self.element([])
 
+    def iter_objects(self) -> Iterator[O]:
+        for i in range(self.this_degree):
+            yield self.object(i)
+
 
 class SimPermGrpDefinition(PermutationGroupDefinition[R, E, G, O]):
-    pass
+    def order(self) -> int:
+        from algebra2.group.permutation.stabilizer import StabilizerChain
+        return StabilizerChain.build(self).order()
 
 
 class SimPermGrpElement(PermutationGroupElement[R, E, G, O]):

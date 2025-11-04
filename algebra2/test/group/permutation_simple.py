@@ -10,6 +10,9 @@ class TestPermutationSimpleCase(unittest.TestCase):
             [[0, 1, 2, 3]],
             [[1, 3]]
         ], name="D_8")
-        print(group)
-        print(group.orbit(0))
-        print(group.stabilizer(0))
+        self.assertSizeEqual(group.orbit(0), 4)
+        self.assertEqual(group.stabilizer(0).order(), 2)
+        self.assertEqual(group.order(), 8)
+
+    def assertSizeEqual(self, container, size, msg=None):
+        self.assertEqual(len(container), size, msg)

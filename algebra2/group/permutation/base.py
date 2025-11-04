@@ -1,6 +1,6 @@
-from typing import Iterator, Container, Any
+from typing import Iterator, Container, Any, Union, Type
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing_extensions import Generic, TypeVar
 
 from algebra2.exception import WorkInProgressError
@@ -24,10 +24,55 @@ class PermutationGroupRepresentation(GroupRepresentation[R, E, G],
     def object(self, *args, **kwargs) -> O:
         raise NotImplementedError(type(self))
 
+    def element_cls(self) -> Type[E]:
+        raise NotImplementedError(type(self))
+
+    def element(self,
+                cycle_info: Union[
+                    list[list[int | O]],
+                    dict[O, O],
+                    E
+                ]) -> E:
+        mapping = {}
+        element_cls: Type[E] = self.element_cls()
+
+        if isinstance(cycle_info, element_cls):
+            if self != cycle_info.representation:
+                raise ValueError("Representation not matched")
+            return cycle_info
+
+        elif isinstance(cycle_info, dict):
+            for k, v in cycle_info.items():
+                k, v = self.object(k), self.object(v)
+                mapping[k] = v
+
+        elif isinstance(cycle_info, list):
+            for cycle in cycle_info:
+                cycle = [self.object(obj) for obj in cycle]
+
+                if len(set(cycle)) != len(cycle):
+                    raise TypeError
+
+                mapping.update(zip(cycle, cycle[1:] + cycle[:1]))
+
+        else:
+            raise TypeError(f"Unknown type : {type(cycle_info)}")
+
+        return element_cls(representation=self, data=mapping)
+
 
 class PermutationGroupElement(GroupElement[R, E, G],
                               Generic[R, E, G, O]):
     data: dict[O, O]
+
+    @field_validator("data")
+    @classmethod
+    def _remove_same_items(cls, data):
+        return {
+            k: v
+            for k, v in data.items()
+            if k != v
+        }
 
     def __truediv__(self, other: E) -> E:
         return self * other.inverse()
@@ -46,6 +91,9 @@ class PermutationGroupElement(GroupElement[R, E, G],
 
     def sign(self) -> int:
         raise WorkInProgressError()
+
+    def is_identity(self) -> bool:
+        return len(self.data) == 0
 
 
 class PermutationGroupDefinition(GroupDefinition[R, E, G],

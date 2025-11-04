@@ -76,6 +76,9 @@ class GroupElement(AppBaseModel, Generic[R, E, G]):
     def order(self) -> int:
         raise NotImplementedError(type(self))
 
+    def is_identity(self) -> bool:
+        raise NotImplementedError(type(self))
+
 
 class GroupDefinition(AppBaseModel, Generic[R, E, G]):
     representation: R
