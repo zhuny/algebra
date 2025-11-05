@@ -88,3 +88,16 @@ class SimPermGrpObject(PermutationGroupObject[R, E, G, O]):
         return str(self.number)
 
     __str__ = __repr__
+
+
+def cyclic_product(order_list: list[int]):
+    rep = SimPermGrpRepresentation(degree=sum(order_list))
+
+    element_list = []
+    start = 0
+    for order in order_list:
+        end = start + order
+        element_list.append([list(range(start, end))])
+        start = end
+
+    return rep.group(element_list)
