@@ -23,12 +23,13 @@ class GroupRepresentation(AppBaseModel, Generic[R, E, G]):
     def identity(self) -> E:
         raise NotImplementedError(type(self))
 
-    def group(self, generator_list: list[Any], name=None) -> G:
+    def group(self, generator_list: list[Any], name=None, **kwargs) -> G:
         generator_list = [self.element(e) for e in generator_list]
         return self.group_cls()(
             representation=self,
             generator_list=generator_list,
-            name=name
+            name=name,
+            **kwargs
         )
 
     def group_cls(self) -> Type[G]:
@@ -96,7 +97,7 @@ class GroupDefinition(AppBaseModel, Generic[R, E, G]):
     __str__ = __repr__
 
     def __contains__(self, element: E) -> bool:
-        raise NotImplementedError(type(self))
+        return element in self
 
     def order(self) -> int:
         raise NotImplementedError(type(self))
@@ -108,7 +109,7 @@ class GroupDefinition(AppBaseModel, Generic[R, E, G]):
         return True
 
     def contains(self, element: E) -> bool:
-        return element in self
+        raise NotImplementedError(type(self))
 
     def is_subgroup(self, subgroup: G) -> bool:
         for element in subgroup.generator_list:
@@ -126,4 +127,14 @@ class GroupDefinition(AppBaseModel, Generic[R, E, G]):
         raise NotImplementedError(type(self))
 
     def normalizer(self, subgroup: G) -> G:
+        raise NotImplementedError(type(self))
+
+    def is_normalizer(self, element: E) -> bool:
+        for g in self.generator_list:
+            conj = element * g / element
+            if not self.contains(conj):
+                return False
+        return True
+
+    def automorphism_group(self):
         raise NotImplementedError(type(self))

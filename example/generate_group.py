@@ -1,3 +1,5 @@
+import itertools
+
 from algebra2.group.permutation.simple import cyclic_product
 from algebra2.util.number.integer import factorize
 
@@ -30,43 +32,30 @@ def generate_p_power(base, power):
 
 def generate_from_order(order: int):
     factor = factorize(order)
-    divisor_list = [1]
-
-    for f in factor.factor:
-        p_power = [1, f.base]
-        for _ in range(1, f.power):
-            p_power.append(p_power[-1] * f.base)
-        divisor_list = [
-            pp * d
-            for pp in p_power
-            for d in divisor_list
-        ]
 
     combined_cases = {}
     for f in factor.factor:
-        other = factor.number // (f.base ** f.power)
-        conjugate_valid = [
-            d for d in divisor_list
-            if d % f.base == 1 and other % d == 0
-        ]
-        p_power_groups = list(generate_p_power(f.base, f.power))
-        combined_cases[f.base] = [
-            (g, d)
-            for d in conjugate_valid
-            for g in p_power_groups
-        ]
-        print(f.base, 'base')
-        for g, d in combined_cases[f.base]:
-            print('-', g, d)
-    print(order)
+        combined_cases[f.base] = list(generate_p_power(f.base, f.power))
 
-    return []
+    if len(combined_cases) == 1:
+        for k, v in combined_cases.items():
+            yield from v
+
+    elif len(combined_cases) == 2:
+        for g1, g2 in itertools.product(*combined_cases.values()):
+            yield g1.direct_product(g2)
 
 
 def main():
-    for i in range(6, 7):
+    for i in range(1, 9):
         for group in generate_from_order(i):
-            print(group)
+            show_group('Given', group)
+            show_group('Automorphism Group', group.automorphism_group())
+            print()
+
+
+def show_group(msg, g):
+    print(msg, ':', g, g.order())
 
 
 if __name__ == '__main__':

@@ -1,5 +1,5 @@
 from queue import Queue
-from typing import TypeVar, Optional
+from typing import TypeVar, Optional, Any
 
 from pydantic import ConfigDict
 from typing_extensions import Generic
@@ -101,22 +101,37 @@ class StabilizerChainLayer(AppBaseModel, Generic[R, E, G, O]):
             current = current.stabilizer
             yield current
 
+    def iter_elements(self, element):
+        if self.is_leaf():
+            yield element
+            return
+
+        for e in self.transversal.values():
+            yield from self.stabilizer.iter_elements(element * e)
+
 
 class StabilizerChain(AppBaseModel, Generic[R, E, G, O]):
     representation: R
     top_layer: 'StabilizerChainLayer[R, E, G, O]'
+    obj_iter: Any
 
     @classmethod
-    def build(cls, group: G) -> 'StabilizerChain[R, E, G, O]':
-        obj_iter = ObjectContainer(object_list=list(group.representation.iter_objects()))
-        top_layer = StabilizerChainLayer()
-        for g in group.generator_list:
-            top_layer.extend(g, obj_iter)
-
-        return StabilizerChain(
-            representation=group.representation,
-            top_layer=top_layer
+    def build(cls, group: G, object_list: list[O] | None = None) -> 'StabilizerChain[R, E, G, O]':
+        obj_iter = ObjectContainer(
+            object_list=list(object_list or group.representation.iter_objects())
         )
+        top_layer = StabilizerChainLayer()
+        self = cls(
+            representation=group.representation,
+            top_layer=top_layer,
+            obj_iter=obj_iter
+        )
+        for g in group.generator_list:
+            self.extend(g)
+        return self
+
+    def extend(self, element: E) -> None:
+        self.top_layer.extend(element, self.obj_iter)
 
     def order(self) -> int:
         answer = 1
@@ -125,6 +140,17 @@ class StabilizerChain(AppBaseModel, Generic[R, E, G, O]):
                 break
             answer *= len(layer.transversal)
         return answer
+
+    def iter_elements(self):
+        return self.top_layer.iter_elements(self.representation.identity())
+
+    def contains(self, element: E) -> bool:
+        return self.top_layer.contains(element)
+
+    def group(self) -> G:
+        return self.representation.group(
+            generator_list=self.top_layer.generator
+        )
 
 
 class ObjectContainer(Generic[E, O]):

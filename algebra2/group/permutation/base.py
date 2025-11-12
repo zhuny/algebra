@@ -1,9 +1,10 @@
-from typing import Iterator, Container, Any, Union, Type
+from functools import cached_property
+from typing import Iterator, Any, Union, Type, Tuple
 
-from pydantic import BaseModel, field_validator
+from pydantic import field_validator
 from typing_extensions import Generic, TypeVar
 
-from algebra2.exception import WorkInProgressError
+from algebra2.exception import WorkInProgressError, Unreachable
 from algebra2.group.base import GroupRepresentation, GroupElement, GroupDefinition, AppBaseModel
 
 # 앞으로 나올 4개를 서로 묶을 타입 변수
@@ -98,6 +99,15 @@ class PermutationGroupElement(GroupElement[R, E, G],
 
 class PermutationGroupDefinition(GroupDefinition[R, E, G],
                                  Generic[R, E, G, O]):
+    def order(self) -> int:
+        return self.stabilizer_chain.order()
+
+    def iter_elements(self) -> Iterator[E]:
+        return self.stabilizer_chain.iter_elements()
+
+    def contains(self, element: E) -> bool:
+        return self.stabilizer_chain.contains(element)
+
     def orbit(self, obj: Any) -> list[O]:
         obj: O = self.representation.object(obj)
         orbit_set = set()
@@ -118,7 +128,7 @@ class PermutationGroupDefinition(GroupDefinition[R, E, G],
     def orbits(self) -> list[list[O]]:
         raise WorkInProgressError()
 
-    def stabilizer(self, obj: Any) -> G:
+    def stabilizer_old(self, obj: Any):
         obj: O = self.representation.object(obj)
         queue = [obj]
         done = set()
@@ -149,22 +159,55 @@ class PermutationGroupDefinition(GroupDefinition[R, E, G],
             )
         )
 
-    def stabilizer_set_wise(self, obj_set: Container[O]) -> G:
+    def stabilizer(self, obj: Any):
+        return self.stabilizer_point_wise([obj])
+
+    def stabilizer_set_wise(self, obj_set: list[Any]) -> G:
         raise WorkInProgressError()
 
-    def stabilizer_point_wise(self, obj_set: Container[O]) -> G:
-        raise WorkInProgressError()
+    def stabilizer_point_wise(self, obj_set: list[Any]):
+        from algebra2.group.permutation.stabilizer import StabilizerChain
 
+        obj_list = [self.representation.object(obj) for obj in obj_set]
+        return StabilizerChain.build(self, obj_list)
+
+    def automorphism_group(self):
+        from algebra2.group.permutation.automorphism import AutomorphismBuilder
+        return AutomorphismBuilder(self).run()
+
+    @cached_property
     def stabilizer_chain(self):
-        raise WorkInProgressError()
+        # 여러번 필요시 캐시
+        return self._stabilizer_chain()
 
     def is_transitive(self) -> bool:
         for obj in self.representation.iter_objects():
             obj_orbit = self.orbit(obj)
             return len(obj_orbit) == self.representation.degree()
 
-        # 사실상 unreachable
-        return False
+        raise Unreachable()
+
+    def normalizer(self, subgroup: G) -> G:
+        return self.normalizer_with_quotient(subgroup)[0]
+
+    def normalizer_with_quotient(self, subgroup: G) -> Tuple[G, list[E]]:
+        if not self.is_subgroup(subgroup):
+            raise ValueError("Should be subgroup")
+
+        stab = subgroup._stabilizer_chain()
+        quotient = []
+        for element in self.iter_elements():
+            if stab.contains(element):
+                continue
+            if subgroup.is_normalizer(element):
+                stab.extend(element)
+                quotient.append(element)
+        return stab.group(), quotient
+
+    def _stabilizer_chain(self):
+        from algebra2.group.permutation.stabilizer import StabilizerChain
+        return StabilizerChain.build(self)
+
 
 
 class PermutationGroupObject(AppBaseModel, Generic[R, E, G, O]):

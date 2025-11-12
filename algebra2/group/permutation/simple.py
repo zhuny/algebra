@@ -1,6 +1,6 @@
-from typing import TypeVar, Type, Union, Iterator
+from typing import TypeVar, Type, Iterator
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, model_validator
 
 from algebra2.group.permutation.base import PermutationGroupRepresentation, PermutationGroupElement, \
     PermutationGroupObject, PermutationGroupDefinition
@@ -42,17 +42,29 @@ class SimPermGrpRepresentation(PermutationGroupRepresentation[R, E, G, O]):
 
 
 class SimPermGrpDefinition(PermutationGroupDefinition[R, E, G, O]):
-    def order(self) -> int:
-        from algebra2.group.permutation.stabilizer import StabilizerChain
-        return StabilizerChain.build(self).order()
+    def direct_product(self, other: 'SimPermGrpDefinition'):
+        first_degree = self.representation.this_degree
+        rep = SimPermGrpRepresentation(degree=first_degree + other.representation.this_degree)
+        element_list = [
+            g.model_dump_data()
+            for g in self.generator_list
+        ]
+        element_list.extend(
+            g.model_dump_data(first_degree)
+            for g in other.generator_list
+        )
+        return rep.group(element_list)
 
 
 class SimPermGrpElement(PermutationGroupElement[R, E, G, O]):
     def __repr__(self):
-        return repr({
-            k.number: v.number
-            for k, v in self.data.items()
-        })
+        return repr(self.model_dump_data())
+
+    def __hash__(self):
+        items = list(self.model_dump_data().items())
+        items.sort()
+        items = tuple(items)
+        return hash(items)
 
     def __mul__(self, other: E) -> E:
         self._check_type(other)
@@ -72,6 +84,12 @@ class SimPermGrpElement(PermutationGroupElement[R, E, G, O]):
 
         if self.representation != other.representation:
             raise ValueError("Representation not matched")
+
+    def model_dump_data(self, offset=0):
+        return {
+            k.number + offset: v.number + offset
+            for k, v in self.data.items()
+        }
 
 
 class SimPermGrpObject(PermutationGroupObject[R, E, G, O]):
